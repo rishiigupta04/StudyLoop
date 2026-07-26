@@ -10,6 +10,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <App />
       <Toaster
+        theme="dark"
         position="bottom-right"
         visibleToasts={3}
         expand={false}
