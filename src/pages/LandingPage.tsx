@@ -227,6 +227,7 @@ export default function LandingPage() {
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [isPlayingGif, setIsPlayingGif] = useState(true);
   const [selectedEngine, setSelectedEngine] = useState<'local' | 'cloud'>('local');
+  const [isAnnualBilling, setIsAnnualBilling] = useState(true);
   const navigate = useNavigate();
 
   // GIF-like Auto-playing Frame Timeline Loop
@@ -268,7 +269,7 @@ export default function LandingPage() {
             <a href="#demo" className="hover:text-foreground transition-colors">Live Simulation</a>
             <a href="#architecture" className="hover:text-foreground transition-colors">Architecture</a>
             <a href="#scenarios" className="hover:text-foreground transition-colors">Voice Commands</a>
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
+            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </div>
 
@@ -879,6 +880,172 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing Section in Rupees (₹) ── */}
+      <section id="pricing" className="py-20 px-6 max-w-7xl mx-auto border-t border-border/40">
+        <div className="text-center mb-14">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3 block">
+            Simple Transparent Pricing
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+            Invest in Your Learning Velocity
+          </h2>
+          <p className="text-foreground-muted text-base max-w-2xl mx-auto">
+            Choose the plan that fits your study routine. Upgrade or cancel anytime with a 14-day money-back guarantee.
+          </p>
+
+          {/* Annual vs Monthly Billing Toggle */}
+          <div className="inline-flex items-center gap-3 mt-8 p-1.5 rounded-2xl bg-surface-card border border-border/80">
+            <button
+              onClick={() => setIsAnnualBilling(false)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                !isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Monthly Billing
+            </button>
+            <button
+              onClick={() => setIsAnnualBilling(true)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>Annual Billing</span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold">
+                Save 20%
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+          {/* Free Tier Card */}
+          <div className="p-8 rounded-3xl bg-surface-card border border-border/80 text-left flex flex-col justify-between relative overflow-hidden card-hover">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3.5 py-1 rounded-full bg-surface-elevated border border-border text-xs font-bold text-muted-foreground">
+                  Starter Student
+                </span>
+                <span className="text-xs font-mono text-muted-foreground font-semibold">Free Forever</span>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-foreground tracking-tight font-mono">₹0</span>
+                  <span className="text-sm font-semibold text-muted-foreground">/ month</span>
+                </div>
+                <p className="text-xs text-foreground-muted mt-2">
+                  Perfect for exploring AI video copilot sessions & timestamped notes.
+                </p>
+              </div>
+
+              <ul className="space-y-3.5 text-xs text-foreground-muted mb-8 border-t border-border/50 pt-6">
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>10 Video Study Sessions per month</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Push-to-Talk (~) Voice Copilot (Standard Latency)</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Bilingual Hinglish & English Speech ASR</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Anti-Spoiler Grounded Guardrail</span>
+                </li>
+                <li className="flex items-center gap-3 text-muted-foreground/60">
+                  <Icon name="XMarkIcon" size={16} className="text-muted-foreground shrink-0" />
+                  <span>Sub-45ms Local DistilBERT Engine (Pro only)</span>
+                </li>
+                <li className="flex items-center gap-3 text-muted-foreground/60">
+                  <Icon name="XMarkIcon" size={16} className="text-muted-foreground shrink-0" />
+                  <span>1-Click Notion Sync & Anki Export (Pro only)</span>
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              className="w-full py-3.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface-elevated/80 font-bold text-foreground text-sm transition-colors"
+            >
+              Get Started Free
+            </button>
+          </div>
+
+          {/* Pro Tier Card */}
+          <div className="p-8 rounded-3xl bg-surface-card border-2 border-indigo-500/60 text-left flex flex-col justify-between relative overflow-hidden card-hover shadow-2xl">
+            {/* Popular Badge Ribbon */}
+            <div className="absolute top-5 right-5">
+              <span className="px-3.5 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500 text-white text-[11px] font-extrabold shadow-md flex items-center gap-1">
+                <Icon name="SparklesIcon" size={12} />
+                Most Popular for Students
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-3.5 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold">
+                  Scholar Pro
+                </span>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold text-foreground tracking-tight font-mono">
+                    ₹{isAnnualBilling ? '399' : '499'}
+                  </span>
+                  <span className="text-sm font-semibold text-muted-foreground">/ month</span>
+                </div>
+                <p className="text-xs text-foreground-muted mt-2">
+                  {isAnnualBilling ? 'Billed annually at ₹4,788/year (Save 20%)' : 'Billed monthly. Cancel anytime.'}
+                </p>
+              </div>
+
+              <ul className="space-y-3.5 text-xs text-foreground-muted mb-8 border-t border-border/50 pt-6">
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <strong className="text-foreground">Unlimited Video Study Sessions</strong>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <strong className="text-indigo-300">⚡ Sub-45ms Local DistilBERT Engine</strong>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Unlimited Push-to-Talk (~) & Hands-Free Commands</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Whisper-Hindi2Hinglish + BGE-M3 1024-dim RAG</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>Advanced pgvector Anti-Spoiler Index</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <strong className="text-emerald-300">📓 1-Click Notion Sync, Anki Cards & PDF Export</strong>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Icon name="CheckIcon" size={16} className="text-cyan-400 shrink-0" />
+                  <span>AI Adaptive Active Recall Practice Quizzes</span>
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
+              className="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-sm shadow-lg flex items-center justify-center gap-2"
+            >
+              <Icon name="SparklesIcon" size={18} />
+              Upgrade to Scholar Pro
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* ── FAQ Accordion ── */}
       <section id="faq" className="py-20 px-6 max-w-4xl mx-auto">
         <div className="text-center mb-12">
@@ -972,6 +1139,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <Link to="/video-study-page" className="hover:text-foreground">App Workspace</Link>
             <Link to="/dashboard-home" className="hover:text-foreground">Dashboard</Link>
+            <a href="#pricing" className="hover:text-foreground">Pricing</a>
             <a href="#architecture" className="hover:text-foreground">Architecture</a>
           </div>
         </div>
