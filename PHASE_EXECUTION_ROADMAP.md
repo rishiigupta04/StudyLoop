@@ -15,8 +15,8 @@
 
 | Phase | Title | Depends On | Status |
 | :---: | :--- | :---: | :---: |
-| **1** | Frontend UI/UX, $1M Landing Page, Tilde PTT & Service Contracts | — | 🟡 Active |
-| **2** | Interactive Video Player Loop & Dual-Mode Intent Contract | Phase 1 | ⬜ Planned |
+| **1** | Frontend UI/UX, $1M Landing Page, Tilde PTT & Service Contracts | — | ✅ Completed |
+| **2** | Interactive Video Player Loop & Dual-Mode Intent Contract | Phase 1 | 🟡 Active |
 | **3** | Voice Bridge & WebSocket Audio Streaming | Phase 2 | ⬜ Planned |
 | **4** | FastAPI Gateway, LangGraph 9-Node DAG & Redis Caching | Phase 3 | ⬜ Planned |
 | **5** | Full pgvector RAG, Anti-Spoiler Search & Document Exporters | Phase 4 | ⬜ Planned |
