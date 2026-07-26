@@ -77,7 +77,7 @@ const STEPS = [
 
 const FAQS = [
   {
-    q: 'How does the Push-to-Talk (PTT) Tilde (~) key feature work?',
+    q: 'How does the Push-to-Talk (PTT) feature work?',
     a: 'Simply press and hold the Tilde (~) key on your keyboard while watching a video. Speak your command or question, then release the key. The AI voice agent will transcribe, process, and answer in real-time without disturbing video playback.',
   },
   {
@@ -127,9 +127,6 @@ export default function LandingPage() {
             <span className="font-black text-xl tracking-tight text-foreground group-hover:text-indigo-400 transition-colors">
               Study<span className="gradient-text-indigo">Loop</span>
             </span>
-            <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              v2.0 LangGraph
-            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
@@ -159,15 +156,6 @@ export default function LandingPage() {
 
       {/* ── Hero Section ── */}
       <section className="relative pt-36 pb-20 px-6 max-w-7xl mx-auto text-center">
-        {/* Floating Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-semibold mb-8 backdrop-blur-md"
-        >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>LangGraph Multi-Agent DAG Engine • Bilingual Voice PTT</span>
-        </motion.div>
 
         {/* Main Headline */}
         <motion.h1
@@ -205,7 +193,7 @@ export default function LandingPage() {
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Paste YouTube video URL (e.g. MIT 6.006 Lecture)..."
+                  placeholder="Paste YouTube video URL..."
                   className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                 />
               </div>
@@ -412,11 +400,10 @@ export default function LandingPage() {
               <motion.div
                 key={`faq-${idx}`}
                 initial={false}
-                className={`rounded-2xl transition-all duration-300 overflow-hidden ${
-                  isOpen
-                    ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
-                    : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
-                }`}
+                className={`rounded-2xl transition-all duration-300 overflow-hidden ${isOpen
+                  ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
+                  : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
+                  }`}
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
@@ -424,18 +411,16 @@ export default function LandingPage() {
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
+                        }`}
                     />
                     {faq.q}
                   </span>
                   <div
-                    className={`p-2 rounded-xl transition-all duration-300 ${
-                      isOpen
-                        ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
-                        : 'bg-surface-elevated text-muted-foreground'
-                    }`}
+                    className={`p-2 rounded-xl transition-all duration-300 ${isOpen
+                      ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
+                      : 'bg-surface-elevated text-muted-foreground'
+                      }`}
                   >
                     <Icon name="ChevronDownIcon" size={18} />
                   </div>
