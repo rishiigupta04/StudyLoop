@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
+import { useAppFullscreen } from '@/hooks/useAppFullscreen';
 
 interface Chapter {
   id: string;
@@ -124,6 +125,9 @@ export default function VideoPane({
   const [isMuted, setIsMuted] = useState(false);
   const [currentChapter, setCurrentChapter] = useState('ch-peak1d');
   const [activeTab, setActiveTab] = useState<'summary' | 'chapters'>('summary');
+  
+  const paneContainerRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggleFullscreen } = useAppFullscreen(paneContainerRef);
 
   const activeChapter = chapters.find((c) => c.id === currentChapter);
   const progressPercent = activeChapter ? (activeChapter.timeSeconds / totalSeconds) * 100 : 30;
@@ -131,7 +135,12 @@ export default function VideoPane({
   const speeds = ['0.75x', '1x', '1.25x', '1.5x', '2x'];
 
   return (
-    <div className="flex flex-col h-full min-h-0 video-pane overflow-y-auto scrollbar-thin">
+    <div
+      ref={paneContainerRef}
+      className={`flex flex-col h-full min-h-0 video-pane overflow-y-auto scrollbar-thin ${
+        isFullscreen ? 'bg-obsidian p-4' : ''
+      }`}
+    >
       {/* YouTube Embed Container */}
       <div className="relative w-full bg-black flex items-center justify-center flex-shrink-0 max-h-[48vh] sm:max-h-[52vh] overflow-hidden">
         <div className="w-full aspect-video relative max-h-[48vh] sm:max-h-[52vh]">
@@ -145,7 +154,7 @@ export default function VideoPane({
         </div>
       </div>
 
-      {/* Integrated Controls Bar with Voice Copilot Button */}
+      {/* Integrated Controls Bar with Voice Copilot Button & App Fullscreen Toggle */}
       <div className="bg-surface-card/90 border-b border-border/80 px-4 py-2.5 flex-shrink-0">
         {/* Progress bar */}
         <div className="mb-2.5 relative">
@@ -174,7 +183,7 @@ export default function VideoPane({
           ))}
         </div>
 
-        {/* Controls Row: Play/Pause, Voice Copilot, Speed */}
+        {/* Controls Row: Play/Pause, Voice Copilot, Speed, Fullscreen */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Left: Playback buttons */}
           <div className="flex items-center gap-1">
@@ -218,7 +227,7 @@ export default function VideoPane({
             </kbd>
           </button>
 
-          {/* Right: Time & Speed */}
+          {/* Right: Time, Speed & App Fullscreen Toggle */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
               {activeChapter?.time} / 1:20:00
@@ -238,6 +247,14 @@ export default function VideoPane({
                 </button>
               ))}
             </div>
+            {/* App Fullscreen Toggle Button (Preserves Keyboard Shortcuts & Voice Overlays) */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors ml-1"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Study Workspace Fullscreen (Keeps ~ PTT Active)'}
+            >
+              <Icon name={isFullscreen ? 'ArrowsPointingInIcon' : 'ArrowsPointingOutIcon'} size={16} />
+            </button>
           </div>
         </div>
       </div>
