@@ -14,6 +14,13 @@ const MODEL_BADGES = [
   { name: 'MeloTTS', desc: 'Fluent Accent-Matched Audio Output', color: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
 ];
 
+const METRICS = [
+  { value: '< 150ms', label: 'Voice PTT Response Latency', icon: 'BoltIcon', color: 'text-indigo-400' },
+  { value: '100%', label: 'Anti-Spoiler Grounded Precision', icon: 'ShieldCheckIcon', color: 'text-cyan-400' },
+  { value: '1024-dim', label: 'Cross-Lingual Vector Index', icon: 'SparklesIcon', color: 'text-emerald-400' },
+  { value: 'Bi-directional', label: 'English & Hinglish Voice AI', icon: 'GlobeAltIcon', color: 'text-purple-400' },
+];
+
 const UNIVERSITIES = [
   { name: 'MIT OpenCourseWare', logo: '🏛️' },
   { name: 'Stanford Online', logo: '🌲' },
@@ -26,15 +33,15 @@ const FEATURES = [
   {
     icon: 'MicrophoneIcon',
     title: 'Push-to-Talk Voice Copilot',
-    desc: 'Hold down the Tilde (~) key while watching any video to ask questions in natural English or Hindi without pausing.',
-    tag: 'Fast-Path Sub-150ms',
+    desc: 'Hold down the Tilde (~) key while watching any video to ask questions in natural English or Hindi without pausing playback.',
+    tag: 'Sub-150ms PTT Engine',
     color: 'from-indigo-600/20 to-purple-600/10 border-indigo-500/30',
     iconColor: 'text-indigo-400',
   },
   {
     icon: 'SparklesIcon',
     title: 'Anti-Spoiler Grounded RAG',
-    desc: 'Powered by BGE-M3 cross-lingual embeddings. Answers are strictly bounded to content played up to your current playback timestamp.',
+    desc: 'Powered by BGE-M3 cross-lingual embeddings. Answers are strictly bounded to content played up to your current timestamp.',
     tag: 'pgvector Anti-Spoiler',
     color: 'from-cyan-600/20 to-blue-600/10 border-cyan-500/30',
     iconColor: 'text-cyan-400',
@@ -100,6 +107,7 @@ export default function LandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [isDemoActive, setIsDemoActive] = useState(false);
   const navigate = useNavigate();
 
   const handleProcessUrl = (e?: React.FormEvent) => {
@@ -112,12 +120,21 @@ export default function LandingPage() {
     }, 900);
   };
 
+  const triggerVoiceDemo = () => {
+    setIsDemoActive(true);
+    setTimeout(() => {
+      setIsDemoActive(false);
+    }, 4500);
+  };
+
   return (
     <div className="min-h-screen bg-obsidian text-foreground selection:bg-indigo-600/30 relative overflow-hidden">
       <CursorOrb />
 
-      {/* Hero Ambient Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-hero opacity-80 pointer-events-none" />
+      {/* Ambient Gradient Mesh */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-hero opacity-80 pointer-events-none" />
+      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] orb-indigo opacity-30 pointer-events-none" />
+      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] orb-cyan opacity-20 pointer-events-none" />
 
       {/* ── Glass Navbar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-navbar px-6 py-4">
@@ -130,9 +147,9 @@ export default function LandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
+            <a href="#demo" className="hover:text-foreground transition-colors">Live Demo</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
-            <a href="#tech-stack" className="hover:text-foreground transition-colors">Architecture</a>
+            <a href="#how-it-works" className="hover:text-foreground transition-colors">Workflow</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </div>
 
@@ -155,8 +172,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero Section ── */}
-      <section className="relative pt-36 pb-20 px-6 max-w-7xl mx-auto text-center">
-
+      <section className="relative pt-36 pb-16 px-6 max-w-7xl mx-auto text-center">
         {/* Main Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
@@ -183,9 +199,9 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="max-w-2xl mx-auto mb-8"
+          className="max-w-2xl mx-auto mb-10"
         >
-          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl glass-card border border-indigo-500/25 shadow-glow-indigo">
+          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2.5 rounded-2xl glass-card border border-indigo-500/25 shadow-glow-indigo">
             <div className="relative flex-1 group rounded-xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
               <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[11px] overflow-hidden">
                 <Icon name="LinkIcon" size={18} className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
@@ -193,7 +209,7 @@ export default function LandingPage() {
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Paste YouTube video URL..."
+                  placeholder="Paste YouTube video URL (e.g. MIT 6.006 Lecture)..."
                   className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                 />
               </div>
@@ -226,6 +242,156 @@ export default function LandingPage() {
             </div>
           </form>
         </motion.div>
+
+        {/* ── Interactive Live Product Showcase Preview ── */}
+        <motion.div
+          id="demo"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="max-w-5xl mx-auto mb-16 relative"
+        >
+          <div className="relative rounded-3xl overflow-hidden glass-card border border-indigo-500/30 p-2 shadow-glow-indigo">
+            {/* Top Mock Window Header */}
+            <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex items-center justify-between border-b border-border/60">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
+                <span className="ml-2 text-xs font-mono text-muted-foreground hidden sm:inline-block">
+                  studyloop.ai/video-study-page (MIT 6.006 Lecture 1)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={triggerVoiceDemo}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isDemoActive
+                      ? 'bg-red-500 text-white animate-pulse shadow-glow-indigo-sm'
+                      : 'bg-indigo-600/80 hover:bg-indigo-600 text-white shadow-glow-indigo-sm'
+                  }`}
+                >
+                  <Icon name="MicrophoneIcon" size={14} />
+                  <span>{isDemoActive ? 'Listening (~ Active)...' : 'Test Voice PTT (~)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Video Mock Workspace Content */}
+            <div className="grid lg:grid-cols-3 gap-2 bg-[#0B0E17] p-3 rounded-b-2xl min-h-[360px] text-left relative overflow-hidden">
+              {/* Main Video Screen */}
+              <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/60 border border-border/60 flex flex-col justify-between p-4 min-h-[260px]">
+                <img
+                  src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1000&auto=format&fit=crop&q=80"
+                  alt="MIT 6.006 Lecture preview"
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none" />
+
+                <div className="relative z-10 flex items-center justify-between">
+                  <span className="px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold backdrop-blur-md">
+                    MIT 6.006 Algorithms @ 24:10
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                    HD Transcript Indexed
+                  </span>
+                </div>
+
+                {/* Simulated PTT Overlay Box */}
+                <div className="relative z-10 my-auto text-center py-6">
+                  {isDemoActive ? (
+                    <motion.div
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="inline-flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-950/90 border border-indigo-500/50 backdrop-blur-xl shadow-glow-indigo"
+                    >
+                      <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
+                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse" />
+                        <span>Speech Captured: "What is 1D Peak Finding time complexity?"</span>
+                      </div>
+                      <div className="flex items-center gap-1 h-4">
+                        {[40, 70, 30, 90, 50, 80, 40].map((h, i) => (
+                          <div
+                            key={`bar-${i}`}
+                            className="w-1 bg-cyan-400 rounded-full animate-waveform"
+                            style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <button
+                      onClick={triggerVoiceDemo}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card/80 border border-indigo-500/30 hover:border-indigo-500/60 text-xs font-bold text-foreground backdrop-blur-md transition-all group"
+                    >
+                      <Icon name="PlayCircleIcon" size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                      <span>Click to simulate Push-to-Talk voice query</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
+                  <span className="font-mono text-cyan-300">24:10 / 52:30</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Guard: Active</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Copilot Side Chat Preview */}
+              <div className="rounded-xl bg-[#151926]/90 border border-border/60 p-3 flex flex-col justify-between text-xs">
+                <div>
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                    <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
+                    <span className="font-extrabold text-foreground">AI Voice Copilot</span>
+                    <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border/40">
+                      <p className="text-[11px] font-bold text-indigo-300 mb-0.5">User (Speech input via ~):</p>
+                      <p className="text-foreground text-xs">"What is the complexity of 1D Peak Finding?"</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+                      <p className="text-[11px] font-bold text-cyan-300 mb-0.5">AI Answer (Anti-Spoiler RAG):</p>
+                      <p className="text-foreground-muted text-xs leading-relaxed">
+                        In 1D arrays, divide & conquer checks array midpoints in <strong className="text-foreground">O(log n)</strong> time complexity.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1 text-indigo-400">
+                    <Icon name="BookmarkIcon" size={12} />
+                    Auto-saved to notes
+                  </span>
+                  <span className="font-mono text-cyan-400 font-bold">@ 24:10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Impact Metrics Grid ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto mb-16">
+          {METRICS.map((m) => (
+            <div
+              key={`metric-${m.label}`}
+              className="p-5 rounded-2xl glass-card border border-indigo-500/15 text-left relative overflow-hidden card-hover"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <Icon name={m.icon as Parameters<typeof Icon>[0]['name']} size={20} className={m.color} />
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-1 font-mono">
+                {m.value}
+              </p>
+              <p className="text-xs font-semibold text-muted-foreground">{m.label}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Ambient AI Model Badges */}
         <motion.div
@@ -373,7 +539,7 @@ export default function LandingPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {STEPS.map((step, idx) => (
+          {STEPS.map((step) => (
             <div key={`step-${step.num}`} className="p-8 rounded-3xl bg-surface-card border border-border relative">
               <span className="text-5xl font-black text-indigo-500/20 mb-4 block font-mono">
                 {step.num}
@@ -400,10 +566,11 @@ export default function LandingPage() {
               <motion.div
                 key={`faq-${idx}`}
                 initial={false}
-                className={`rounded-2xl transition-all duration-300 overflow-hidden ${isOpen
-                  ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
-                  : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
-                  }`}
+                className={`rounded-2xl transition-all duration-300 overflow-hidden ${
+                  isOpen
+                    ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
+                    : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
+                }`}
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
@@ -411,16 +578,18 @@ export default function LandingPage() {
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
-                        }`}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
+                      }`}
                     />
                     {faq.q}
                   </span>
                   <div
-                    className={`p-2 rounded-xl transition-all duration-300 ${isOpen
-                      ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
-                      : 'bg-surface-elevated text-muted-foreground'
-                      }`}
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      isOpen
+                        ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
+                        : 'bg-surface-elevated text-muted-foreground'
+                    }`}
                   >
                     <Icon name="ChevronDownIcon" size={18} />
                   </div>
