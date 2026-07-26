@@ -329,7 +329,7 @@ export default function LandingPage() {
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Paste YouTube video URL (e.g. Stanford CS229 Gradient Descent)..."
+                  placeholder="Paste YouTube video URL..."
                   className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                 />
               </div>
@@ -399,11 +399,10 @@ export default function LandingPage() {
                       setActiveFrameIndex(i);
                       setIsPlayingGif(false);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-                      activeFrameIndex === i
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${activeFrameIndex === i
                         ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
-                    }`}
+                      }`}
                   >
                     <span>{f.interactionType}</span>
                   </button>
@@ -587,22 +586,20 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 mt-8 p-1.5 rounded-2xl bg-surface-card border border-border/80">
             <button
               onClick={() => setSelectedEngine('local')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                selectedEngine === 'local'
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${selectedEngine === 'local'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <Icon name="BoltIcon" size={16} />
               <span>⚡ Local DistilBERT Engine (&lt; 45ms)</span>
             </button>
             <button
               onClick={() => setSelectedEngine('cloud')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                selectedEngine === 'cloud'
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${selectedEngine === 'cloud'
                   ? 'bg-cyan-600 text-white shadow-md'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
+                }`}
             >
               <Icon name="CloudIcon" size={16} />
               <span>🌐 Cloud BGE-M3 RAG Engine (Deep Reasoning)</span>
@@ -897,17 +894,15 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-3 mt-8 p-1.5 rounded-2xl bg-surface-card border border-border/80">
             <button
               onClick={() => setIsAnnualBilling(false)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                !isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               Monthly Billing
             </button>
             <button
               onClick={() => setIsAnnualBilling(true)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${isAnnualBilling ? 'bg-indigo-600 text-white shadow-md' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <span>Annual Billing</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold">
@@ -1061,11 +1056,10 @@ export default function LandingPage() {
               <motion.div
                 key={`faq-${idx}`}
                 initial={false}
-                className={`rounded-2xl transition-all duration-300 overflow-hidden ${
-                  isOpen
+                className={`rounded-2xl transition-all duration-300 overflow-hidden ${isOpen
                     ? 'bg-surface-card border border-indigo-500/40'
                     : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
-                }`}
+                  }`}
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
@@ -1073,18 +1067,16 @@ export default function LandingPage() {
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        isOpen ? 'bg-cyan-400' : 'bg-indigo-500/40'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${isOpen ? 'bg-cyan-400' : 'bg-indigo-500/40'
+                        }`}
                     />
                     {faq.q}
                   </span>
                   <div
-                    className={`p-2 rounded-xl transition-all duration-300 ${
-                      isOpen
+                    className={`p-2 rounded-xl transition-all duration-300 ${isOpen
                         ? 'bg-indigo-600 text-white rotate-180'
                         : 'bg-surface-elevated text-muted-foreground'
-                    }`}
+                      }`}
                   >
                     <Icon name="ChevronDownIcon" size={18} />
                   </div>
