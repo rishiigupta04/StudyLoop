@@ -122,15 +122,15 @@ export default function LandingPage() {
       {/* ── Glass Navbar ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-navbar px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 cursor-pointer group" title="StudyLoop Home">
             <AppLogo size={36} />
-            <span className="font-black text-xl tracking-tight text-foreground">
+            <span className="font-black text-xl tracking-tight text-foreground group-hover:text-indigo-400 transition-colors">
               Study<span className="gradient-text-indigo">Loop</span>
             </span>
             <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               v2.0 LangGraph
             </span>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
