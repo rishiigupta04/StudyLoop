@@ -1,10 +1,10 @@
 import React from 'react';
 import AppLayout from '@/components/AppLayout';
-import DashboardHero from './components/DashboardHero';
-import RecentVideosGrid from './components/RecentVideosGrid';
-import StatsBar from './components/StatsBar';
-import StudyTimeChart from './components/StudyTimeChart';
-import LibraryShortcuts from './components/LibraryShortcuts';
+import DashboardHero from '@/app/dashboard-home/components/DashboardHero';
+import RecentVideosGrid from '@/app/dashboard-home/components/RecentVideosGrid';
+import StatsBar from '@/app/dashboard-home/components/StatsBar';
+import StudyTimeChart from '@/app/dashboard-home/components/StudyTimeChart';
+import LibraryShortcuts from '@/app/dashboard-home/components/LibraryShortcuts';
 
 export default function DashboardHomePage() {
   return (

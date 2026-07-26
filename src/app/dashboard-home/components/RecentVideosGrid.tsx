@@ -1,6 +1,5 @@
-'use client';
 import React from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/AppIcon';
 
 interface VideoCard {
@@ -93,7 +92,7 @@ export default function RecentVideosGrid() {
           <p className="text-xs text-muted-foreground">हाल के वीडियो</p>
         </div>
         <Link
-          href="/library"
+          to="/library"
           className="text-xs font-semibold text-primary hover:text-accent transition-colors duration-150 flex items-center gap-1">
           
           View Library
@@ -105,7 +104,7 @@ export default function RecentVideosGrid() {
         {recentVideos.map((video) =>
         <Link
           key={video.id}
-          href="/video-study-page"
+          to="/video-study-page"
           className="block">
           
             <div className="bg-card rounded-xl border border-border overflow-hidden video-card-hover shadow-card group cursor-pointer">

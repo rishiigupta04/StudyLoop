@@ -1,6 +1,5 @@
-'use client';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/AppIcon';
 
@@ -9,7 +8,7 @@ const DUMMY_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 export default function DashboardHero() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleStartStudying = () => {
     if (!url?.trim()) {
@@ -24,7 +23,7 @@ export default function DashboardHero() {
     // BACKEND INTEGRATION: POST /api/videos/process { url } → videoId, metadata, transcript
     setTimeout(() => {
       setIsLoading(false);
-      router?.push('/video-study-page');
+      navigate('/video-study-page');
     }, 1000);
   };
 

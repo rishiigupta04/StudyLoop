@@ -1,6 +1,5 @@
-'use client';
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import AppLogo from '@/components/ui/AppLogo';
 import Icon from '@/components/ui/AppIcon';
 
@@ -63,10 +62,10 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           return (
             <Link
               key={`nav-${item.href}`}
-              href={item.href}
+              to={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
                 isActive
-                  ? 'sidebar-nav-active' :'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'sidebar-nav-active' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
               <div className="flex-shrink-0">
@@ -139,7 +138,7 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           )}
           {!collapsed && (
             <Link
-              href="/login-page"
+              to="/"
               className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-all duration-150"
               aria-label="Sign out"
             >

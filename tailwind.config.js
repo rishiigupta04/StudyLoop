@@ -1,6 +1,9 @@
+import typography from '@tailwindcss/typography';
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
+    './index.html',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   darkMode: 'class',
@@ -52,7 +55,7 @@ module.exports = {
         '2xl': 'calc(var(--radius) + 16px)',
       },
       fontFamily: {
-        sans: ['var(--font-plus-jakarta-sans)', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       animation: {
@@ -72,5 +75,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [typography],
 };

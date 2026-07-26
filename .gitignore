@@ -2,12 +2,11 @@
 node_modules/
 package-lock.json
 
-# Next.js build output
+# Build outputs
 .next/
 out/
-
-# Production build
 build/
+dist/
 
 # Logs
 npm-debug.log*

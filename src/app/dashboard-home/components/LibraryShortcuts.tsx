@@ -1,6 +1,5 @@
-'use client';
 import React from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import Icon from '@/components/ui/AppIcon';
 
 const topics = [
@@ -20,7 +19,7 @@ export default function LibraryShortcuts() {
           <p className="text-xs text-muted-foreground">Quick access / त्वरित पहुंच</p>
         </div>
         <Link
-          href="/library"
+          to="/library"
           className="text-xs font-semibold text-primary hover:text-accent transition-colors duration-150 flex items-center gap-1"
         >
           View All
@@ -29,7 +28,7 @@ export default function LibraryShortcuts() {
       </div>
       <div className="flex flex-wrap gap-2">
         {topics?.map((topic) => (
-          <Link key={topic?.id} href="/library">
+          <Link key={topic?.id} to="/library">
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer transition-all duration-150 hover:opacity-80 ${topic?.color}`}>
               {topic?.label}
               <span className="text-xs opacity-70">{topic?.count}</span>

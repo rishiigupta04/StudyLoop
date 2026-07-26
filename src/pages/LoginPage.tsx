@@ -1,6 +1,5 @@
-'use client';
 import React, { useState } from 'react';
-import Link from 'next/link';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import AppLogo from '@/components/ui/AppLogo';
@@ -20,6 +19,7 @@ export default function LoginPage() {
   const [activeLang, setActiveLang] = useState<Lang>('EN');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -40,7 +40,7 @@ export default function LoginPage() {
         toast.success('Welcome back, Arjun! / वापस स्वागत है!', {
           icon: '🎉',
         });
-        window.location.href = '/dashboard-home';
+        navigate('/dashboard-home');
       } else {
         toast.error('Invalid credentials — use the demo accounts below to sign in');
       }
@@ -281,7 +281,7 @@ export default function LoginPage() {
           {/* Sign up link */}
           <p className="text-center text-xs text-muted-foreground mt-5">
             Don't have an account?{' '}
-            <Link href="#" className="text-primary hover:text-accent font-semibold transition-colors duration-150">
+            <Link to="#" className="text-primary hover:text-accent font-semibold transition-colors duration-150">
               Sign up free / मुफ्त में साइन अप करें
             </Link>
           </p>
