@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import Icon from '@/components/ui/AppIcon';
 
-const DUMMY_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+const DEMO_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 
 export default function DashboardHero() {
   const [url, setUrl] = useState('');
@@ -23,32 +24,38 @@ export default function DashboardHero() {
     // BACKEND INTEGRATION: POST /api/videos/process { url } → videoId, metadata, transcript
     setTimeout(() => {
       setIsLoading(false);
-      navigate('/video-study-page');
-    }, 1000);
+      navigate('/video-study-page', { state: { videoUrl: url } });
+    }, 900);
   };
 
-  const fillDummy = () => {
-    setUrl(DUMMY_URL);
+  const fillDemo = () => {
+    setUrl(DEMO_URL);
     toast?.success('Demo URL filled! Click "Start Studying" to continue.');
   };
 
   return (
-    <div className="relative mb-6">
-      {/* Background gradient card */}
-      <div className="relative rounded-2xl overflow-hidden border border-border">
-        <div className="absolute inset-0 gradient-purple-blue opacity-10 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-64 h-64 orb-purple opacity-30 pointer-events-none" />
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative mb-8"
+    >
+      {/* Background card with glassmorphism & ambient glowing orb */}
+      <div className="relative rounded-3xl overflow-hidden glass-card border border-indigo-500/20 shadow-glow-indigo-sm">
+        <div className="absolute top-0 right-0 w-80 h-80 orb-indigo opacity-40 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-60 h-60 orb-cyan opacity-20 pointer-events-none" />
+
         <div className="relative z-10 p-6 md:p-8">
-          {/* Welcome Text */}
+          {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-2xl">👋</span>
-              <h1 className="text-2xl font-extrabold text-foreground">
-                Welcome back, Arjun!
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-2xl">⚡</span>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+                AI Command Station
               </h1>
             </div>
-            <p className="text-base text-muted-foreground">
-              What will you study today?
+            <p className="text-sm md:text-base text-foreground-muted">
+              Paste any YouTube lecture to initiate voice copilot & anti-spoiler vector search.
             </p>
           </div>
 
@@ -63,26 +70,28 @@ export default function DashboardHero() {
                 value={url}
                 onChange={(e) => setUrl(e?.target?.value)}
                 onKeyDown={(e) => e?.key === 'Enter' && handleStartStudying()}
-                placeholder="Paste YouTube URL to start studying…"
-                className="input-field w-full rounded-xl pl-11 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground"
+                placeholder="Paste YouTube video URL to start studying…"
+                className="input-field w-full rounded-2xl pl-11 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60"
               />
             </div>
             <div className="flex gap-2">
               <button
-                onClick={fillDummy}
-                className="px-4 py-3.5 rounded-xl border border-border text-sm font-semibold text-muted-foreground hover:text-foreground hover:border-primary transition-all duration-150 whitespace-nowrap"
+                type="button"
+                onClick={fillDemo}
+                className="px-4 py-3.5 rounded-2xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
               >
-                Try Demo
+                Fill Demo
               </button>
               <button
+                type="button"
                 onClick={handleStartStudying}
                 disabled={isLoading}
-                className="btn-orange px-6 py-3.5 rounded-xl text-sm font-bold text-white flex items-center gap-2 disabled:opacity-60 whitespace-nowrap"
+                className="btn-primary px-6 py-3.5 rounded-2xl text-sm font-bold text-white flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shadow-glow-indigo-sm"
               >
                 {isLoading ? (
                   <>
                     <Icon name="ArrowPathIcon" size={16} className="animate-spin" />
-                    Processing…
+                    Ingesting...
                   </>
                 ) : (
                   <>
@@ -94,26 +103,26 @@ export default function DashboardHero() {
             </div>
           </div>
 
-          {/* Feature Pills */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          {/* Capability Badges */}
+          <div className="flex flex-wrap gap-2 mt-5">
             {[
-              { icon: '🎤', label: 'Voice Q&A' },
+              { icon: '🎙️', label: 'Push-to-Talk (~)' },
+              { icon: '🛡️', label: 'Anti-Spoiler RAG' },
               { icon: '📝', label: 'Auto Notes' },
-              { icon: '⏱️', label: 'Timestamps' },
-              { icon: '🌐', label: 'AI Voice Control' },
-              { icon: '📤', label: 'Export to Notion' },
-            ]?.map((feat) => (
+              { icon: '🌐', label: 'Hinglish ASR' },
+              { icon: '📤', label: 'Notion Export' },
+            ].map((feat) => (
               <span
-                key={`feat-${feat?.label}`}
-                className="text-xs text-muted-foreground px-3 py-1 rounded-full border border-border bg-muted/50 flex items-center gap-1.5"
+                key={`feat-${feat.label}`}
+                className="text-xs text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-surface-elevated/40 flex items-center gap-1.5 backdrop-blur-md"
               >
-                <span>{feat?.icon}</span>
-                {feat?.label}
+                <span>{feat.icon}</span>
+                <span>{feat.label}</span>
               </span>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import AppLogo from '@/components/ui/AppLogo';
 import Icon from '@/components/ui/AppIcon';
 
@@ -27,23 +28,23 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
 
   return (
     <aside
-      className={`sidebar-transition flex-shrink-0 flex flex-col h-screen bg-secondary border-r border-border z-40 ${
+      className={`sidebar-transition flex-shrink-0 flex flex-col h-screen bg-obsidian border-r border-border/80 z-40 relative ${
         collapsed ? 'w-16' : 'w-60'
       }`}
     >
       {/* Logo */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-border min-h-[64px]">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-border/60 min-h-[64px]">
         <div className="flex items-center gap-3 overflow-hidden">
           <AppLogo size={32} />
           {!collapsed && (
             <span className="font-extrabold text-base text-foreground tracking-tight whitespace-nowrap">
-              StudyLoop
+              Study<span className="gradient-text-indigo">Loop</span>
             </span>
           )}
         </div>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-150 flex-shrink-0"
+          className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-all duration-150 flex-shrink-0"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <Icon name={collapsed ? 'ChevronRightIcon' : 'ChevronLeftIcon'} size={16} />
@@ -51,43 +52,57 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 py-3 px-2 space-y-1 overflow-hidden">
+      <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-hidden">
         {navItems.map((item) => {
           const isActive = activeRoute === item.href;
           return (
             <Link
               key={`nav-${item.href}`}
               to={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
                 isActive
-                  ? 'sidebar-nav-active' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'text-indigo-300 font-semibold'
+                  : 'text-muted-foreground hover:bg-surface-elevated/60 hover:text-foreground'
               }`}
             >
-              <div className="flex-shrink-0">
+              {/* Framer Motion Active Indicator Pill */}
+              {isActive && (
+                <motion.div
+                  layoutId="sidebarActivePill"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600/25 to-indigo-600/5 border-r-2 border-indigo-500 shadow-glow-indigo-sm"
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
+
+              <div className="flex-shrink-0 z-10">
                 <Icon
                   name={item.icon as Parameters<typeof Icon>[0]['name']}
                   size={20}
-                  className={isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}
+                  className={isActive ? 'text-indigo-400' : 'text-muted-foreground group-hover:text-foreground'}
                 />
               </div>
+
               {!collapsed && (
                 <>
-                  <div className="flex-1 overflow-hidden">
-                    <span className="text-sm font-medium truncate block">{item.label}</span>
+                  <div className="flex-1 overflow-hidden z-10">
+                    <span className="text-sm truncate block">{item.label}</span>
                   </div>
                   {item.badge !== undefined && (
-                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full tabular-nums flex-shrink-0 ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full tabular-nums flex-shrink-0 z-10 ${
+                        isActive
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                          : 'bg-surface-elevated text-muted-foreground'
+                      }`}
+                    >
                       {item.badge}
                     </span>
                   )}
                 </>
               )}
+
               {collapsed && item.badge !== undefined && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center tabular-nums">
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-indigo-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums z-10 shadow-glow-indigo-sm">
                   {item.badge > 9 ? '9+' : item.badge}
                 </span>
               )}
@@ -96,11 +111,11 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
         })}
       </nav>
 
-      {/* User Profile */}
-      <div className={`border-t border-border p-3 ${collapsed ? 'flex justify-center' : ''}`}>
+      {/* User Profile Footer */}
+      <div className={`border-t border-border/60 p-3 ${collapsed ? 'flex justify-center' : ''}`}>
         <div className={`flex items-center gap-3 ${collapsed ? '' : 'w-full'}`}>
-          <div className="w-8 h-8 rounded-full gradient-purple-blue flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
-            A
+          <div className="w-8 h-8 rounded-full gradient-indigo-cyan flex items-center justify-center flex-shrink-0 text-white text-xs font-extrabold shadow-glow-indigo-sm">
+            AS
           </div>
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
@@ -111,7 +126,7 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           {!collapsed && (
             <Link
               to="/"
-              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-destructive transition-all duration-150"
+              className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-red-400 transition-all duration-150"
               aria-label="Sign out"
             >
               <Icon name="ArrowRightOnRectangleIcon" size={16} />

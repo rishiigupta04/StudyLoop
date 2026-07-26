@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import Icon from '@/components/ui/AppIcon';
 
 const stats = [
@@ -7,66 +8,68 @@ const stats = [
     icon: 'PlayCircleIcon',
     value: '14',
     label: 'Videos Studied',
-    color: 'text-accent',
-    bgColor: 'bg-accent/10',
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10 border-cyan-500/20',
     trend: '+2 this week',
-    trendUp: true,
   },
   {
     id: 'stat-notes',
     icon: 'DocumentTextIcon',
     value: '67',
     label: 'Notes Captured',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
+    color: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10 border-indigo-500/20',
     trend: '+8 today',
-    trendUp: true,
   },
   {
     id: 'stat-streak',
     icon: 'FireIcon',
     value: '5',
     label: 'Study Streak',
-    color: 'text-highlight',
-    bgColor: 'bg-highlight/10',
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/10 border-emerald-500/20',
     trend: '5 days 🔥',
-    trendUp: true,
   },
   {
     id: 'stat-questions',
     icon: 'ChatBubbleLeftEllipsisIcon',
     value: '143',
     label: 'Questions Asked',
-    color: 'text-success',
-    bgColor: 'bg-success/10',
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10 border-purple-500/20',
     trend: '+12 today',
-    trendUp: true,
   },
 ];
 
 export default function StatsBar() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat) => (
-        <div
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {stats.map((stat, i) => (
+        <motion.div
           key={stat.id}
-          className="bg-card rounded-xl border border-border p-4 stat-card-hover shadow-card"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: i * 0.08 }}
+          whileHover={{ y: -3 }}
+          className="glass-card rounded-2xl border border-indigo-500/15 p-5 relative overflow-hidden transition-all duration-200 card-hover"
         >
           <div className="flex items-start justify-between mb-3">
-            <div className={`w-9 h-9 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
+            <div className={`w-10 h-10 rounded-xl ${stat.bgColor} border flex items-center justify-center`}>
               <Icon
                 name={stat.icon as Parameters<typeof Icon>[0]['name']}
-                size={18}
+                size={20}
                 className={stat.color}
               />
             </div>
-            <span className={`text-xs font-medium ${stat.trendUp ? 'text-success' : 'text-destructive'}`}>
+            <span className="text-xs font-semibold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
               {stat.trend}
             </span>
           </div>
-          <p className="text-2xl font-extrabold text-foreground tabular-nums mb-0.5">{stat.value}</p>
-          <p className="text-xs font-semibold text-muted-foreground">{stat.label}</p>
-        </div>
+          <p className="text-3xl font-extrabold text-foreground tabular-nums tracking-tight mb-1">
+            {stat.value}
+          </p>
+          <p className="text-xs font-medium text-foreground-muted">{stat.label}</p>
+        </motion.div>
       ))}
     </div>
   );

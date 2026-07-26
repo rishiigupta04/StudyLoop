@@ -69,18 +69,23 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <div className="w-full max-w-md mx-4 modal-fade-in">
-        <div className="glass-card rounded-2xl p-6 shadow-modal border border-primary/20">
+        <div className="glass-card rounded-3xl p-6 shadow-modal border border-indigo-500/30 relative">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                voiceState === 'listening' ?'bg-highlight ptt-pulse'
-                  : voiceState === 'processing'|| voiceState === 'responding' ?'gradient-purple-blue' :'bg-muted'
-              }`}>
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                  voiceState === 'listening'
+                    ? 'bg-indigo-600 ptt-pulse'
+                    : voiceState === 'processing' || voiceState === 'responding'
+                    ? 'gradient-indigo-cyan'
+                    : 'bg-surface-elevated border border-border'
+                }`}
+              >
                 <Icon
                   name={voiceState === 'responding' ? 'SpeakerWaveIcon' : 'MicrophoneIcon'}
                   size={20}
@@ -89,17 +94,23 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
-                  {voiceState === 'idle' && 'Voice Assistant'}
+                  {voiceState === 'idle' && 'Voice Copilot'}
                   {voiceState === 'listening' && 'Listening…'}
                   {voiceState === 'processing' && 'Processing…'}
                   {voiceState === 'responding' && 'AI Speaking…'}
                 </h3>
-                <p className="text-xs text-muted-foreground">Push-to-Talk · Whisper ASR</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span>Hold</span>
+                  <kbd className="px-1 py-0.2 rounded bg-surface-elevated border border-border text-indigo-300 font-mono text-[10px]">
+                    ~ Tilde
+                  </kbd>
+                  <span>key or button</span>
+                </p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-150"
+              className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Close voice modal"
             >
               <Icon name="XMarkIcon" size={18} />
@@ -112,14 +123,17 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               <div
                 key={`wave-${i}`}
                 className={`w-1 rounded-full waveform-bar ${
-                  voiceState === 'listening' || voiceState === 'responding' ?'bg-highlight'
-                    : voiceState === 'processing' ?'bg-primary' :'bg-muted'
+                  voiceState === 'listening' || voiceState === 'responding'
+                    ? 'bg-indigo-400'
+                    : voiceState === 'processing'
+                    ? 'bg-cyan-400'
+                    : 'bg-surface-elevated'
                 }`}
                 style={{
                   height: `${20 + (i % 7) * 6}px`,
                   animationDuration: `${0.4 + (i % 5) * 0.12}s`,
                   animationDelay: `${i * 0.04}s`,
-                  opacity: voiceState === 'idle' ? 0.3 : 1,
+                  opacity: voiceState === 'idle' ? 0.35 : 1,
                 }}
               />
             ))}
@@ -127,9 +141,9 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
 
           {/* Recognized Speech */}
           {(recognizedText || voiceState === 'listening') && (
-            <div className="bg-muted rounded-xl p-3 mb-4 border border-border">
+            <div className="bg-surface-card rounded-2xl p-3.5 mb-4 border border-border">
               <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1.5">
-                <Icon name="MicrophoneIcon" size={11} />
+                <Icon name="MicrophoneIcon" size={12} className="text-indigo-400" />
                 Recognized Speech:
               </p>
               <p className="text-sm text-foreground font-medium">
@@ -147,23 +161,28 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
           {/* Pipeline Status */}
           {voiceState === 'processing' && (
             <div className="mb-4 space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">AI Pipeline</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                LangGraph Pipeline
+              </p>
               {pipelineSteps.map((step, i) => (
                 <div key={step.id} className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                    i < activeStep
-                      ? 'bg-success'
-                      : i === activeStep
-                      ? 'bg-primary animate-pulse' :'bg-muted'
-                  }`}>
-                    {i < activeStep && (
-                      <Icon name="CheckIcon" size={10} className="text-white" />
-                    )}
+                  <div
+                    className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                      i < activeStep
+                        ? 'bg-emerald-500'
+                        : i === activeStep
+                        ? 'bg-indigo-500 animate-pulse'
+                        : 'bg-surface-elevated'
+                    }`}
+                  >
+                    {i < activeStep && <Icon name="CheckIcon" size={10} className="text-white" />}
                   </div>
                   <div className="flex-1 flex items-center justify-between">
-                    <span className={`text-xs font-medium ${
-                      i <= activeStep ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`text-xs font-medium ${
+                        i <= activeStep ? 'text-foreground' : 'text-muted-foreground'
+                      }`}
+                    >
                       {step.label}
                     </span>
                     <span className="text-xs text-muted-foreground">{step.desc}</span>
@@ -175,14 +194,14 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
 
           {/* AI Response */}
           {aiResponse && (
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-4">
+            <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-3.5 mb-4">
               <div className="flex items-center gap-1.5 mb-2">
-                <Icon name="SparklesIcon" size={12} className="text-primary" />
-                <span className="text-xs font-semibold text-primary">AI Response</span>
+                <Icon name="SparklesIcon" size={14} className="text-indigo-400" />
+                <span className="text-xs font-bold text-indigo-400">AI Response</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{aiResponse}</p>
-              <button className="mt-2 text-xs font-semibold text-primary hover:text-accent flex items-center gap-1 transition-colors duration-150">
-                <Icon name="PlayIcon" size={10} />
+              <button className="mt-2 text-xs font-bold text-indigo-400 hover:text-cyan-400 flex items-center gap-1 transition-colors">
+                <Icon name="PlayIcon" size={12} />
                 Jump to 24:10 →
               </button>
             </div>
@@ -192,25 +211,27 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
           <button
             onMouseDown={startListening}
             disabled={voiceState === 'processing'}
-            className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
-              voiceState === 'listening' ?'bg-destructive text-white' :'btn-orange text-white'
+            className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
+              voiceState === 'listening'
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                : 'btn-primary text-white shadow-glow-indigo-sm'
             }`}
           >
             <Icon name="MicrophoneIcon" size={18} />
-            {voiceState === 'idle' && 'Hold to Talk'}
+            {voiceState === 'idle' && 'Hold to Speak (~)'}
             {voiceState === 'listening' && 'Listening… Release to send'}
-            {voiceState === 'processing' && 'Processing your question…'}
-            {voiceState === 'responding' && 'AI is speaking…'}
+            {voiceState === 'processing' && 'Processing question…'}
+            {voiceState === 'responding' && 'AI Speaking…'}
           </button>
 
           {/* Example Commands */}
           {voiceState === 'idle' && (
             <div className="mt-4">
               <p className="text-xs text-muted-foreground mb-2 font-medium">Try saying:</p>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-2">
                 {exampleCommands.map((cmd) => (
-                  <div key={cmd.id} className="flex flex-col bg-muted rounded-lg px-2.5 py-2">
-                    <span className="text-xs font-bold text-primary">{cmd.text}</span>
+                  <div key={cmd.id} className="flex flex-col bg-surface-card border border-border/60 rounded-xl px-3 py-2">
+                    <span className="text-xs font-bold text-indigo-400">{cmd.text}</span>
                     <span className="text-xs text-muted-foreground">{cmd.desc}</span>
                   </div>
                 ))}
