@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import Icon from '@/components/ui/AppIcon';
 import { PTTStage } from '@/hooks/useTildePTT';
 
@@ -40,13 +41,15 @@ export default function VoiceModal({
 }: VoiceModalProps) {
   const waveBarCount = 24;
 
-  return (
+  const targetMount = document.fullscreenElement || document.body;
+
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-md mx-4 modal-fade-in">
-        <div className="glass-card rounded-3xl p-6 shadow-modal border border-indigo-500/30 relative">
+        <div className="glass-card rounded-3xl p-6 shadow-modal border border-indigo-500/40 relative">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
@@ -225,4 +228,6 @@ export default function VoiceModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, targetMount);
 }

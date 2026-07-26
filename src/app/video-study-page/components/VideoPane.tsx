@@ -145,11 +145,10 @@ export default function VideoPane({
       <div className="relative w-full bg-black flex items-center justify-center flex-shrink-0 max-h-[48vh] sm:max-h-[52vh] overflow-hidden">
         <div className="w-full aspect-video relative max-h-[48vh] sm:max-h-[52vh]">
           <iframe
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ?modestbranding=1&rel=0&showinfo=0"
+            src="https://www.youtube.com/embed/dQw4w9WgXcQ?modestbranding=1&rel=0&showinfo=0&fs=0&enablejsapi=1"
             title="MIT 6.006 Introduction to Algorithms - Lecture 1"
             className="absolute inset-0 w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
           />
         </div>
       </div>

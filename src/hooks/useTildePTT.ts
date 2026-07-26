@@ -59,6 +59,7 @@ export function useTildePTT(options?: UseTildePTTOptions) {
         if (isInputField(document.activeElement)) return; // Don't intercept when typing in inputs
 
         e.preventDefault();
+        e.stopPropagation();
         if (!keyIsDown) {
           keyIsDown = true;
           startListening();
@@ -71,6 +72,7 @@ export function useTildePTT(options?: UseTildePTTOptions) {
         if (isInputField(document.activeElement)) return;
 
         e.preventDefault();
+        e.stopPropagation();
         if (keyIsDown) {
           keyIsDown = false;
           stopListeningAndProcess();
@@ -78,12 +80,13 @@ export function useTildePTT(options?: UseTildePTTOptions) {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    // Use Capture phase (true) so parent captures keyboard event before iframe or focus traps
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
     };
   }, [startListening, stopListeningAndProcess]);
 
