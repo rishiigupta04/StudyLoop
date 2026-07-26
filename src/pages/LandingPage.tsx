@@ -409,35 +409,53 @@ export default function LandingPage() {
           {FAQS.map((faq, idx) => {
             const isOpen = openFaq === idx;
             return (
-              <div
+              <motion.div
                 key={`faq-${idx}`}
-                className="rounded-2xl bg-surface-card border border-border overflow-hidden"
+                initial={false}
+                className={`rounded-2xl transition-all duration-300 overflow-hidden ${
+                  isOpen
+                    ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
+                    : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
+                }`}
               >
                 <button
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full p-6 text-left font-bold text-base text-foreground flex items-center justify-between gap-4"
+                  className="w-full p-6 text-left font-bold text-base md:text-lg text-foreground flex items-center justify-between gap-4 select-none cursor-pointer"
                 >
-                  <span>{faq.q}</span>
-                  <Icon
-                    name={isOpen ? 'ChevronUpIcon' : 'ChevronDownIcon'}
-                    size={20}
-                    className="text-muted-foreground flex-shrink-0"
-                  />
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
+                      }`}
+                    />
+                    {faq.q}
+                  </span>
+                  <div
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      isOpen
+                        ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
+                        : 'bg-surface-elevated text-muted-foreground'
+                    }`}
+                  >
+                    <Icon name="ChevronDownIcon" size={18} />
+                  </div>
                 </button>
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="px-6 pb-6 text-sm text-foreground-muted leading-relaxed border-t border-border/40 pt-4"
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
                     >
-                      {faq.a}
+                      <div className="px-6 pb-6 pt-2 text-sm md:text-base text-foreground-muted leading-relaxed border-t border-indigo-500/15">
+                        {faq.a}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
         </div>
