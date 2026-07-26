@@ -33,7 +33,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
   const [streakDays] = useState(5);
   const [dailyXPEarned, setDailyXPEarned] = useState(65);
-  const [badgesUnlocked, setBadgesUnlocked] = useState<string[]>([
+  const [badgesUnlocked] = useState<string[]>([
     'FIRST_VOICE_QUERY',
     'STREAK_5_DAYS',
     'ALGO_STARTER',
@@ -57,7 +57,7 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const awardXP = (amount: number, reason: string) => {
     setXp((prevXP) => {
       const newXP = prevXP + amount;
-      
+
       // Level up check
       let oldLevel = 1;
       if (prevXP >= 3000) oldLevel = 5;
@@ -73,11 +73,14 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 
       if (newLevel > oldLevel) {
         toast.success(`🎉 LEVEL UP! You reached Level ${newLevel}: ${levelTitles[newLevel - 1]}!`, {
-          duration: 5000,
+          id: `level-up-${newLevel}`,
+          duration: 4000,
         });
       } else {
+        // Use deduplicated toast ID to prevent rapid toast cluttering
         toast.success(`+${amount} XP — ${reason}`, {
-          duration: 3000,
+          id: `xp-${reason.toLowerCase().replace(/\s+/g, '-')}`,
+          duration: 2500,
         });
       }
 

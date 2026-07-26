@@ -11,12 +11,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />
       <Toaster
         position="bottom-right"
+        visibleToasts={3}
+        expand={false}
+        closeButton
+        duration={3000}
         toastOptions={{
           style: {
-            background: '#1E293B',
-            border: '1px solid rgba(108, 63, 197, 0.3)',
-            color: '#F1F5F9',
-            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            background: '#151926',
+            border: '1px solid rgba(124, 58, 237, 0.4)',
+            color: '#F8FAFC',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(124, 58, 237, 0.25)',
+            borderRadius: '16px',
+            padding: '12px 16px',
           },
         }}
       />
