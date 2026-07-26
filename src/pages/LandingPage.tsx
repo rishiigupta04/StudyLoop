@@ -1140,12 +1140,12 @@ export default function LandingPage() {
       {/* ── Embedded Auth Modal ── */}
       <AnimatePresence>
         {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md p-8 rounded-3xl bg-surface-card border border-border/80 shadow-2xl relative"
+              exit={{ scale: 0.94, opacity: 0 }}
+              className="w-full max-w-md p-8 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative text-left"
             >
               <button
                 onClick={() => setShowAuthModal(false)}

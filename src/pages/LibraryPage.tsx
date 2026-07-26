@@ -641,12 +641,12 @@ export default function LibraryPage() {
         {/* Quick Preview Drawer Modal */}
         <AnimatePresence>
           {previewVideo && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.94, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-2xl p-8 rounded-3xl glass-card border border-indigo-500/30 relative max-h-[85vh] overflow-y-auto scrollbar-thin"
+                exit={{ scale: 0.94, opacity: 0 }}
+                className="w-full max-w-2xl p-8 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative max-h-[85vh] overflow-y-auto scrollbar-thin text-left"
               >
                 <button
                   onClick={() => setPreviewVideo(null)}
@@ -729,12 +729,12 @@ export default function LibraryPage() {
         {/* Add Video Modal */}
         <AnimatePresence>
           {showAddModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.94, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-lg p-8 rounded-3xl glass-card border border-indigo-500/30 relative"
+                exit={{ scale: 0.94, opacity: 0 }}
+                className="w-full max-w-lg p-8 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative text-left"
               >
                 <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated">
                   <Icon name="XMarkIcon" size={18} />

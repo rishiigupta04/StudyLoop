@@ -792,16 +792,16 @@ export default function NotesPage() {
       {/* Manual Create / Edit Note Modal */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              className="w-full max-w-lg p-6 rounded-3xl bg-surface-card border border-indigo-500/30 shadow-2xl relative"
+              exit={{ scale: 0.94, opacity: 0 }}
+              className="w-full max-w-lg p-7 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative text-left"
             >
               <button
                 onClick={() => setShowAddModal(false)}
-                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated"
+                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated border border-border/80 transition-colors"
               >
                 <Icon name="XMarkIcon" size={18} />
               </button>
@@ -829,7 +829,7 @@ export default function NotesPage() {
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g. Learning Rate α Sensitivity Analysis"
-                    className="w-full input-field rounded-xl px-4 py-2.5"
+                    className="w-full input-field rounded-xl px-4 py-2.5 bg-[#0B0E17]"
                   />
                 </div>
 
@@ -839,7 +839,7 @@ export default function NotesPage() {
                     <select
                       value={newVideoTitle}
                       onChange={(e) => setNewVideoTitle(e.target.value)}
-                      className="w-full input-field rounded-xl px-3 py-2.5 cursor-pointer truncate"
+                      className="w-full input-field rounded-xl px-3 py-2.5 cursor-pointer truncate bg-[#0B0E17]"
                     >
                       {uniqueVideos.map((v) => (
                         <option key={`modal-vid-${v}`} value={v}>
@@ -856,7 +856,7 @@ export default function NotesPage() {
                       value={newTimestamp}
                       onChange={(e) => setNewTimestamp(e.target.value)}
                       placeholder="e.g. 18:45"
-                      className="w-full input-field rounded-xl px-4 py-2.5 font-mono"
+                      className="w-full input-field rounded-xl px-4 py-2.5 font-mono bg-[#0B0E17]"
                     />
                   </div>
                 </div>
@@ -867,7 +867,7 @@ export default function NotesPage() {
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value as any)}
-                      className="w-full input-field rounded-xl px-3 py-2.5 cursor-pointer"
+                      className="w-full input-field rounded-xl px-3 py-2.5 cursor-pointer bg-[#0B0E17]"
                     >
                       <option value="Math">📐 Math & Formulas</option>
                       <option value="Key Takeaway">💡 Key Takeaway</option>
@@ -882,7 +882,7 @@ export default function NotesPage() {
                       value={newTags}
                       onChange={(e) => setNewTags(e.target.value)}
                       placeholder="Algorithms, Calculus"
-                      className="w-full input-field rounded-xl px-4 py-2.5"
+                      className="w-full input-field rounded-xl px-4 py-2.5 bg-[#0B0E17]"
                     />
                   </div>
                 </div>
@@ -895,7 +895,7 @@ export default function NotesPage() {
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
                     placeholder="Write key equations, takeaways, or concepts..."
-                    className="w-full input-field rounded-xl px-4 py-2.5"
+                    className="w-full input-field rounded-xl px-4 py-2.5 bg-[#0B0E17]"
                   />
                 </div>
 
@@ -903,7 +903,7 @@ export default function NotesPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2.5 rounded-xl bg-surface-elevated text-muted-foreground hover:text-foreground font-semibold"
+                    className="px-4 py-2.5 rounded-xl bg-surface-elevated border border-border text-muted-foreground hover:text-foreground font-semibold"
                   >
                     Cancel
                   </button>
@@ -923,22 +923,22 @@ export default function NotesPage() {
       {/* AI Active Recall Flashcard Quiz Modal */}
       <AnimatePresence>
         {showQuizModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              className="w-full max-w-md p-6 rounded-3xl bg-surface-card border border-indigo-500/40 shadow-2xl relative text-left"
+              exit={{ scale: 0.94, opacity: 0 }}
+              className="w-full max-w-md p-7 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative text-left"
             >
               <button
                 onClick={() => setShowQuizModal(false)}
-                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated"
+                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated border border-border/80 transition-colors"
               >
                 <Icon name="XMarkIcon" size={18} />
               </button>
 
               <div className="flex items-center gap-2 mb-4">
-                <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[10px] font-extrabold">
+                <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-[10px] font-extrabold">
                   AI Active Recall Mode
                 </span>
                 <span className="text-xs font-mono text-muted-foreground ml-auto">
@@ -959,7 +959,7 @@ export default function NotesPage() {
                   <motion.p
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-xs text-cyan-300 leading-relaxed font-sans bg-indigo-950/60 p-3 rounded-xl border border-indigo-500/30 w-full"
+                    className="text-xs text-cyan-300 leading-relaxed font-sans bg-indigo-950 p-3 rounded-xl border border-indigo-500/40 w-full"
                   >
                     {notes[currentQuizIndex]?.content}
                   </motion.p>
@@ -1003,16 +1003,16 @@ export default function NotesPage() {
       {/* Multi-Format Export Hub Modal */}
       <AnimatePresence>
         {showExportModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              className="w-full max-w-md p-6 rounded-3xl bg-surface-card border border-indigo-500/40 shadow-2xl relative text-left"
+              exit={{ scale: 0.94, opacity: 0 }}
+              className="w-full max-w-md p-7 rounded-3xl bg-[#151926] border border-indigo-500/50 shadow-2xl relative text-left"
             >
               <button
                 onClick={() => setShowExportModal(false)}
-                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated"
+                className="absolute top-5 right-5 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated border border-border/80 transition-colors"
               >
                 <Icon name="XMarkIcon" size={18} />
               </button>
@@ -1033,7 +1033,7 @@ export default function NotesPage() {
                     handleBulkExportNotion();
                     setShowExportModal(false);
                   }}
-                  className="w-full p-4 rounded-2xl bg-surface-elevated hover:bg-surface-elevated/80 border border-indigo-500/30 flex items-center justify-between text-left group transition-all"
+                  className="w-full p-4 rounded-2xl bg-[#1E2235] hover:bg-[#252A42] border border-indigo-500/40 flex items-center justify-between text-left group transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🚀</span>
@@ -1050,7 +1050,7 @@ export default function NotesPage() {
                     exportAnkiCSV();
                     setShowExportModal(false);
                   }}
-                  className="w-full p-4 rounded-2xl bg-surface-elevated hover:bg-surface-elevated/80 border border-cyan-500/30 flex items-center justify-between text-left group transition-all"
+                  className="w-full p-4 rounded-2xl bg-[#1E2235] hover:bg-[#252A42] border border-cyan-500/40 flex items-center justify-between text-left group transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🎴</span>
@@ -1067,7 +1067,7 @@ export default function NotesPage() {
                     window.print();
                     setShowExportModal(false);
                   }}
-                  className="w-full p-4 rounded-2xl bg-surface-elevated hover:bg-surface-elevated/80 border border-emerald-500/30 flex items-center justify-between text-left group transition-all"
+                  className="w-full p-4 rounded-2xl bg-[#1E2235] hover:bg-[#252A42] border border-emerald-500/40 flex items-center justify-between text-left group transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">📄</span>
@@ -1083,7 +1083,7 @@ export default function NotesPage() {
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setShowExportModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-surface-elevated text-xs font-bold text-muted-foreground hover:text-foreground"
+                  className="px-4 py-2.5 rounded-xl bg-surface-elevated border border-border text-xs font-bold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Close
                 </button>

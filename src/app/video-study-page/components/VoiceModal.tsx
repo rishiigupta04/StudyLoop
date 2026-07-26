@@ -45,11 +45,11 @@ export default function VoiceModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-md"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-md mx-4 modal-fade-in">
-        <div className="glass-card rounded-3xl p-6 shadow-modal border border-indigo-500/40 relative">
+        <div className="bg-[#151926] rounded-3xl p-6 shadow-2xl border border-indigo-500/50 relative">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
