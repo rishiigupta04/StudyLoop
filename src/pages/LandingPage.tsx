@@ -9,39 +9,43 @@ const DEMO_YOUTUBE_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 
 const DEMO_FRAMES = [
   {
-    frameTitle: 'Frame 1: Initial Learning Rate Selection',
+    frameTitle: 'Interaction 1: Bilingual Concept Query',
+    interactionType: '💡 Concept Q&A',
     timestamp: '12:10',
     lossValue: 'J(θ) = 4.82 (High Loss)',
     query: 'Bhai, Gradient Descent me initial learning rate alpha kitna select karein?',
-    response: 'Typically α = 0.01 or 0.001 set karte hain so model step-by-step global minimum ki taraf convergence kar sake.',
-    autoNote: 'Saved: Initial α = 0.01 hyperparameter rule',
+    response: 'Typically α = 0.01 or 0.001 set karte hain to avoid divergence on the 3D loss surface.',
+    autoNote: 'Saved note: α = 0.01 learning rate rule',
     image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&auto=format&fit=crop&q=80',
   },
   {
-    frameTitle: 'Frame 2: Overshooting & Oscillations',
-    timestamp: '18:45',
-    lossValue: 'J(θ) = 3.15 (Oscillating)',
-    query: 'Agar learning rate alpha ziada bada choose kar liya toh kya hoga?',
-    response: 'Nahi! Agar α ziada bada ho, toh Gradient Descent minimum value ko overshoot kar steep valley walls par oscillate karega aur diverge ho jayega.',
-    autoNote: 'Saved equation: θ := θ - α ∇J(θ)',
+    frameTitle: 'Interaction 2: Semantic Topic Jump',
+    interactionType: '⏭️ Jump to Concept',
+    timestamp: '34:20',
+    lossValue: 'J(θ) = 1.15 (Chain Rule)',
+    query: 'Go to where Backpropagation and Chain Rule were explained',
+    response: 'Jumping video player to 34:20 where Backpropagation ∂L/∂w = ∂L/∂a · ∂a/∂z is explained!',
+    autoNote: 'Auto-Seek: Jumped to 34:20 (Backpropagation)',
     image: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1200&auto=format&fit=crop&q=80',
   },
   {
-    frameTitle: 'Frame 3: Escaping Saddle Points',
-    timestamp: '28:30',
-    lossValue: 'J(θ) = 0.88 (Plateau)',
-    query: 'Saddle point par gradient zero ho gaya toh model trapped ho jayega?',
-    response: 'Saddle points se escape karne ke liye Adam Optimizer ya Momentum updates (v_t = β v_{t-1} + (1-β) ∇J) compute karte hain.',
-    autoNote: 'Saved concept: Adam / Momentum escape dynamics',
+    frameTitle: 'Interaction 3: Hands-Free Voice Skipping',
+    interactionType: '⏪ Skip 10 Seconds',
+    timestamp: '34:10',
+    lossValue: 'J(θ) = 1.18 (Rewound -10s)',
+    query: 'Go back skip 10 seconds, missed that matrix multiply step',
+    response: 'Skipping back 10 seconds to 34:10 for the weight matrix multiplication walkthrough.',
+    autoNote: 'Player Action: Rewound -10s to 34:10',
     image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
   },
   {
-    frameTitle: 'Frame 4: Global Minimum & 1-Click Notion Sync',
+    frameTitle: 'Interaction 4: Notion & Flashcard Export',
+    interactionType: '📝 1-Click Export',
     timestamp: '42:15',
-    lossValue: 'J(θ) = 0.04 (Optimal Minimum)',
-    query: 'Export all gradient descent notes and active recall flashcards to Notion!',
-    response: 'Done! Synced 4 timestamped structured notes, equations & 5 active recall flashcards to your Notion workspace.',
-    autoNote: 'Synced: 1-Click Notion Workspace Export',
+    lossValue: 'J(θ) = 0.04 (Minimum)',
+    query: 'Generate active recall quiz and export all notes to Notion!',
+    response: 'Done! Synced 4 timestamped structured notes & 5 active recall flashcards directly to Notion.',
+    autoNote: 'Notion Sync: 4 Notes & 5 Flashcards Exported',
     image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80',
   },
 ];
@@ -82,7 +86,7 @@ const SCENARIOS = [
     badge: 'Voice Navigation',
     title: 'Hands-Free Timestamp Seeking',
     desc: 'Never scrub back and forth manually trying to find where a specific mathematical equation was explained.',
-    example: '"Jump to where learning rate decay formula was introduced"',
+    example: '"Go to where backpropagation was explained"',
     color: 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300',
   },
   {
@@ -190,7 +194,7 @@ export default function LandingPage() {
     if (!isPlayingGif) return;
     const interval = setInterval(() => {
       setActiveFrameIndex((prev) => (prev + 1) % DEMO_FRAMES.length);
-    }, 3800);
+    }, 4000);
     return () => clearInterval(interval);
   }, [isPlayingGif]);
 
@@ -341,25 +345,25 @@ export default function LandingPage() {
               <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1">
                 <button
                   onClick={() => setIsPlayingGif(!isPlayingGif)}
-                  className="px-2 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1 hover:bg-indigo-600/50 transition-colors"
+                  className="px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-600/50 transition-colors"
                 >
                   <Icon name={isPlayingGif ? 'PauseIcon' : 'PlayIcon'} size={12} />
                   <span>{isPlayingGif ? 'Auto Loop GIF' : 'Paused'}</span>
                 </button>
-                {DEMO_FRAMES.map((_, i) => (
+                {DEMO_FRAMES.map((f, i) => (
                   <button
-                    key={`frame-dot-${i}`}
+                    key={`frame-tab-${i}`}
                     onClick={() => {
                       setActiveFrameIndex(i);
                       setIsPlayingGif(false);
                     }}
-                    className={`w-6 h-6 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                       activeFrameIndex === i
-                        ? 'bg-cyan-500 text-black shadow-sm font-extrabold'
+                        ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
                     }`}
                   >
-                    {i + 1}
+                    <span>{f.interactionType}</span>
                   </button>
                 ))}
               </div>
@@ -435,18 +439,20 @@ export default function LandingPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
                       <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
-                      <span className="font-extrabold text-foreground">AI Voice Copilot Response</span>
-                      <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
+                      <span className="font-extrabold text-foreground">AI Voice Copilot</span>
+                      <span className="ml-auto text-[10px] font-mono text-cyan-400 font-bold bg-cyan-950 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                        {currentFrame.interactionType}
+                      </span>
                     </div>
 
                     <div className="space-y-3">
                       <div className="p-3 rounded-xl bg-surface-elevated/60 border border-border/40">
-                        <p className="text-[11px] font-bold text-indigo-300 mb-1">User Query (Hinglish ASR):</p>
+                        <p className="text-[11px] font-bold text-indigo-300 mb-1">User Command:</p>
                         <p className="text-foreground text-xs leading-snug font-mono">"{currentFrame.query}"</p>
                       </div>
 
                       <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
-                        <p className="text-[11px] font-bold text-cyan-300 mb-1">AI Grounded RAG Answer:</p>
+                        <p className="text-[11px] font-bold text-cyan-300 mb-1">AI Action & Answer:</p>
                         <p className="text-foreground-muted text-xs leading-relaxed">
                           {currentFrame.response}
                         </p>
