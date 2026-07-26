@@ -468,7 +468,7 @@ export default function LibraryPage() {
         </div>
 
         {/* Category Filter Chips */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="flex items-center gap-2 mb-8 overflow-x-auto scrollbar-none pb-1">
           {categories.map((cat) => (
             <button
               key={`cat-${cat}`}
