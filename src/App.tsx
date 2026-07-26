@@ -6,6 +6,7 @@ import DashboardHomePage from './pages/DashboardHomePage';
 import VideoStudyPage from './pages/VideoStudyPage';
 import LibraryPage from './pages/LibraryPage';
 import NotesPage from './pages/NotesPage';
+import ChatHistoryPage from './pages/ChatHistoryPage';
 import NotFound from './pages/NotFound';
 import { GamificationProvider } from './context/GamificationContext';
 
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/video-study-page" element={<VideoStudyPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="/notes" element={<NotesPage />} />
+        <Route path="/chat-history" element={<ChatHistoryPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </GamificationProvider>
