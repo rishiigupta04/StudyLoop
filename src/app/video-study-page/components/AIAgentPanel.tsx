@@ -21,7 +21,7 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
   const [activeTab, setActiveTab] = useState<Tab>('transcript');
 
   return (
-    <div className="flex flex-col h-full bg-secondary/30">
+    <div className="flex flex-col h-full min-h-0 bg-surface-card/40">
       {/* Tab Bar */}
       <div className="flex border-b border-border flex-shrink-0">
         {tabs.map((tab) => (
@@ -30,7 +30,7 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-semibold transition-all duration-150 relative ${
               activeTab === tab.id
-                ? 'tab-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                ? 'tab-active' : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated/40'
             }`}
           >
             <Icon
@@ -41,8 +41,8 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
             {tab.badge !== undefined && (
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
                 activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+                  ? 'bg-indigo-500 text-white'
+                  : 'bg-surface-elevated text-muted-foreground'
               }`}>
                 {tab.badge}
               </span>
@@ -52,7 +52,7 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === 'transcript' && (
           <TranscriptTab
             activeTimestamp={activeTimestamp}

@@ -9,7 +9,7 @@ export default function VideoStudyLayout() {
   const [activeTimestamp, setActiveTimestamp] = useState('24:10');
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden">
+    <div className="flex flex-col min-h-full flex-1 bg-background">
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-secondary/50 flex-shrink-0 z-10">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -35,10 +35,10 @@ export default function VideoStudyLayout() {
         </div>
       </div>
 
-      {/* Main Content Area — Responsive Stack (Mobile: scrollable column, Desktop: 2-pane fixed height layout) */}
-      <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-y-auto lg:overflow-hidden relative">
+      {/* Main Content Area — Responsive 2-Pane Layout (Mobile/Laptop: column with natural scrolling, Desktop: side-by-side) */}
+      <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative">
         {/* Left: Video Pane */}
-        <div className="flex-1 min-w-0 flex flex-col h-auto lg:h-full relative border-b lg:border-b-0 lg:border-r border-border overflow-hidden">
+        <div className="flex-1 min-w-0 flex flex-col min-h-[480px] lg:min-h-full relative border-b lg:border-b-0 lg:border-r border-border">
           <VideoPane
             activeTimestamp={activeTimestamp}
             onTimestampClick={(ts) => setActiveTimestamp(ts)}
@@ -54,7 +54,7 @@ export default function VideoStudyLayout() {
         </div>
 
         {/* Right: AI Agent Panel */}
-        <div className="w-full lg:w-[380px] xl:w-[420px] 2xl:w-[460px] flex-shrink-0 flex flex-col h-[520px] lg:h-full overflow-hidden bg-obsidian/40">
+        <div className="w-full lg:w-[380px] xl:w-[420px] 2xl:w-[460px] flex-shrink-0 flex flex-col min-h-[500px] lg:min-h-full bg-obsidian/40">
           <AIAgentPanel
             activeTimestamp={activeTimestamp}
             onTimestampClick={(ts) => setActiveTimestamp(ts)}
