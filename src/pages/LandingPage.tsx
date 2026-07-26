@@ -50,15 +50,50 @@ const DEMO_FRAMES = [
   },
 ];
 
+const ARCHITECTURE_STEPS = [
+  {
+    stepNum: '01',
+    stage: 'Input Capture',
+    title: 'WebAudio & Press-to-Talk Listener',
+    desc: 'Listens for global ~ key holding. Audio PCM buffers are sampled at 16kHz via WebAudio API without interrupting video player playback.',
+    badge: '16kHz Audio Stream',
+    color: 'border-indigo-500/30 text-indigo-400',
+  },
+  {
+    stepNum: '02',
+    stage: 'Dual Engine Switch',
+    title: 'Local DistilBERT vs Cloud RAG Routing',
+    desc: 'Fast player navigation commands (skip, rewind, timestamp jump) execute on-device via ONNX DistilBERT in < 45ms. Complex Q&A routes to Cloud BGE-M3 + Qwen2.5.',
+    badge: 'Dual Routing Core',
+    color: 'border-cyan-500/30 text-cyan-400',
+  },
+  {
+    stepNum: '03',
+    stage: 'Anti-Spoiler Filter',
+    title: 'pgvector Timestamp Bounding Guard',
+    desc: 'Cross-lingual BGE-M3 vector search applies a strict hard constraint T_segment <= T_current to prevent skipping or spoiling unwatched video sections.',
+    badge: 'Anti-Spoiler Guardrail',
+    color: 'border-emerald-500/30 text-emerald-400',
+  },
+  {
+    stepNum: '04',
+    stage: 'Output & Sync',
+    title: 'Synchronized Voice & Notion Sync',
+    desc: 'MeloTTS synthesizes accent-matched audio while HTML5 player seeks target timestamps and auto-logs structured notes into Notion.',
+    badge: 'MeloTTS & Notion API',
+    color: 'border-purple-500/30 text-purple-400',
+  },
+];
+
 const MODEL_BADGES = [
   { name: 'Whisper ASR', desc: 'Bilingual Hindi/English Speech Recognition', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
-  { name: 'Qwen2.5 LLM', desc: 'Reasoning & Grounded Answering', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' },
+  { name: 'DistilBERT Local', desc: 'On-Device Sub-45ms NLU Intent Classifier', color: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10' },
   { name: 'BGE-M3 RAG', desc: '1024-dim Vector Embeddings', color: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' },
   { name: 'MeloTTS', desc: 'Fluent Accent-Matched Audio Output', color: 'border-purple-500/30 text-purple-400 bg-purple-500/10' },
 ];
 
 const METRICS = [
-  { value: '< 150ms', label: 'Voice PTT Response Latency', icon: 'BoltIcon', color: 'text-indigo-400' },
+  { value: '< 45ms', label: 'Local DistilBERT Intent Latency', icon: 'BoltIcon', color: 'text-indigo-400' },
   { value: '100%', label: 'Anti-Spoiler Grounded Precision', icon: 'ShieldCheckIcon', color: 'text-cyan-400' },
   { value: '1024-dim', label: 'Cross-Lingual Vector Index', icon: 'SparklesIcon', color: 'text-emerald-400' },
   { value: 'Bi-directional', label: 'English & Hinglish Voice AI', icon: 'GlobeAltIcon', color: 'text-purple-400' },
@@ -112,7 +147,7 @@ const FEATURES = [
     icon: 'MicrophoneIcon',
     title: 'Push-to-Talk Voice Copilot',
     desc: 'Hold down the Tilde (~) key while watching any video to ask questions in natural English or Hindi without pausing playback.',
-    tag: 'Sub-150ms PTT Engine',
+    tag: 'Sub-45ms Local DistilBERT Engine',
     color: 'from-indigo-600/20 to-purple-600/10 border-indigo-500/30',
     iconColor: 'text-indigo-400',
   },
@@ -166,6 +201,10 @@ const FAQS = [
     a: 'Simply press and hold the Tilde (~) key on your keyboard while watching a video. Speak your command or question, then release the key. The AI voice agent will transcribe, process, and answer in real-time without disturbing video playback.',
   },
   {
+    q: 'What is Local DistilBERT Mode?',
+    a: 'Local DistilBERT Mode runs a lightweight ONNX-quantized DistilBERT model directly inside your browser. Fast player control commands (such as "skip 10s", "pause", or "jump to backpropagation") execute on-device in under 45ms with 100% privacy and zero server roundtrips.',
+  },
+  {
     q: 'What is Anti-Spoiler RAG?',
     a: 'Traditional video AI tools search the entire transcript, often spoiling answers or concepts that appear later in the video. StudyLoop’s pgvector Anti-Spoiler guardrail strictly filters search bounds to segments played up to your current timestamp.',
   },
@@ -187,6 +226,7 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [activeFrameIndex, setActiveFrameIndex] = useState(0);
   const [isPlayingGif, setIsPlayingGif] = useState(true);
+  const [selectedEngine, setSelectedEngine] = useState<'local' | 'cloud'>('local');
   const navigate = useNavigate();
 
   // GIF-like Auto-playing Frame Timeline Loop
@@ -226,6 +266,7 @@ export default function LandingPage() {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#demo" className="hover:text-foreground transition-colors">Live Simulation</a>
+            <a href="#architecture" className="hover:text-foreground transition-colors">Architecture</a>
             <a href="#scenarios" className="hover:text-foreground transition-colors">Voice Commands</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
@@ -528,6 +569,145 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── System Architecture & Dual Engine Workflow Section ── */}
+      <section id="architecture" className="py-20 px-6 max-w-7xl mx-auto border-t border-border/40">
+        <div className="text-center mb-14">
+          <span className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-3 block">
+            System Architecture Workflow
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+            Dual Execution Engines: Local DistilBERT & Cloud RAG
+          </h2>
+          <p className="text-foreground-muted text-base max-w-3xl mx-auto">
+            StudyLoop routes user commands through an on-device ONNX DistilBERT engine for instant &lt; 45ms player navigation, or a hybrid Cloud RAG engine for deep multi-lingual reasoning.
+          </p>
+
+          {/* Engine Selector Toggle */}
+          <div className="inline-flex items-center gap-2 mt-8 p-1.5 rounded-2xl bg-surface-card border border-border/80">
+            <button
+              onClick={() => setSelectedEngine('local')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                selectedEngine === 'local'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name="BoltIcon" size={16} />
+              <span>⚡ Local DistilBERT Engine (&lt; 45ms)</span>
+            </button>
+            <button
+              onClick={() => setSelectedEngine('cloud')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                selectedEngine === 'cloud'
+                  ? 'bg-cyan-600 text-white shadow-md'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon name="CloudIcon" size={16} />
+              <span>🌐 Cloud BGE-M3 RAG Engine (Deep Reasoning)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Engine Highlights Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`engine-card-${selectedEngine}`}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25 }}
+            className="mb-14 p-8 rounded-3xl bg-surface-card border border-indigo-500/30 max-w-5xl mx-auto relative overflow-hidden"
+          >
+            {selectedEngine === 'local' ? (
+              <div className="grid md:grid-cols-3 gap-6 text-left">
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold">
+                      ONNX DistilBERT-base-uncased
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                      100% On-Device Privacy
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">Local DistilBERT Intent Execution</h3>
+                  <p className="text-foreground-muted text-sm leading-relaxed mb-4">
+                    Player navigation commands such as <em>"skip 10s"</em>, <em>"pause lecture"</em>, or <em>"jump to backpropagation"</em> are parsed locally inside your browser in under 45ms without calling cloud APIs.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs font-mono text-cyan-300">
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border">Intent: PLAYER_SEEK (-10s)</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border">Latency: 38ms</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border font-bold text-emerald-400">Zero Cloud Bandwidth</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#0B0E17] border border-border flex flex-col justify-center text-xs space-y-2">
+                  <p className="font-bold text-foreground mb-1">Supported Local Triggers:</p>
+                  <p className="text-muted-foreground">• "Skip 10 seconds back"</p>
+                  <p className="text-muted-foreground">• "Jump to backpropagation"</p>
+                  <p className="text-muted-foreground">• "Bookmark equation θ := θ - α∇J"</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-6 text-left">
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-xs font-bold">
+                      BGE-M3 + Qwen2.5 72B + pgvector
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30 text-[10px] font-bold">
+                      Anti-Spoiler Guarded
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">Cloud Hybrid Vector RAG Engine</h3>
+                  <p className="text-foreground-muted text-sm leading-relaxed mb-4">
+                    Complex conceptual queries in Hinglish or English pass through Whisper ASR and BGE-M3 1024-dim cross-lingual vector search, strictly bounded up to current video timestamp T_current.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs font-mono text-cyan-300">
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border">Vector Dim: 1024</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border font-bold text-purple-400">Whisper Hinglish ASR</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-obsidian border border-border text-emerald-400">pgvector Bounded</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#0B0E17] border border-border flex flex-col justify-center text-xs space-y-2">
+                  <p className="font-bold text-foreground mb-1">Supported Cloud RAG Triggers:</p>
+                  <p className="text-muted-foreground">• "Why does large alpha oscillate?"</p>
+                  <p className="text-muted-foreground">• "Explain saddle points intuition"</p>
+                  <p className="text-muted-foreground">• "Export active recall quiz to Notion"</p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* 4-Step Architecture Flowchart Cards */}
+        <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          {ARCHITECTURE_STEPS.map((step, idx) => (
+            <motion.div
+              key={`arch-${step.stepNum}`}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className="p-6 rounded-3xl bg-surface-card border border-border/80 text-left flex flex-col justify-between relative overflow-hidden card-hover"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl font-black text-indigo-500/30 font-mono">{step.stepNum}</span>
+                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${step.color}`}>
+                    {step.badge}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-indigo-400 block mb-1 uppercase tracking-wider">
+                  {step.stage}
+                </span>
+                <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
+                <p className="text-foreground-muted text-xs leading-relaxed">{step.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Real-Life Hands-Free Study Scenarios Section ── */}
       <section id="scenarios" className="py-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
@@ -792,7 +972,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <Link to="/video-study-page" className="hover:text-foreground">App Workspace</Link>
             <Link to="/dashboard-home" className="hover:text-foreground">Dashboard</Link>
-            <a href="#features" className="hover:text-foreground">Architecture</a>
+            <a href="#architecture" className="hover:text-foreground">Architecture</a>
           </div>
         </div>
       </footer>
