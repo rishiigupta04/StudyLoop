@@ -20,6 +20,18 @@ interface LibraryVideo {
   notesCount: number;
   questionsCount: number;
   isBookmarked: boolean;
+  chapters: { time: string; title: string }[];
+  topTakeaway: string;
+}
+
+interface CoursePlaylist {
+  id: string;
+  title: string;
+  institution: string;
+  videoCount: number;
+  progressPercent: number;
+  totalDuration: string;
+  videoIds: string[];
 }
 
 const mockLibraryVideos: LibraryVideo[] = [
@@ -38,6 +50,15 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 7,
     questionsCount: 12,
     isBookmarked: true,
+    chapters: [
+      { time: '0:00', title: 'Introduction & Course Goals' },
+      { time: '4:32', title: 'Course Overview & Prerequisites' },
+      { time: '12:15', title: 'Algorithmic Thinking' },
+      { time: '24:10', title: 'Peak Finding (1D Array)' },
+      { time: '38:45', title: 'Peak Finding (2D Matrix)' },
+      { time: '52:30', title: 'Complexity Analysis' },
+    ],
+    topTakeaway: 'Peak in 1D array can be found in O(log n) time using Divide and Conquer.',
   },
   {
     id: 'lib-002',
@@ -54,6 +75,12 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 14,
     questionsCount: 22,
     isBookmarked: true,
+    chapters: [
+      { time: '0:00', title: 'Supervised vs Unsupervised' },
+      { time: '18:40', title: 'Linear Regression Formulation' },
+      { time: '42:10', title: 'Gradient Descent Convergence' },
+    ],
+    topTakeaway: 'Gradient descent minimizes cost function J(θ) via batch or stochastic updates.',
   },
   {
     id: 'lib-003',
@@ -70,6 +97,11 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 5,
     questionsCount: 8,
     isBookmarked: false,
+    chapters: [
+      { time: '0:00', title: 'Sequence Interface' },
+      { time: '22:15', title: 'Amortized Array Doubling' },
+    ],
+    topTakeaway: 'Array doubling yields O(1) amortized insertion time.',
   },
   {
     id: 'lib-004',
@@ -86,6 +118,12 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 11,
     questionsCount: 19,
     isBookmarked: true,
+    chapters: [
+      { time: '0:00', title: 'RAM Memory Addresses' },
+      { time: '35:10', title: 'Pointers & Dereferencing (*)' },
+      { time: '1:12:05', title: 'Malloc & Free Stack vs Heap' },
+    ],
+    topTakeaway: 'Heap memory allocated via malloc must be explicitly freed to prevent memory leaks.',
   },
   {
     id: 'lib-005',
@@ -102,6 +140,11 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 3,
     questionsCount: 5,
     isBookmarked: false,
+    chapters: [
+      { time: '0:00', title: 'Double Slit Experiment' },
+      { time: '11:04', title: 'Wavefunction Probability Density' },
+    ],
+    topTakeaway: '|Ψ(x,t)|² represents the probability density of finding a particle at position x.',
   },
   {
     id: 'lib-006',
@@ -118,36 +161,96 @@ const mockLibraryVideos: LibraryVideo[] = [
     notesCount: 19,
     questionsCount: 31,
     isBookmarked: true,
+    chapters: [
+      { time: '0:00', title: 'React Server Components (RSC)' },
+      { time: '45:00', title: 'Server Actions & Mutations' },
+      { time: '1:30:00', title: 'Suspense & Streaming' },
+    ],
+    topTakeaway: 'React Server Components execute 100% on the server, sending zero JavaScript to the client.',
+  },
+];
+
+const mockPlaylists: CoursePlaylist[] = [
+  {
+    id: 'pl-01',
+    title: 'MIT 6.006: Introduction to Algorithms',
+    institution: 'MIT OpenCourseWare',
+    videoCount: 2,
+    progressPercent: 52,
+    totalDuration: '2:38:45',
+    videoIds: ['lib-001', 'lib-003'],
+  },
+  {
+    id: 'pl-02',
+    title: 'Stanford CS229: Machine Learning Specialization',
+    institution: 'Stanford Online',
+    videoCount: 1,
+    progressPercent: 100,
+    totalDuration: '1:15:30',
+    videoIds: ['lib-002'],
   },
 ];
 
 const categories = ['All', 'Algorithms', 'Machine Learning', 'Computer Science', 'Physics', 'Web Dev', 'Starred'];
 
+type SortOption = 'recent' | 'progress-high' | 'notes-high' | 'title-asc';
+type StatusFilter = 'all' | 'in-progress' | 'completed';
+
 export default function LibraryPage() {
   const [videos, setVideos] = useState<LibraryVideo[]>(mockLibraryVideos);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Modals & Drawers
   const [showAddModal, setShowAddModal] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<LibraryVideo | null>(null);
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [isIngesting, setIsIngesting] = useState(false);
+  const [dailyGoalMins, setDailyGoalMins] = useState(45);
+  const [currentGoalMins] = useState(30);
+
   const navigate = useNavigate();
 
-  const filteredVideos = videos.filter((v) => {
-    const matchesSearch =
-      v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.channel.toLowerCase().includes(searchQuery.toLowerCase());
-    if (selectedCategory === 'All') return matchesSearch;
-    if (selectedCategory === 'Starred') return matchesSearch && v.isBookmarked;
-    return matchesSearch && v.category === selectedCategory;
-  });
+  // Filter & Sort Logic
+  const filteredVideos = videos
+    .filter((v) => {
+      const matchesSearch =
+        v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.channel.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.topTakeaway.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCat =
+        selectedCategory === 'All'
+          ? true
+          : selectedCategory === 'Starred'
+          ? v.isBookmarked
+          : v.category === selectedCategory;
+
+      const matchesStatus =
+        statusFilter === 'all' ? true : v.status === statusFilter;
+
+      return matchesSearch && matchesCat && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'progress-high') return b.progressPercent - a.progressPercent;
+      if (sortBy === 'notes-high') return b.notesCount - a.notesCount;
+      if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
+      return 0; // default recent order
+    });
 
   const toggleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setVideos((prev) =>
       prev.map((v) => (v.id === id ? { ...v, isBookmarked: !v.isBookmarked } : v))
     );
-    toast.success('Bookmark updated!');
+    toast.success('Bookmark state updated!');
+  };
+
+  const handleExportPlaylist = (plTitle: string) => {
+    toast.success(`Exporting all notes from "${plTitle}" to Notion & PDF...`);
   };
 
   const handleAddVideo = (e: React.FormEvent) => {
@@ -159,7 +262,7 @@ export default function LibraryPage() {
       setIsIngesting(false);
       setShowAddModal(false);
       setNewVideoUrl('');
-      toast.success('Video processed & added to library!');
+      toast.success('Video processed with TranscriptAPI & pgvector!');
       navigate('/video-study-page');
     }, 1200);
   };
@@ -175,15 +278,22 @@ export default function LibraryPage() {
                 <Icon name="BookOpenIcon" size={22} />
               </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                Study Library
+                Study Library & Courseware
               </h1>
             </div>
             <p className="text-sm text-foreground-muted">
-              {videos.length} videos indexed with TranscriptAPI & pgvector RAG
+              {videos.length} videos indexed with TranscriptAPI, BGE-M3 vector RAG & MeloTTS
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleExportPlaylist('All Library Notes')}
+              className="btn-ghost px-4 py-3 rounded-2xl text-xs font-bold text-indigo-300 flex items-center gap-2"
+            >
+              <Icon name="ArrowDownTrayIcon" size={16} />
+              Batch Export Notes
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="btn-primary px-5 py-3 rounded-2xl text-sm font-bold text-white shadow-glow-indigo-sm flex items-center gap-2"
@@ -194,28 +304,103 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {/* Library Stats Bar */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Videos', val: videos.length, icon: 'PlayCircleIcon', color: 'text-indigo-400' },
-            { label: 'Hours Watched', val: '28.5 hrs', icon: 'ClockIcon', color: 'text-cyan-400' },
-            { label: 'Notes Captured', val: '67', icon: 'DocumentTextIcon', color: 'text-emerald-400' },
-            { label: 'Starred Courseware', val: videos.filter((v) => v.isBookmarked).length, icon: 'StarIcon', color: 'text-amber-400' },
-          ].map((stat, idx) => (
-            <div key={`stat-${idx}`} className="glass-card rounded-2xl border border-indigo-500/15 p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-elevated flex items-center justify-center flex-shrink-0">
-                <Icon name={stat.icon as Parameters<typeof Icon>[0]['name']} size={20} className={stat.color} />
+        {/* Daily Study Goal Tracker & Metrics Bar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Daily Goal Card */}
+          <div className="lg:col-span-1 glass-card rounded-3xl border border-indigo-500/20 p-5 relative overflow-hidden flex flex-col justify-between shadow-glow-indigo-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔥</span>
+                <h3 className="text-sm font-bold text-foreground">Daily Study Goal</h3>
               </div>
-              <div>
-                <p className="text-xl font-extrabold text-foreground tabular-nums">{stat.val}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">
+                5 Day Streak
+              </span>
+            </div>
+
+            <div className="mb-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5 font-medium">
+                <span>{currentGoalMins} / {dailyGoalMins} mins studied today</span>
+                <span className="text-indigo-400 font-bold">{Math.round((currentGoalMins / dailyGoalMins) * 100)}%</span>
+              </div>
+              <div className="h-2.5 bg-surface-elevated rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-indigo-cyan rounded-full transition-all duration-500"
+                  style={{ width: `${(currentGoalMins / dailyGoalMins) * 100}%` }}
+                />
               </div>
             </div>
-          ))}
+
+            <p className="text-xs text-muted-foreground">
+              15 mins remaining today to keep your streak active!
+            </p>
+          </div>
+
+          {/* Metrics Grid (3 stats) */}
+          <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Indexed Videos', val: videos.length, icon: 'PlayCircleIcon', color: 'text-indigo-400' },
+              { label: 'Total Hours', val: '28.5 hrs', icon: 'ClockIcon', color: 'text-cyan-400' },
+              { label: 'Saved AI Notes', val: '67 notes', icon: 'DocumentTextIcon', color: 'text-emerald-400' },
+            ].map((stat, idx) => (
+              <div key={`stat-${idx}`} className="glass-card rounded-3xl border border-indigo-500/15 p-5 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center flex-shrink-0">
+                  <Icon name={stat.icon as Parameters<typeof Icon>[0]['name']} size={20} className={stat.color} />
+                </div>
+                <div>
+                  <p className="text-xl font-extrabold text-foreground tabular-nums">{stat.val}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Search & Category Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-8">
+        {/* Structured Course Playlists Section */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex items-center gap-2">
+              <Icon name="FolderIcon" size={18} className="text-indigo-400" />
+              <h2 className="text-lg font-bold text-foreground">Course Modules & Series</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{mockPlaylists.length} active playlists</span>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {mockPlaylists.map((pl) => (
+              <div
+                key={pl.id}
+                className="glass-card rounded-2xl border border-border/80 p-5 flex items-center justify-between gap-4 hover:border-indigo-500/40 transition-all"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                      {pl.institution}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{pl.videoCount} videos • {pl.totalDuration}</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-foreground truncate mb-2">{pl.title}</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-500" style={{ width: `${pl.progressPercent}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-indigo-400">{pl.progressPercent}%</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleExportPlaylist(pl.title)}
+                  className="btn-ghost p-2.5 rounded-xl text-indigo-300 hover:text-white flex-shrink-0"
+                  title="Export Playlist Notes"
+                >
+                  <Icon name="ArrowDownTrayIcon" size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Search, Filter & Sort Matrix */}
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-6">
           {/* Search Input */}
           <div className="relative flex-1 max-w-md">
             <Icon name="MagnifyingGlassIcon" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -223,7 +408,7 @@ export default function LibraryPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by video title, topic or channel..."
+              placeholder="Search by title, topic or key takeaways..."
               className="input-field w-full rounded-2xl pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60"
             />
             {searchQuery && (
@@ -233,26 +418,52 @@ export default function LibraryPage() {
             )}
           </div>
 
-          {/* View Switcher */}
-          <div className="flex items-center gap-1 bg-surface-card border border-border/80 rounded-2xl p-1 self-end md:self-auto">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
+          {/* Controls: Status Filter, Sort, View Switcher */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="input-field rounded-2xl px-3 py-2.5 text-xs text-foreground bg-surface-card border border-border"
             >
-              <Icon name="Squares2X2Icon" size={16} />
-              Grid
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              <option value="all">All Statuses</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+
+            {/* Sort By */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="input-field rounded-2xl px-3 py-2.5 text-xs text-foreground bg-surface-card border border-border"
             >
-              <Icon name="ListBulletIcon" size={16} />
-              List
-            </button>
+              <option value="recent">Recently Studied</option>
+              <option value="progress-high">Highest Progress</option>
+              <option value="notes-high">Most Notes</option>
+              <option value="title-asc">Title (A-Z)</option>
+            </select>
+
+            {/* View Switcher */}
+            <div className="flex items-center gap-1 bg-surface-card border border-border/80 rounded-2xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon name="Squares2X2Icon" size={16} />
+                Grid
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon name="ListBulletIcon" size={16} />
+                List
+              </button>
+            </div>
           </div>
         </div>
 
@@ -279,7 +490,10 @@ export default function LibraryPage() {
             <Icon name="MagnifyingGlassIcon" size={40} className="text-muted-foreground mx-auto mb-3" />
             <h3 className="text-lg font-bold text-foreground mb-1">No videos found</h3>
             <p className="text-sm text-muted-foreground mb-6">Try adjusting your search query or category filters.</p>
-            <button onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }} className="btn-ghost px-4 py-2 rounded-xl text-xs font-semibold text-indigo-300">
+            <button
+              onClick={() => { setSearchQuery(''); setSelectedCategory('All'); setStatusFilter('all'); }}
+              className="btn-ghost px-4 py-2 rounded-xl text-xs font-semibold text-indigo-300"
+            >
               Reset Filters
             </button>
           </div>
@@ -291,10 +505,9 @@ export default function LibraryPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.05 }}
-                onClick={() => navigate('/video-study-page')}
                 className="glass-card rounded-3xl border border-border/80 overflow-hidden cursor-pointer card-hover group flex flex-col justify-between"
               >
-                <div>
+                <div onClick={() => navigate('/video-study-page')}>
                   {/* Thumbnail Container */}
                   <div className="relative aspect-video overflow-hidden bg-black/40">
                     <img
@@ -342,25 +555,33 @@ export default function LibraryPage() {
                     <h3 className="text-base font-bold text-foreground line-clamp-2 mb-2 group-hover:text-indigo-300 transition-colors">
                       {video.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mb-4">{video.channel}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{video.channel}</p>
+
+                    {/* Top Takeaway Snippet */}
+                    <p className="text-xs text-foreground/80 bg-surface-elevated/40 p-2.5 rounded-xl border border-border/40 italic line-clamp-2">
+                      "{video.topTakeaway}"
+                    </p>
                   </div>
                 </div>
 
                 {/* Card Footer */}
                 <div className="px-5 pb-5 pt-3 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <Icon name="DocumentTextIcon" size={14} className="text-indigo-400" />
-                      {video.notesCount} notes
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="ChatBubbleLeftRightIcon" size={14} className="text-cyan-400" />
-                      {video.questionsCount} Q&A
-                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setPreviewVideo(video); }}
+                      className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
+                    >
+                      <Icon name="EyeIcon" size={14} />
+                      Preview Chapters
+                    </button>
                   </div>
-                  <span className="font-bold text-indigo-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                    Study →
-                  </span>
+
+                  <button
+                    onClick={() => navigate('/video-study-page')}
+                    className="font-bold text-indigo-400 group-hover:translate-x-1 transition-transform flex items-center gap-1"
+                  >
+                    Resume @ {video.lastTimestamp} →
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -382,19 +603,116 @@ export default function LibraryPage() {
                     <span className="text-xs text-muted-foreground">• {video.channel}</span>
                   </div>
                   <h3 className="text-sm font-bold text-foreground truncate mb-1">{video.title}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-1 italic mb-2">"{video.topTakeaway}"</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span>Duration: {video.duration}</span>
                     <span>Progress: {video.progressPercent}%</span>
                     <span>{video.notesCount} notes</span>
                   </div>
                 </div>
-                <button className="btn-primary px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap self-end sm:self-center">
-                  Continue Study
-                </button>
+                <div className="flex gap-2 self-end sm:self-center">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setPreviewVideo(video); }}
+                    className="btn-ghost px-3 py-2 rounded-xl text-xs font-semibold text-cyan-300"
+                  >
+                    Preview
+                  </button>
+                  <button className="btn-primary px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap">
+                    Resume @ {video.lastTimestamp}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Quick Preview Drawer Modal */}
+        <AnimatePresence>
+          {previewVideo && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-2xl p-8 rounded-3xl glass-card border border-indigo-500/30 relative max-h-[85vh] overflow-y-auto scrollbar-thin"
+              >
+                <button
+                  onClick={() => setPreviewVideo(null)}
+                  className="absolute top-6 right-6 p-2 rounded-xl text-muted-foreground hover:text-foreground bg-surface-elevated"
+                >
+                  <Icon name="XMarkIcon" size={18} />
+                </button>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                    {previewVideo.category}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{previewVideo.channel}</span>
+                </div>
+
+                <h2 className="text-xl font-extrabold text-foreground mb-3">{previewVideo.title}</h2>
+
+                {/* Key Takeaway Banner */}
+                <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-1 text-indigo-400 font-bold text-xs">
+                    <Icon name="SparklesIcon" size={14} />
+                    <span>AI Key Takeaway</span>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed italic">
+                    "{previewVideo.topTakeaway}"
+                  </p>
+                </div>
+
+                {/* Chapters List */}
+                <div className="mb-6">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground mb-3">
+                    AI-Generated Chapters ({previewVideo.chapters.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {previewVideo.chapters.map((ch, idx) => (
+                      <div
+                        key={`prev-ch-${idx}`}
+                        onClick={() => {
+                          setPreviewVideo(null);
+                          navigate('/video-study-page');
+                        }}
+                        className="flex items-center justify-between p-3 rounded-xl bg-surface-card border border-border/60 hover:border-indigo-500/40 cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-surface-elevated text-indigo-300">
+                            {ch.time}
+                          </span>
+                          <span className="text-sm font-semibold text-foreground">{ch.title}</span>
+                        </div>
+                        <span className="text-xs text-indigo-400 font-bold">Seek →</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end pt-4 border-t border-border">
+                  <button
+                    onClick={() => {
+                      handleExportPlaylist(previewVideo.title);
+                    }}
+                    className="btn-ghost px-4 py-2.5 rounded-xl text-xs font-bold text-indigo-300"
+                  >
+                    Export Notes
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPreviewVideo(null);
+                      navigate('/video-study-page');
+                    }}
+                    className="btn-primary px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-glow-indigo-sm"
+                  >
+                    Resume Study @ {previewVideo.lastTimestamp}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Add Video Modal */}
         <AnimatePresence>
