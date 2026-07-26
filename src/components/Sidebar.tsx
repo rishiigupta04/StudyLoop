@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AppLogo from '@/components/ui/AppLogo';
 import Icon from '@/components/ui/AppIcon';
+import { useGamification } from '@/context/GamificationContext';
 
 interface NavItem {
   label: string;
@@ -25,6 +26,11 @@ interface SidebarProps {
 
 export default function Sidebar({ activeRoute }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { xp, level, levelTitle, streakDays, prevLevelXP, nextLevelXP } = useGamification();
+
+  const currentLevelXP = xp - prevLevelXP;
+  const levelTargetXP = nextLevelXP - prevLevelXP;
+  const xpPercent = Math.min(100, Math.max(0, (currentLevelXP / levelTargetXP) * 100));
 
   return (
     <aside
@@ -50,6 +56,48 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           <Icon name={collapsed ? 'ChevronRightIcon' : 'ChevronLeftIcon'} size={16} />
         </button>
       </div>
+
+      {/* Real-Time XP & Level Gamification Banner */}
+      {!collapsed ? (
+        <div className="mx-3 mt-3 p-3 rounded-2xl bg-surface-card border border-indigo-500/30 relative overflow-hidden shadow-glow-indigo-sm">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-extrabold px-2 py-0.5 rounded-md bg-indigo-600 text-white font-mono shadow-sm">
+                Lvl {level}
+              </span>
+              <span className="text-xs font-bold text-foreground truncate max-w-[100px]">
+                {levelTitle}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-xs font-bold text-amber-400">
+              <span>🔥</span>
+              <span>{streakDays}d</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+              <span>XP Progress</span>
+              <span className="text-indigo-300 font-semibold">
+                {xp} / {nextLevelXP} XP
+              </span>
+            </div>
+            <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-indigo-cyan rounded-full transition-all duration-500"
+                style={{ width: `${xpPercent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-col items-center gap-1 text-center">
+          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-600 text-white font-mono">
+            L{level}
+          </span>
+          <span className="text-[10px] font-bold text-amber-400">🔥{streakDays}</span>
+        </div>
+      )}
 
       {/* Nav Items */}
       <nav className="flex-1 py-4 px-2 space-y-1.5 overflow-hidden">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/AppIcon';
+import { useGamification } from '@/context/GamificationContext';
 
 interface QuizQuestion {
   id: string;
@@ -55,6 +56,7 @@ export default function AIQuizWidget() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [score, setScore] = useState(0);
+  const { awardXP } = useGamification();
 
   const q = mockQuizQuestions[currentIndex];
   const selectedOption = userAnswers[currentIndex] !== undefined ? userAnswers[currentIndex] : null;
@@ -65,7 +67,7 @@ export default function AIQuizWidget() {
     setUserAnswers((prev) => ({ ...prev, [currentIndex]: idx }));
     if (idx === q.correctIndex) {
       setScore((prev) => prev + 1);
-      toast.success('Correct answer! +10 XP');
+      awardXP(10, 'Correct Active Recall Answer');
     } else {
       toast.error('Incorrect. Review explanation below.');
     }
