@@ -5,7 +5,7 @@ import Icon from '@/components/ui/AppIcon';
 import AppLogo from '@/components/ui/AppLogo';
 import CursorOrb from '@/components/ui/CursorOrb';
 
-const DEMO_YOUTUBE_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+const DEMO_YOUTUBE_URL = 'https://www.youtube.com/watch?v=IHZwWFHWa-w';
 
 const MODEL_BADGES = [
   { name: 'Whisper ASR', desc: 'Bilingual Hindi/English Speech Recognition', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
@@ -101,6 +101,8 @@ const FAQS = [
   },
 ];
 
+type FeatureTab = 'video-study' | 'active-recall' | 'gamification' | 'notes-export';
+
 export default function LandingPage() {
   const [urlInput, setUrlInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -108,6 +110,7 @@ export default function LandingPage() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isDemoActive, setIsDemoActive] = useState(false);
+  const [activeTab, setActiveTab] = useState<FeatureTab>('video-study');
   const navigate = useNavigate();
 
   const handleProcessUrl = (e?: React.FormEvent) => {
@@ -142,7 +145,7 @@ export default function LandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#demo" className="hover:text-foreground transition-colors">Live Demo</a>
+            <a href="#demo" className="hover:text-foreground transition-colors">Live Preview</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-foreground transition-colors">Workflow</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
@@ -204,7 +207,7 @@ export default function LandingPage() {
                   type="url"
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Paste YouTube video URL (e.g. MIT 6.006 Lecture)..."
+                  placeholder="Paste YouTube video URL (e.g. Gradient Descent Lecture)..."
                   className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                 />
               </div>
@@ -238,7 +241,7 @@ export default function LandingPage() {
           </form>
         </motion.div>
 
-        {/* ── Clean Product Showcase Preview ── */}
+        {/* ── Multi-Feature Interactive Showcase Preview Container ── */}
         <motion.div
           id="demo"
           initial={{ opacity: 0, scale: 0.96 }}
@@ -246,6 +249,29 @@ export default function LandingPage() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="max-w-5xl mx-auto mb-16 relative"
         >
+          {/* Feature Showcase Tab Controls */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            {[
+              { id: 'video-study', label: '🎥 Video Study & PTT Copilot', icon: 'PlayCircleIcon' },
+              { id: 'active-recall', label: '⚡ AI Daily Active Recall', icon: 'AcademicCapIcon' },
+              { id: 'gamification', label: '🏆 Level & XP Gamification', icon: 'FireIcon' },
+              { id: 'notes-export', label: '📓 Auto Notes & Notion Export', icon: 'DocumentTextIcon' },
+            ].map((tab) => (
+              <button
+                key={`tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id as FeatureTab)}
+                className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? 'bg-indigo-600 text-white shadow-lg border border-indigo-400/40'
+                    : 'bg-surface-card text-muted-foreground border border-border/80 hover:text-foreground hover:border-indigo-500/30'
+                }`}
+              >
+                <Icon name={tab.icon as Parameters<typeof Icon>[0]['name']} size={14} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="relative rounded-3xl overflow-hidden bg-surface-card border border-border/80 p-2 shadow-2xl">
             {/* Top Mock Window Header */}
             <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex items-center justify-between border-b border-border/60">
@@ -254,117 +280,272 @@ export default function LandingPage() {
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
                 <span className="ml-2 text-xs font-mono text-muted-foreground hidden sm:inline-block">
-                  studyloop.ai/video-study-page (MIT 6.006 Lecture 1)
+                  studyloop.ai/{activeTab} (Stanford CS229 — Gradient Descent)
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={triggerVoiceDemo}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isDemoActive
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                  }`}
-                >
-                  <Icon name="MicrophoneIcon" size={14} />
-                  <span>{isDemoActive ? 'Listening (~ Active)...' : 'Test Voice PTT (~)'}</span>
-                </button>
+                {activeTab === 'video-study' && (
+                  <button
+                    onClick={triggerVoiceDemo}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                      isDemoActive
+                        ? 'bg-red-500 text-white animate-pulse'
+                        : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                    }`}
+                  >
+                    <Icon name="MicrophoneIcon" size={14} />
+                    <span>{isDemoActive ? 'Listening (~ Active)...' : 'Test Voice PTT (~)'}</span>
+                  </button>
+                )}
+                {activeTab !== 'video-study' && (
+                  <span className="text-[11px] font-mono text-cyan-400 font-bold px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-500/30">
+                    Live Feature Preview
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Video Mock Workspace Content */}
-            <div className="grid lg:grid-cols-3 gap-2 bg-[#0B0E17] p-3 rounded-b-2xl min-h-[360px] text-left relative overflow-hidden">
-              {/* Main Video Screen */}
-              <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/60 border border-border/60 flex flex-col justify-between p-4 min-h-[260px]">
-                <img
-                  src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1000&auto=format&fit=crop&q=80"
-                  alt="MIT 6.006 Lecture preview"
-                  className="absolute inset-0 w-full h-full object-cover opacity-40"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none" />
+            {/* Dynamic Content Views */}
+            <div className="bg-[#0B0E17] p-3.5 rounded-b-2xl min-h-[380px] text-left relative overflow-hidden">
+              {/* TAB 1: VIDEO STUDY & GRADIENT DESCENT PTT COPILOT */}
+              {activeTab === 'video-study' && (
+                <div className="grid lg:grid-cols-3 gap-3 min-h-[360px]">
+                  {/* Main Video Screen (Gradient Descent Lecture) */}
+                  <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/60 border border-border/60 flex flex-col justify-between p-4 min-h-[280px]">
+                    <img
+                      src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1000&auto=format&fit=crop&q=80"
+                      alt="Gradient Descent & Cost Functions Lecture preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-50"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
 
-                <div className="relative z-10 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
-                    MIT 6.006 Algorithms @ 24:10
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                    HD Transcript Indexed
-                  </span>
-                </div>
-
-                {/* Simulated PTT Overlay Box */}
-                <div className="relative z-10 my-auto text-center py-6">
-                  {isDemoActive ? (
-                    <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-950 border border-indigo-500/40 shadow-xl"
-                    >
-                      <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
-                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse" />
-                        <span>Speech Captured: "What is 1D Peak Finding time complexity?"</span>
-                      </div>
-                      <div className="flex items-center gap-1 h-4">
-                        {[40, 70, 30, 90, 50, 80, 40].map((h, i) => (
-                          <div
-                            key={`bar-${i}`}
-                            className="w-1 bg-cyan-400 rounded-full animate-waveform"
-                            style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <button
-                      onClick={triggerVoiceDemo}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card border border-border hover:border-indigo-500/40 text-xs font-bold text-foreground transition-all group"
-                    >
-                      <Icon name="PlayCircleIcon" size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                      <span>Click to simulate Push-to-Talk voice query</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
-                  <span className="font-mono text-cyan-300">24:10 / 52:30</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Guard: Active</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Copilot Side Chat Preview */}
-              <div className="rounded-xl bg-[#151926] border border-border/60 p-3 flex flex-col justify-between text-xs">
-                <div>
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
-                    <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
-                    <span className="font-extrabold text-foreground">AI Voice Copilot</span>
-                    <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border/40">
-                      <p className="text-[11px] font-bold text-indigo-300 mb-0.5">User (Speech input via ~):</p>
-                      <p className="text-foreground text-xs">"What is the complexity of 1D Peak Finding?"</p>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold">
+                        Stanford CS229 Gradient Descent @ 18:45
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                        HD Transcript Indexed
+                      </span>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
-                      <p className="text-[11px] font-bold text-cyan-300 mb-0.5">AI Answer (Anti-Spoiler RAG):</p>
-                      <p className="text-foreground-muted text-xs leading-relaxed">
-                        In 1D arrays, divide & conquer checks array midpoints in <strong className="text-foreground">O(log n)</strong> time complexity.
-                      </p>
+                    {/* Simulated PTT Overlay Box */}
+                    <div className="relative z-10 my-auto text-center py-6">
+                      {isDemoActive ? (
+                        <motion.div
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="inline-flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-950 border border-indigo-500/40 shadow-xl"
+                        >
+                          <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
+                            <Icon name="MicrophoneIcon" size={16} className="animate-pulse" />
+                            <span>Speech Captured: "How does learning rate α affect gradient descent convergence?"</span>
+                          </div>
+                          <div className="flex items-center gap-1 h-4">
+                            {[40, 70, 30, 90, 50, 80, 40].map((h, i) => (
+                              <div
+                                key={`bar-${i}`}
+                                className="w-1 bg-cyan-400 rounded-full animate-waveform"
+                                style={{ height: `${h}%`, animationDelay: `${i * 0.1}s` }}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <button
+                          onClick={triggerVoiceDemo}
+                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card border border-border hover:border-indigo-500/40 text-xs font-bold text-foreground transition-all group"
+                        >
+                          <Icon name="PlayCircleIcon" size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                          <span>Click to simulate Push-to-Talk voice query</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
+                      <span className="font-mono text-cyan-300">18:45 / 45:10</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Guard: Active</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Copilot Side Chat Preview */}
+                  <div className="rounded-xl bg-[#151926] border border-border/60 p-3 flex flex-col justify-between text-xs">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                        <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
+                        <span className="font-extrabold text-foreground">AI Voice Copilot</span>
+                        <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border/40">
+                          <p className="text-[11px] font-bold text-indigo-300 mb-0.5">User (Speech input via ~):</p>
+                          <p className="text-foreground text-xs">"How does learning rate α affect gradient descent?"</p>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
+                          <p className="text-[11px] font-bold text-cyan-300 mb-0.5">AI Answer (Anti-Spoiler RAG):</p>
+                          <p className="text-foreground-muted text-xs leading-relaxed">
+                            If learning rate α is too large, gradient descent overshoots minimum J(θ) and diverges; if too small, convergence takes O(1/ε) steps.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1 text-indigo-400">
+                        <Icon name="BookmarkIcon" size={12} />
+                        Auto-saved to notes
+                      </span>
+                      <span className="font-mono text-cyan-400 font-bold">@ 18:45</span>
                     </div>
                   </div>
                 </div>
+              )}
 
-                <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1 text-indigo-400">
-                    <Icon name="BookmarkIcon" size={12} />
-                    Auto-saved to notes
-                  </span>
-                  <span className="font-mono text-cyan-400 font-bold">@ 24:10</span>
+              {/* TAB 2: AI DAILY ACTIVE RECALL PREVIEW */}
+              {activeTab === 'active-recall' && (
+                <div className="p-4 rounded-xl bg-[#151926] border border-border/60 max-w-2xl mx-auto space-y-4">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <Icon name="AcademicCapIcon" size={18} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">AI Daily Active Recall Question</h4>
+                        <p className="text-[11px] text-muted-foreground">Generated from Stanford CS229 Lecture</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono text-cyan-400 font-bold px-2 py-1 rounded-lg bg-surface-card border border-border">
+                      Question 1/4
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-surface-card border border-indigo-500/20 flex items-center justify-between text-xs">
+                    <span className="font-bold text-indigo-300">Stanford CS229 — Gradient Descent</span>
+                    <span className="font-mono text-cyan-300 font-bold px-2 py-0.5 rounded bg-indigo-950 border border-indigo-500/30">
+                      @ 18:45
+                    </span>
+                  </div>
+
+                  <p className="text-sm font-bold text-foreground leading-relaxed">
+                    What does gradient descent minimize during machine learning model training?
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="p-3 rounded-xl bg-surface-card border border-border/60 text-xs text-muted-foreground flex justify-between items-center">
+                      <span>A) Learning Rate Alpha (α)</span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-xs text-emerald-300 font-bold flex justify-between items-center">
+                      <span>B) Cost Function J(θ)</span>
+                      <Icon name="CheckIcon" size={14} className="text-emerald-400" />
+                    </div>
+                    <div className="p-3 rounded-xl bg-surface-card border border-border/60 text-xs text-muted-foreground flex justify-between items-center">
+                      <span>C) Batch Size Parameters</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs leading-relaxed">
+                    <span className="font-bold text-cyan-300">Explanation: </span>
+                    Gradient descent iteratively updates model parameters θ in the direction of steepest descent to find the local minimum of cost function J(θ).
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* TAB 3: GAMIFICATION & XP PROGRESS */}
+              {activeTab === 'gamification' && (
+                <div className="p-4 rounded-xl bg-[#151926] border border-border/60 max-w-2xl mx-auto space-y-5">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold font-mono flex items-center justify-center text-sm shadow-lg">
+                        L5
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">Master Scholar</h4>
+                        <p className="text-[11px] text-muted-foreground">Level 5 Gamification Status</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold">
+                      <Icon name="FireIcon" size={16} />
+                      <span>5 Day Study Streak 🔥</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-muted-foreground">XP Level Progress</span>
+                      <span className="text-indigo-300 font-bold">1,250 / 1,500 XP</span>
+                    </div>
+                    <div className="h-2.5 bg-surface-card rounded-full overflow-hidden border border-border">
+                      <div className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full w-[83%]" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="p-3 rounded-xl bg-surface-card border border-border">
+                      <p className="text-xl font-extrabold text-foreground font-mono">14</p>
+                      <p className="text-[11px] text-muted-foreground font-semibold">Videos Completed</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-surface-card border border-border">
+                      <p className="text-xl font-extrabold text-indigo-400 font-mono">67</p>
+                      <p className="text-[11px] text-muted-foreground font-semibold">Notes Captured</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-surface-card border border-border">
+                      <p className="text-xl font-extrabold text-cyan-400 font-mono">143</p>
+                      <p className="text-[11px] text-muted-foreground font-semibold">Voice Questions</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: AUTOMATED NOTES & NOTION EXPORT */}
+              {activeTab === 'notes-export' && (
+                <div className="p-4 rounded-xl bg-[#151926] border border-border/60 max-w-2xl mx-auto space-y-4">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Icon name="DocumentTextIcon" size={18} className="text-indigo-400" />
+                      <h4 className="text-sm font-bold text-foreground">Automated Timestamped Notes</h4>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1.5 rounded-lg bg-purple-950 border border-purple-500/40 text-purple-300 text-xs font-bold flex items-center gap-1">
+                        <Icon name="ArrowUpOnSquareIcon" size={12} />
+                        <span>Export to Notion</span>
+                      </button>
+                      <button className="px-3 py-1.5 rounded-lg bg-surface-card border border-border text-xs font-bold text-foreground flex items-center gap-1">
+                        <Icon name="DocumentTextIcon" size={12} />
+                        <span>PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="p-3 rounded-xl bg-surface-card border border-border/80 flex items-start gap-3">
+                      <span className="font-mono font-bold text-cyan-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-500/30 flex-shrink-0">
+                        18:45
+                      </span>
+                      <div>
+                        <p className="font-bold text-indigo-300 mb-0.5">Gradient Descent Update Rule</p>
+                        <p className="text-foreground-muted leading-relaxed font-mono">
+                          θ_j := θ_j - α * ∂/∂θ_j J(θ). Update parameters simultaneously for all j = 0, ..., n.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-surface-card border border-border/80 flex items-start gap-3">
+                      <span className="font-mono font-bold text-cyan-400 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-500/30 flex-shrink-0">
+                        24:12
+                      </span>
+                      <div>
+                        <p className="font-bold text-indigo-300 mb-0.5">Batch vs Stochastic Gradient Descent</p>
+                        <p className="text-foreground-muted leading-relaxed font-mono">
+                          Batch GD scans all m training examples at each step; SGD updates parameters after inspecting every single sample.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
