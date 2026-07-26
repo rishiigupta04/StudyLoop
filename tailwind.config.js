@@ -48,7 +48,7 @@ export default {
         warning: 'var(--warning)',
         destructive: 'var(--destructive)',
 
-        // ── Electric Indigo & Cyber Glow design system ──
+        // ── Electric Indigo & Obsidian design system ──
         obsidian: {
           DEFAULT: '#0B0E17',
           50: '#1a1f2e',
@@ -62,7 +62,7 @@ export default {
         },
         cyan: {
           400: '#22D3EE',
-          50: '#06B6D4',
+          500: '#06B6D4',
           600: '#0891B2',
         },
         emerald: {
@@ -97,25 +97,25 @@ export default {
         'badge-bounce':  'badge-bounce-anim 2s ease-in-out infinite',
       },
       boxShadow: {
-        // Ultra-Premium Multi-Layer Structural Sleek Shadows
-        'card':           '0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06)',
-        'card-hover':     '0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(129, 140, 248, 0.35), 0 4px 20px -2px rgba(99, 102, 241, 0.15)',
-        'modal':          '0 25px 60px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+        // Ultra-Clean Vercel/Linear Style 1px Rim Highlights (Zero Purple Blur Halos)
+        'card':           '0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
+        'card-hover':     '0 20px 40px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(99, 102, 241, 0.35)',
+        'modal':          '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1)',
 
-        // Sleek Ambient Glows (Crisp Structural 1px Rim + Controlled Low Alpha Diffusion)
-        'glow-indigo':    '0 12px 32px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.35), 0 4px 24px -4px rgba(99, 102, 241, 0.2), 0 8px 32px -8px rgba(6, 182, 212, 0.12)',
-        'glow-indigo-sm': '0 8px 20px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.25), 0 2px 12px -2px rgba(99, 102, 241, 0.15)',
-        'glow-cyan':      '0 12px 32px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(34, 211, 238, 0.35), 0 4px 24px -4px rgba(6, 182, 212, 0.22)',
-        'glow-cyan-sm':   '0 8px 20px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.25), 0 2px 10px -2px rgba(6, 182, 212, 0.15)',
-        'glow-emerald':   '0 8px 20px -4px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(52, 211, 153, 0.25), 0 2px 12px -2px rgba(16, 185, 129, 0.15)',
-        'glow-purple':    '0 12px 32px -6px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(168, 85, 247, 0.3), 0 4px 24px -4px rgba(168, 85, 247, 0.18)',
-        'inner-glow':     'inset 0 1px 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4)',
-        'landing-hero':   '0 24px 60px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(99, 102, 241, 0.3), 0 8px 32px -4px rgba(99, 102, 241, 0.15)',
+        // Crisp Subtle Rim Highlights without fuzzy purple blur halos
+        'glow-indigo':    '0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(99, 102, 241, 0.25)',
+        'glow-indigo-sm': '0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.2)',
+        'glow-cyan':      '0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(34, 211, 238, 0.25)',
+        'glow-cyan-sm':   '0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(34, 211, 238, 0.2)',
+        'glow-emerald':   '0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(52, 211, 153, 0.2)',
+        'glow-purple':    '0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(168, 85, 247, 0.25)',
+        'inner-glow':     'inset 0 1px 1px 0 rgba(255, 255, 255, 0.08)',
+        'landing-hero':   '0 32px 80px -16px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(99, 102, 241, 0.25)',
       },
       backgroundImage: {
         'gradient-indigo-cyan':    'linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)',
         'gradient-indigo-purple':  'linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%)',
-        'gradient-hero':           'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, transparent 70%)',
+        'gradient-hero':           'radial-gradient(ellipse 70% 40% at 50% -10%, rgba(99,102,241,0.1) 0%, transparent 70%)',
         'gradient-card':           'linear-gradient(135deg, rgba(21,25,38,0.95) 0%, rgba(11,14,23,0.98) 100%)',
         'shimmer-gradient':        'linear-gradient(90deg, transparent 0%, rgba(124,58,237,0.08) 50%, transparent 100%)',
       },
