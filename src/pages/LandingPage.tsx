@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '@/components/ui/AppIcon';
@@ -6,6 +6,45 @@ import AppLogo from '@/components/ui/AppLogo';
 import CursorOrb from '@/components/ui/CursorOrb';
 
 const DEMO_YOUTUBE_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+
+const DEMO_FRAMES = [
+  {
+    frameTitle: 'Frame 1: Initial Learning Rate Selection',
+    timestamp: '12:10',
+    lossValue: 'J(θ) = 4.82 (High Loss)',
+    query: 'Bhai, Gradient Descent me initial learning rate alpha kitna select karein?',
+    response: 'Typically α = 0.01 or 0.001 set karte hain so model step-by-step global minimum ki taraf convergence kar sake.',
+    autoNote: 'Saved: Initial α = 0.01 hyperparameter rule',
+    image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    frameTitle: 'Frame 2: Overshooting & Oscillations',
+    timestamp: '18:45',
+    lossValue: 'J(θ) = 3.15 (Oscillating)',
+    query: 'Agar learning rate alpha ziada bada choose kar liya toh kya hoga?',
+    response: 'Nahi! Agar α ziada bada ho, toh Gradient Descent minimum value ko overshoot kar steep valley walls par oscillate karega aur diverge ho jayega.',
+    autoNote: 'Saved equation: θ := θ - α ∇J(θ)',
+    image: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    frameTitle: 'Frame 3: Escaping Saddle Points',
+    timestamp: '28:30',
+    lossValue: 'J(θ) = 0.88 (Plateau)',
+    query: 'Saddle point par gradient zero ho gaya toh model trapped ho jayega?',
+    response: 'Saddle points se escape karne ke liye Adam Optimizer ya Momentum updates (v_t = β v_{t-1} + (1-β) ∇J) compute karte hain.',
+    autoNote: 'Saved concept: Adam / Momentum escape dynamics',
+    image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
+  },
+  {
+    frameTitle: 'Frame 4: Global Minimum & 1-Click Notion Sync',
+    timestamp: '42:15',
+    lossValue: 'J(θ) = 0.04 (Optimal Minimum)',
+    query: 'Export all gradient descent notes and active recall flashcards to Notion!',
+    response: 'Done! Synced 4 timestamped structured notes, equations & 5 active recall flashcards to your Notion workspace.',
+    autoNote: 'Synced: 1-Click Notion Workspace Export',
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80',
+  },
+];
 
 const MODEL_BADGES = [
   { name: 'Whisper ASR', desc: 'Bilingual Hindi/English Speech Recognition', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
@@ -142,8 +181,18 @@ export default function LandingPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [isDemoActive, setIsDemoActive] = useState(false);
+  const [activeFrameIndex, setActiveFrameIndex] = useState(0);
+  const [isPlayingGif, setIsPlayingGif] = useState(true);
   const navigate = useNavigate();
+
+  // GIF-like Auto-playing Frame Timeline Loop
+  useEffect(() => {
+    if (!isPlayingGif) return;
+    const interval = setInterval(() => {
+      setActiveFrameIndex((prev) => (prev + 1) % DEMO_FRAMES.length);
+    }, 3800);
+    return () => clearInterval(interval);
+  }, [isPlayingGif]);
 
   const handleProcessUrl = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -155,12 +204,7 @@ export default function LandingPage() {
     }, 900);
   };
 
-  const triggerVoiceDemo = () => {
-    setIsDemoActive(true);
-    setTimeout(() => {
-      setIsDemoActive(false);
-    }, 4500);
-  };
+  const currentFrame = DEMO_FRAMES[activeFrameIndex];
 
   return (
     <div className="min-h-screen bg-obsidian text-foreground selection:bg-indigo-600/30 relative overflow-hidden">
@@ -177,7 +221,7 @@ export default function LandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#demo" className="hover:text-foreground transition-colors">Live Demo</a>
+            <a href="#demo" className="hover:text-foreground transition-colors">Live Simulation</a>
             <a href="#scenarios" className="hover:text-foreground transition-colors">Voice Commands</a>
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
@@ -273,7 +317,7 @@ export default function LandingPage() {
           </form>
         </motion.div>
 
-        {/* ── Gradient Descent Hero Product Showcase Preview with Embedded USPs ── */}
+        {/* ── Frame-by-Frame Animated Conversation GIF Simulation ── */}
         <motion.div
           id="demo"
           initial={{ opacity: 0, scale: 0.96 }}
@@ -282,87 +326,91 @@ export default function LandingPage() {
           className="max-w-5xl mx-auto mb-16 relative"
         >
           <div className="relative rounded-3xl overflow-hidden bg-surface-card border border-border/80 p-2 shadow-2xl">
-            {/* Top Mock Window Header */}
-            <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex items-center justify-between border-b border-border/60">
+            {/* Window Header with Frame Stepper Controls */}
+            <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex flex-wrap items-center justify-between gap-3 border-b border-border/60">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
                 <span className="ml-2 text-xs font-mono text-muted-foreground hidden sm:inline-block">
-                  studyloop.ai/video-study-page (Stanford CS229: Gradient Descent & Cost Functions)
+                  studyloop.ai/video-study-page (Stanford CS229: Gradient Descent Loss Landscape)
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+
+              {/* Interactive GIF Timeline Frame Controller */}
+              <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1">
                 <button
-                  onClick={triggerVoiceDemo}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    isDemoActive
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                  }`}
+                  onClick={() => setIsPlayingGif(!isPlayingGif)}
+                  className="px-2 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1 hover:bg-indigo-600/50 transition-colors"
                 >
-                  <Icon name="MicrophoneIcon" size={14} />
-                  <span>{isDemoActive ? 'Listening (~ Active)...' : 'Test Voice PTT (~)'}</span>
+                  <Icon name={isPlayingGif ? 'PauseIcon' : 'PlayIcon'} size={12} />
+                  <span>{isPlayingGif ? 'Auto Loop GIF' : 'Paused'}</span>
                 </button>
+                {DEMO_FRAMES.map((_, i) => (
+                  <button
+                    key={`frame-dot-${i}`}
+                    onClick={() => {
+                      setActiveFrameIndex(i);
+                      setIsPlayingGif(false);
+                    }}
+                    className={`w-6 h-6 rounded-lg text-xs font-mono font-bold transition-all flex items-center justify-center ${
+                      activeFrameIndex === i
+                        ? 'bg-cyan-500 text-black shadow-sm font-extrabold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Video Mock Workspace Content featuring Gradient Descent Lecture */}
-            <div className="grid lg:grid-cols-3 gap-2 bg-[#0B0E17] p-3 rounded-b-2xl min-h-[400px] text-left relative overflow-hidden">
-              {/* Main Video Screen with Embedded Major USPs Overlay */}
-              <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/80 border border-border/60 flex flex-col justify-between p-4 min-h-[300px]">
-                {/* High-Tech Gradient Descent Machine Learning Slides Preview */}
-                <img
-                  src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&auto=format&fit=crop&q=80"
-                  alt="Stanford CS229 Gradient Descent lecture contour map & learning rate optimization slide"
-                  className="absolute inset-0 w-full h-full object-cover opacity-35"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
+            {/* Video Mock Workspace with Frame-by-Frame Animated Content */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`frame-content-${activeFrameIndex}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25 }}
+                className="grid lg:grid-cols-3 gap-2 bg-[#0B0E17] p-3 rounded-b-2xl min-h-[420px] text-left relative overflow-hidden"
+              >
+                {/* Main Video Screen displaying 3D Gradient Descent Loss Landscape */}
+                <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/80 border border-border/60 flex flex-col justify-between p-4 min-h-[320px]">
+                  {/* High-Tech 3D Gradient Descent Loss Surface Image */}
+                  <img
+                    src={currentFrame.image}
+                    alt="Gradient Descent 3D loss surface optimization landscape slide"
+                    className="absolute inset-0 w-full h-full object-cover opacity-40 transition-opacity duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
 
-                {/* Top Video HUD Badges */}
-                <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
-                  <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold font-mono">
-                    Stanford CS229: Gradient Descent @ 18:45
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
-                    Transcript & Vectors Indexed
-                  </span>
-                </div>
+                  {/* Top HUD Overlay */}
+                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
+                    <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold font-mono">
+                      Stanford CS229 Loss Surface @ {currentFrame.timestamp}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold">
+                      {currentFrame.lossValue}
+                    </span>
+                  </div>
 
-                {/* On-Screen Major USPs Floating Feature Badges Overlay */}
-                <div className="relative z-10 my-4 grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-xl bg-indigo-950/80 border border-indigo-500/30 text-xs">
-                    <span className="text-[10px] font-extrabold text-indigo-300 block mb-0.5">🎙️ Hands-Free ~ PTT</span>
-                    <p className="text-[11px] text-foreground font-medium">Hold ~ while eating or writing</p>
+                  {/* Frame Description Indicator */}
+                  <div className="relative z-10 my-3">
+                    <span className="px-3 py-1 rounded-lg bg-surface-card/90 border border-border text-[11px] font-bold text-foreground inline-block">
+                      {currentFrame.frameTitle}
+                    </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-500/30 text-xs">
-                    <span className="text-[10px] font-extrabold text-cyan-300 block mb-0.5">🌐 Hinglish Voice ASR</span>
-                    <p className="text-[11px] text-foreground font-medium">Ask naturally in Hindi/English</p>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-xs">
-                    <span className="text-[10px] font-extrabold text-emerald-300 block mb-0.5">🛡️ Anti-Spoiler Grounded</span>
-                    <p className="text-[11px] text-foreground font-medium">Answers bounded to 18:45</p>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/30 text-xs">
-                    <span className="text-[10px] font-extrabold text-purple-300 block mb-0.5">📝 Auto Notes & Math</span>
-                    <p className="text-[11px] text-foreground font-mono">θ := θ - α∇J(θ) auto-logged</p>
-                  </div>
-                </div>
 
-                {/* Simulated PTT Overlay Box */}
-                <div className="relative z-10 text-center py-2">
-                  {isDemoActive ? (
-                    <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex flex-col items-center gap-2 p-3 rounded-2xl bg-indigo-950 border border-indigo-500/40 shadow-xl"
-                    >
+                  {/* Simulated PTT Speech Bubble in Active Frame */}
+                  <div className="relative z-10 text-center py-2">
+                    <div className="inline-flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 shadow-xl max-w-lg mx-auto">
                       <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
-                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse" />
-                        <span>Hinglish Speech: "Bhai learning rate alpha small nahi select kiya toh kya hoga?"</span>
+                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse text-cyan-400" />
+                        <span className="font-mono">User Speech (~ Held): "{currentFrame.query}"</span>
                       </div>
-                      <div className="flex items-center gap-1 h-4">
-                        {[40, 70, 30, 90, 50, 80, 40].map((h, i) => (
+                      <div className="flex items-center gap-1 h-3.5">
+                        {[40, 80, 30, 95, 60, 85, 45, 75, 35].map((h, i) => (
                           <div
                             key={`bar-${i}`}
                             className="w-1 bg-cyan-400 rounded-full animate-waveform"
@@ -370,59 +418,53 @@ export default function LandingPage() {
                           />
                         ))}
                       </div>
-                    </motion.div>
-                  ) : (
-                    <button
-                      onClick={triggerVoiceDemo}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card border border-border hover:border-indigo-500/40 text-xs font-bold text-foreground transition-all group"
-                    >
-                      <Icon name="PlayCircleIcon" size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                      <span>Click to simulate Push-to-Talk Hinglish Voice Query</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
-                  <span className="font-mono text-cyan-300">18:45 / 1:15:20</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Guard: Active @ 18:45</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* AI Copilot Side Chat Preview for Gradient Descent */}
-              <div className="rounded-xl bg-[#151926] border border-border/60 p-3 flex flex-col justify-between text-xs">
-                <div>
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
-                    <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
-                    <span className="font-extrabold text-foreground">AI Voice Copilot</span>
-                    <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border/40">
-                      <p className="text-[11px] font-bold text-indigo-300 mb-0.5">User (Hinglish Voice via ~):</p>
-                      <p className="text-foreground text-xs font-mono">"Bhai learning rate alpha ziada bada choose kar liya toh algorithm convergence fast hoga?"</p>
                     </div>
+                  </div>
 
-                    <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
-                      <p className="text-[11px] font-bold text-cyan-300 mb-0.5">AI Answer (Grounded RAG @ 18:45):</p>
-                      <p className="text-foreground-muted text-xs leading-relaxed">
-                        Nahi! Agar <strong className="text-foreground">α (alpha)</strong> ziada bada ho, toh gradient descent minimum value ko overshoot kar scroll back oscillation kar sakta hai aur diverge ho sakta hai.
-                      </p>
+                  {/* Video Control Bar */}
+                  <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
+                    <span className="font-mono text-cyan-300">{currentFrame.timestamp} / 52:30</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Bound: @ {currentFrame.timestamp}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-1 text-indigo-400 font-semibold">
-                    <Icon name="BookmarkIcon" size={12} />
-                    Saved: θ := θ - α∇J(θ)
-                  </span>
-                  <span className="font-mono text-cyan-400 font-bold">@ 18:45</span>
+                {/* AI Copilot Voice & Note Capture Panel for Active Frame */}
+                <div className="rounded-xl bg-[#151926] border border-border/60 p-3.5 flex flex-col justify-between text-xs">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                      <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
+                      <span className="font-extrabold text-foreground">AI Voice Copilot Response</span>
+                      <span className="ml-auto text-[10px] font-mono text-emerald-400">150ms Latency</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-xl bg-surface-elevated/60 border border-border/40">
+                        <p className="text-[11px] font-bold text-indigo-300 mb-1">User Query (Hinglish ASR):</p>
+                        <p className="text-foreground text-xs leading-snug font-mono">"{currentFrame.query}"</p>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
+                        <p className="text-[11px] font-bold text-cyan-300 mb-1">AI Grounded RAG Answer:</p>
+                        <p className="text-foreground-muted text-xs leading-relaxed">
+                          {currentFrame.response}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Auto Note Saved Line */}
+                  <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                      <Icon name="BookmarkIcon" size={14} />
+                      {currentFrame.autoNote}
+                    </span>
+                    <span className="font-mono text-cyan-400 font-bold">@ {currentFrame.timestamp}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </motion.div>
 
