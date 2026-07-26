@@ -517,6 +517,19 @@ export default function LibraryPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-obsidian/80 via-transparent to-transparent" />
 
+                    {/* Status Badge Overlay */}
+                    <div className="absolute top-3 left-3 z-10">
+                      <span
+                        className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${
+                          video.status === 'completed'
+                            ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-md backdrop-blur-md'
+                            : 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50 shadow-md backdrop-blur-md'
+                        }`}
+                      >
+                        {video.status === 'completed' ? '✓ Completed' : '⏱ In Progress'}
+                      </span>
+                    </div>
+
                     {/* Duration Badge */}
                     <span className="absolute bottom-3 right-3 px-2 py-0.5 rounded-lg bg-obsidian/90 border border-border text-[11px] font-mono font-bold text-foreground">
                       {video.duration}
