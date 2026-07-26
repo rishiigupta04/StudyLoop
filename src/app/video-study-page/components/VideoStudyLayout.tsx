@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
 import VoiceModal from './VoiceModal';
@@ -6,11 +7,20 @@ import Icon from '@/components/ui/AppIcon';
 import { useTildePTT } from '@/hooks/useTildePTT';
 
 export default function VideoStudyLayout() {
+  const location = useLocation();
   const [activeTimestamp, setActiveTimestamp] = useState('24:10');
+
+  useEffect(() => {
+    if (location.state?.timestamp) {
+      setActiveTimestamp(location.state.timestamp);
+    }
+  }, [location.state]);
 
   const ptt = useTildePTT({
     onSeekTimestamp: (ts) => setActiveTimestamp(ts),
   });
+
+  const videoTitle = location.state?.videoTitle || 'MIT 6.006 Introduction to Algorithms — Lecture 1';
 
   return (
     <div className="flex flex-col min-h-full flex-1 bg-obsidian">
@@ -22,7 +32,7 @@ export default function VideoStudyLayout() {
             <span className="text-xs font-medium text-muted-foreground hidden sm:block">Now Studying:</span>
           </div>
           <span className="text-sm font-bold text-foreground truncate max-w-xs sm:max-w-md lg:max-w-lg">
-            MIT 6.006 Introduction to Algorithms — Lecture 1
+            {videoTitle}
           </span>
           <span className="text-xs text-muted-foreground hidden md:block">· MIT OpenCourseWare</span>
         </div>

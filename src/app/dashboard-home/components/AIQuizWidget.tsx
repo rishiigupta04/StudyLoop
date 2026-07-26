@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
@@ -57,6 +58,7 @@ export default function AIQuizWidget() {
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [score, setScore] = useState(0);
   const { awardXP } = useGamification();
+  const navigate = useNavigate();
 
   const q = mockQuizQuestions[currentIndex];
   const selectedOption = userAnswers[currentIndex] !== undefined ? userAnswers[currentIndex] : null;
@@ -69,7 +71,7 @@ export default function AIQuizWidget() {
       setScore((prev) => prev + 1);
       awardXP(10, 'Correct Active Recall Answer');
     } else {
-      toast.error('Incorrect. Review explanation below.');
+      toast.error('Incorrect. Review concept at timestamp below.');
     }
   };
 
@@ -85,6 +87,13 @@ export default function AIQuizWidget() {
     } else {
       toast.success(`Daily Recall Completed! Total Score: ${score}/${mockQuizQuestions.length}`);
     }
+  };
+
+  const jumpToLectureTimestamp = () => {
+    toast.success(`Opening ${q.videoTitle} @ ${q.timestamp}`);
+    navigate('/video-study-page', {
+      state: { timestamp: q.timestamp, videoTitle: q.videoTitle },
+    });
   };
 
   return (
@@ -127,11 +136,21 @@ export default function AIQuizWidget() {
         </div>
       </div>
 
-      {/* Video Context Tag */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-        <span className="truncate max-w-[240px] text-indigo-300 font-semibold">{q.videoTitle}</span>
-        <span className="font-mono text-muted-foreground">@{q.timestamp}</span>
-      </div>
+      {/* Interactive Timestamp Jump Button Container */}
+      <button
+        onClick={jumpToLectureTimestamp}
+        className="w-full flex items-center justify-between text-xs p-2.5 rounded-xl bg-surface-card/90 border border-indigo-500/25 hover:border-indigo-500/60 hover:bg-indigo-500/10 transition-all group mb-3 cursor-pointer shadow-sm"
+        title={`Click to open lecture video at ${q.timestamp}`}
+      >
+        <div className="flex items-center gap-2 truncate pr-2">
+          <Icon name="PlayCircleIcon" size={16} className="text-indigo-400 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
+          <span className="truncate text-indigo-300 font-bold group-hover:text-white transition-colors">{q.videoTitle}</span>
+        </div>
+        <span className="font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-indigo-600/30 text-cyan-300 border border-indigo-500/30 group-hover:bg-cyan-500/20 group-hover:border-cyan-500/40 transition-colors flex items-center gap-1 flex-shrink-0">
+          <Icon name="PlayIcon" size={10} />
+          <span>@{q.timestamp}</span>
+        </span>
+      </button>
 
       {/* Question */}
       <p className="text-sm font-bold text-foreground mb-4 leading-relaxed">
@@ -167,13 +186,20 @@ export default function AIQuizWidget() {
         })}
       </div>
 
-      {/* Explanation */}
+      {/* Explanation & Seek Button */}
       {isAnswered && (
-        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 mb-4">
+        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3.5 mb-4 space-y-2">
           <p className="text-xs text-foreground/90 leading-relaxed">
             <span className="font-bold text-indigo-400">Explanation: </span>
             {q.explanation}
           </p>
+          <button
+            onClick={jumpToLectureTimestamp}
+            className="text-xs font-bold text-indigo-300 hover:text-cyan-300 transition-colors flex items-center gap-1"
+          >
+            <Icon name="PlayIcon" size={12} />
+            <span>Watch concept video @ {q.timestamp} →</span>
+          </button>
         </div>
       )}
 
