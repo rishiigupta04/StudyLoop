@@ -28,7 +28,7 @@ const stats = [
     label: 'Study Streak',
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10 border-emerald-500/20',
-    trend: '5 days 🔥',
+    trend: '5 day streak',
   },
   {
     id: 'stat-questions',

@@ -33,6 +33,14 @@ export default function DashboardHero() {
     toast?.success('Demo URL filled! Click "Start Studying" to continue.');
   };
 
+  const featureBadges = [
+    { icon: 'MicrophoneIcon', label: 'Push-to-Talk (~)', color: 'text-indigo-400' },
+    { icon: 'ShieldCheckIcon', label: 'Anti-Spoiler RAG', color: 'text-cyan-400' },
+    { icon: 'DocumentTextIcon', label: 'Auto Notes', color: 'text-emerald-400' },
+    { icon: 'GlobeAltIcon', label: 'Hinglish ASR', color: 'text-amber-400' },
+    { icon: 'ArrowUpOnSquareIcon', label: 'Notion Export', color: 'text-purple-400' },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -49,7 +57,9 @@ export default function DashboardHero() {
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-2xl">⚡</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <Icon name="BoltIcon" size={18} />
+              </div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
                 AI Command Station
               </h1>
@@ -106,20 +116,14 @@ export default function DashboardHero() {
             </div>
           </div>
 
-          {/* Capability Badges */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            {[
-              { icon: '🎙️', label: 'Push-to-Talk (~)' },
-              { icon: '🛡️', label: 'Anti-Spoiler RAG' },
-              { icon: '📝', label: 'Auto Notes' },
-              { icon: '🌐', label: 'Hinglish ASR' },
-              { icon: '📤', label: 'Notion Export' },
-            ].map((feat) => (
+          {/* Professional Modern Capability Badges */}
+          <div className="flex flex-wrap gap-2.5 mt-5">
+            {featureBadges.map((feat) => (
               <span
                 key={`feat-${feat.label}`}
-                className="text-xs text-muted-foreground px-3 py-1 rounded-full border border-border/60 bg-surface-elevated/40 flex items-center gap-1.5 backdrop-blur-md"
+                className="text-xs text-foreground/90 font-medium px-3.5 py-1.5 rounded-full border border-border/80 bg-surface-card/60 flex items-center gap-2 backdrop-blur-md hover:border-indigo-500/30 transition-colors"
               >
-                <span>{feat.icon}</span>
+                <Icon name={feat.icon as Parameters<typeof Icon>[0]['name']} size={14} className={feat.color} />
                 <span>{feat.label}</span>
               </span>
             ))}

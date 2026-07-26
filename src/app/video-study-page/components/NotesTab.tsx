@@ -92,11 +92,11 @@ export default function NotesTab() {
     toast.success('Note deleted');
   };
 
-  const filterOptions: { id: typeof filter; label: string }[] = [
+  const filterOptions: { id: typeof filter; label: string; icon?: string }[] = [
     { id: 'all', label: 'All' },
-    { id: 'auto', label: '🤖 Auto' },
-    { id: 'manual', label: '✍️ Manual' },
-    { id: 'bookmarked', label: '⭐ Starred' },
+    { id: 'auto', label: 'Auto', icon: 'SparklesIcon' },
+    { id: 'manual', label: 'Manual', icon: 'PencilSquareIcon' },
+    { id: 'bookmarked', label: 'Starred', icon: 'StarIcon' },
   ];
 
   return (
@@ -113,7 +113,7 @@ export default function NotesTab() {
         <button
           onClick={addNote}
           disabled={!newNoteText.trim()}
-          className="btn-orange w-full py-2 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
+          className="btn-primary w-full py-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40 shadow-glow-indigo-sm"
         >
           <Icon name="PlusIcon" size={14} />
           Add Note
@@ -126,13 +126,16 @@ export default function NotesTab() {
           <button
             key={`filter-${opt.id}`}
             onClick={() => setFilter(opt.id)}
-            className={`text-xs font-semibold px-2.5 py-1 rounded-md transition-all duration-150 ${
+            className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all duration-150 ${
               filter === opt.id
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
             }`}
           >
-            {opt.label}
+            {opt.icon && (
+              <Icon name={opt.icon as Parameters<typeof Icon>[0]['name']} size={12} className={filter === opt.id ? 'text-white' : 'text-indigo-400'} />
+            )}
+            <span>{opt.label}</span>
           </button>
         ))}
       </div>
@@ -149,39 +152,41 @@ export default function NotesTab() {
           filteredNotes.map((note) => (
             <div
               key={note.id}
-              className="bg-card rounded-xl border border-border p-3 group transition-all duration-150 hover:border-primary/30"
+              className="bg-surface-card rounded-xl border border-border/80 p-3 group transition-all duration-150 hover:border-indigo-500/30"
             >
               <div className="flex items-start gap-2">
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground flex-shrink-0 tabular-nums">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-surface-elevated text-cyan-400 flex-shrink-0 tabular-nums">
                   {note.timestamp}
                 </span>
                 {note.isAuto ? (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex-shrink-0">
-                    🤖 AI
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+                    <Icon name="SparklesIcon" size={10} className="text-indigo-400" />
+                    <span>AI Auto</span>
                   </span>
                 ) : (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-highlight/10 text-highlight border border-highlight/20 flex-shrink-0">
-                    ✍️ You
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 flex items-center gap-1">
+                    <Icon name="PencilSquareIcon" size={10} className="text-cyan-400" />
+                    <span>You</span>
                   </span>
                 )}
               </div>
-              <p className="text-sm text-foreground leading-relaxed mt-2 font-mono">{note.text}</p>
+              <p className="text-xs text-foreground leading-relaxed mt-2 font-mono">{note.text}</p>
               <div className="flex items-center justify-between mt-2">
-                <span className="text-xs text-muted-foreground">{note.chapter}</span>
+                <span className="text-[11px] text-muted-foreground">{note.chapter}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                   <button
                     onClick={() => toggleBookmark(note.id)}
-                    className={`p-1 rounded-md hover:bg-muted transition-all duration-150 ${
-                      note.isBookmarked ? 'text-highlight' : 'text-muted-foreground'
+                    className={`p-1 rounded-md hover:bg-surface-elevated transition-all duration-150 ${
+                      note.isBookmarked ? 'text-amber-400' : 'text-muted-foreground'
                     }`}
                     aria-label="Bookmark note"
                   >
-                    <Icon name="StarIcon" size={14} variant={note.isBookmarked ? 'solid' : 'outline'} />
+                    <Icon name="StarIcon" size={14} className={note.isBookmarked ? 'text-amber-400 fill-amber-400' : ''} />
                   </button>
                   {!note.isAuto && (
                     <button
                       onClick={() => deleteNote(note.id)}
-                      className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all duration-150"
+                      className="p-1 rounded-md hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all duration-150"
                       aria-label="Delete note"
                     >
                       <Icon name="TrashIcon" size={14} />
@@ -199,17 +204,17 @@ export default function NotesTab() {
         <p className="text-xs text-muted-foreground mb-2 font-medium">Export Notes:</p>
         <div className="flex gap-2">
           {[
-            { id: 'export-notion', label: 'Notion', icon: '📓' },
-            { id: 'export-pdf', label: 'PDF', icon: '📄' },
-            { id: 'export-docs', label: 'Docs', icon: '📝' },
+            { id: 'export-notion', label: 'Notion', icon: 'ArrowUpOnSquareIcon', color: 'text-purple-400' },
+            { id: 'export-pdf', label: 'PDF', icon: 'DocumentTextIcon', color: 'text-cyan-400' },
+            { id: 'export-docs', label: 'Docs', icon: 'DocumentDuplicateIcon', color: 'text-emerald-400' },
           ].map((btn) => (
             <button
               key={btn.id}
-              onClick={() => toast.success('Export initiated!')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/50 transition-all duration-150"
+              onClick={() => toast.success(`${btn.label} export initiated!`)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 hover:bg-surface-elevated transition-all duration-150"
             >
-              <span>{btn.icon}</span>
-              {btn.label}
+              <Icon name={btn.icon as Parameters<typeof Icon>[0]['name']} size={12} className={btn.color} />
+              <span>{btn.label}</span>
             </button>
           ))}
         </div>

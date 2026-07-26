@@ -69,7 +69,7 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
               </span>
             </div>
             <div className="flex items-center gap-1 text-xs font-bold text-amber-400">
-              <span>🔥</span>
+              <Icon name="FireIcon" size={14} className="text-amber-400" />
               <span>{streakDays}d</span>
             </div>
           </div>

@@ -519,12 +519,13 @@ export default function LibraryPage() {
                     {/* Status Badge Overlay */}
                     <div className="absolute top-3 left-3 z-10">
                       <span
-                        className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${video.status === 'completed'
+                        className={`text-[11px] font-extrabold px-3 py-1 rounded-full border flex items-center gap-1.5 ${video.status === 'completed'
                             ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-md backdrop-blur-md'
                             : 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50 shadow-md backdrop-blur-md'
                           }`}
                       >
-                        {video.status === 'completed' ? '✓ Completed' : '⏱ In Progress'}
+                        <Icon name={video.status === 'completed' ? 'CheckIcon' : 'ClockIcon'} size={12} />
+                        <span>{video.status === 'completed' ? 'Completed' : 'In Progress'}</span>
                       </span>
                     </div>
 

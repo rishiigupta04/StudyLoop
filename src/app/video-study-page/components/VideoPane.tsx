@@ -278,7 +278,8 @@ export default function VideoPane({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📑 Structured Summary</span>
+              <Icon name="DocumentTextIcon" size={14} />
+              <span>Structured Summary</span>
             </button>
             <button
               onClick={() => setActiveTab('chapters')}
@@ -288,7 +289,8 @@ export default function VideoPane({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span>📌 Chapters ({chapters.length})</span>
+              <Icon name="BookmarkIcon" size={14} />
+              <span>Chapters ({chapters.length})</span>
             </button>
           </div>
         </div>

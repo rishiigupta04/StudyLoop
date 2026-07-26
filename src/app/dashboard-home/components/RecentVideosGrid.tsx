@@ -73,15 +73,18 @@ const recentVideos: VideoCard[] = [
 
 const statusConfig = {
   completed: {
-    label: '✓ Completed',
+    label: 'Completed',
+    icon: 'CheckIcon',
     color: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-md backdrop-blur-md',
   },
   'in-progress': {
-    label: '⏱ In Progress',
+    label: 'In Progress',
+    icon: 'ClockIcon',
     color: 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50 shadow-md backdrop-blur-md',
   },
   'not-started': {
-    label: '▶ Not Started',
+    label: 'Not Started',
+    icon: 'PlayIcon',
     color: 'bg-slate-900/90 text-slate-300 border-slate-700/60 shadow-md backdrop-blur-md',
   },
 };
@@ -103,88 +106,92 @@ export default function RecentVideosGrid() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {recentVideos.map((video) => (
-          <Link key={video.id} to="/video-study-page" className="block">
-            <div className="glass-card rounded-2xl border border-border/80 overflow-hidden card-hover group cursor-pointer">
-              {/* Thumbnail */}
-              <div className="relative h-40 bg-black/40 overflow-hidden">
-                <img
-                  src={video.thumbnail}
-                  alt={video.thumbnailAlt}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-obsidian/90 via-transparent to-transparent" />
+        {recentVideos.map((video) => {
+          const status = statusConfig[video.status];
+          return (
+            <Link key={video.id} to="/video-study-page" className="block">
+              <div className="glass-card rounded-2xl border border-border/80 overflow-hidden card-hover group cursor-pointer">
+                {/* Thumbnail */}
+                <div className="relative h-40 bg-black/40 overflow-hidden">
+                  <img
+                    src={video.thumbnail}
+                    alt={video.thumbnailAlt}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-obsidian/90 via-transparent to-transparent" />
 
-                {/* High-Contrast Readable Status Badge Overlay */}
-                <div className="absolute top-3 right-3 z-10">
-                  <span
-                    className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${statusConfig[video.status].color}`}
-                  >
-                    {statusConfig[video.status].label}
-                  </span>
+                  {/* High-Contrast Professional Status Badge Overlay */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <span
+                      className={`text-[11px] font-extrabold px-3 py-1 rounded-full border flex items-center gap-1.5 ${status.color}`}
+                    >
+                      <Icon name={status.icon as Parameters<typeof Icon>[0]['name']} size={12} />
+                      <span>{status.label}</span>
+                    </span>
+                  </div>
+
+                  {/* Language badge */}
+                  <div className="absolute bottom-3 left-3 z-10">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
+                      {video.language}
+                    </span>
+                  </div>
+
+                  {/* Play overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-indigo-900/20 transition-all duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-12 h-12 rounded-full btn-primary flex items-center justify-center shadow-glow-indigo">
+                      <Icon name="PlayIcon" size={20} className="text-white ml-0.5" />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Language badge */}
-                <div className="absolute bottom-3 left-3 z-10">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
-                    {video.language}
-                  </span>
-                </div>
+                {/* Card Body */}
+                <div className="p-4">
+                  <h3 className="text-sm font-bold text-foreground leading-snug mb-1 line-clamp-2 group-hover:text-indigo-300 transition-colors">
+                    {video.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">{video.channel}</p>
 
-                {/* Play overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-indigo-900/20 transition-all duration-200 flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-12 h-12 rounded-full btn-primary flex items-center justify-center shadow-glow-indigo">
-                    <Icon name="PlayIcon" size={20} className="text-white ml-0.5" />
+                  {/* Progress */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs text-muted-foreground">Progress</span>
+                      <span className="text-xs font-bold text-foreground tabular-nums">
+                        {video.progress}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full progress-bar-fill ${
+                          video.progress === 100 ? 'bg-emerald-500' : 'bg-indigo-500'
+                        }`}
+                        style={{ width: `${video.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Meta row */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1">
+                        <Icon name="BookmarkIcon" size={12} className="text-indigo-400" />
+                        {video.chapters} ch
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Icon name="DocumentTextIcon" size={12} className="text-cyan-400" />
+                        {video.notes} notes
+                      </span>
+                    </div>
+                    <span className="flex items-center gap-1">
+                      <Icon name="ClockIcon" size={12} />
+                      {video.lastStudied}
+                    </span>
                   </div>
                 </div>
               </div>
-
-              {/* Card Body */}
-              <div className="p-4">
-                <h3 className="text-sm font-bold text-foreground leading-snug mb-1 line-clamp-2 group-hover:text-indigo-300 transition-colors">
-                  {video.title}
-                </h3>
-                <p className="text-xs text-muted-foreground mb-3">{video.channel}</p>
-
-                {/* Progress */}
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">Progress</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums">
-                      {video.progress}%
-                    </span>
-                  </div>
-                  <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full progress-bar-fill ${
-                        video.progress === 100 ? 'bg-emerald-500' : 'bg-indigo-500'
-                      }`}
-                      style={{ width: `${video.progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Meta row */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <Icon name="BookmarkIcon" size={12} className="text-indigo-400" />
-                      {video.chapters} ch
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Icon name="DocumentTextIcon" size={12} className="text-cyan-400" />
-                      {video.notes} notes
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1">
-                    <Icon name="ClockIcon" size={12} />
-                    {video.lastStudied}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
