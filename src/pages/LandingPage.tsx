@@ -131,13 +131,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-obsidian text-foreground selection:bg-indigo-600/30 relative overflow-hidden">
       <CursorOrb />
 
-      {/* Ambient Gradient Mesh */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-hero opacity-80 pointer-events-none" />
-      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] orb-indigo opacity-30 pointer-events-none" />
-      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] orb-cyan opacity-20 pointer-events-none" />
-
-      {/* ── Glass Navbar ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-navbar px-6 py-4">
+      {/* ── Clean Navbar ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0B0E17]/95 border-b border-border/80 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 cursor-pointer group" title="StudyLoop Home">
             <AppLogo size={36} />
@@ -162,7 +157,7 @@ export default function LandingPage() {
             </button>
             <button
               onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-              className="btn-primary px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-glow-indigo-sm flex items-center gap-2"
+              className="btn-primary px-5 py-2.5 rounded-xl text-sm font-bold text-white flex items-center gap-2"
             >
               <Icon name="SparklesIcon" size={16} />
               Get Started Free
@@ -194,16 +189,16 @@ export default function LandingPage() {
           Hold down the <kbd className="px-2 py-1 rounded bg-surface-elevated border border-border text-indigo-300 font-mono text-sm shadow-inner">~ Tilde</kbd> key to ask questions, jump timestamps, and generate notes while watching lectures—in Hindi or English.
         </motion.p>
 
-        {/* Try-It-Now URL Processing Bar */}
+        {/* Clean URL Processing Bar */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="max-w-2xl mx-auto mb-10"
         >
-          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2.5 rounded-2xl glass-card border border-indigo-500/25 shadow-glow-indigo">
-            <div className="relative flex-1 group rounded-xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
-              <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[11px] overflow-hidden">
+          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2.5 rounded-2xl bg-surface-card border border-border/80 shadow-xl">
+            <div className="relative flex-1 group rounded-xl border border-border/80 bg-[#151926] hover:border-indigo-500/40 transition-all duration-300">
+              <div className="relative flex items-center rounded-[11px] overflow-hidden">
                 <Icon name="LinkIcon" size={18} className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
                 <input
                   type="url"
@@ -225,7 +220,7 @@ export default function LandingPage() {
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="btn-primary px-6 py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 shadow-glow-indigo-sm"
+                className="btn-primary px-6 py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>
@@ -243,7 +238,7 @@ export default function LandingPage() {
           </form>
         </motion.div>
 
-        {/* ── Interactive Live Product Showcase Preview ── */}
+        {/* ── Clean Product Showcase Preview ── */}
         <motion.div
           id="demo"
           initial={{ opacity: 0, scale: 0.96 }}
@@ -251,7 +246,7 @@ export default function LandingPage() {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="max-w-5xl mx-auto mb-16 relative"
         >
-          <div className="relative rounded-3xl overflow-hidden glass-card border border-indigo-500/30 p-2 shadow-glow-indigo">
+          <div className="relative rounded-3xl overflow-hidden bg-surface-card border border-border/80 p-2 shadow-2xl">
             {/* Top Mock Window Header */}
             <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex items-center justify-between border-b border-border/60">
               <div className="flex items-center gap-2">
@@ -267,8 +262,8 @@ export default function LandingPage() {
                   onClick={triggerVoiceDemo}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                     isDemoActive
-                      ? 'bg-red-500 text-white animate-pulse shadow-glow-indigo-sm'
-                      : 'bg-indigo-600/80 hover:bg-indigo-600 text-white shadow-glow-indigo-sm'
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                   }`}
                 >
                   <Icon name="MicrophoneIcon" size={14} />
@@ -289,10 +284,10 @@ export default function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none" />
 
                 <div className="relative z-10 flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold backdrop-blur-md">
+                  <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
                     MIT 6.006 Algorithms @ 24:10
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
                     HD Transcript Indexed
                   </span>
                 </div>
@@ -303,7 +298,7 @@ export default function LandingPage() {
                     <motion.div
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-950/90 border border-indigo-500/50 backdrop-blur-xl shadow-glow-indigo"
+                      className="inline-flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-950 border border-indigo-500/40 shadow-xl"
                     >
                       <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
                         <Icon name="MicrophoneIcon" size={16} className="animate-pulse" />
@@ -322,7 +317,7 @@ export default function LandingPage() {
                   ) : (
                     <button
                       onClick={triggerVoiceDemo}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card/80 border border-indigo-500/30 hover:border-indigo-500/60 text-xs font-bold text-foreground backdrop-blur-md transition-all group"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-surface-card border border-border hover:border-indigo-500/40 text-xs font-bold text-foreground transition-all group"
                     >
                       <Icon name="PlayCircleIcon" size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
                       <span>Click to simulate Push-to-Talk voice query</span>
@@ -339,7 +334,7 @@ export default function LandingPage() {
               </div>
 
               {/* AI Copilot Side Chat Preview */}
-              <div className="rounded-xl bg-[#151926]/90 border border-border/60 p-3 flex flex-col justify-between text-xs">
+              <div className="rounded-xl bg-[#151926] border border-border/60 p-3 flex flex-col justify-between text-xs">
                 <div>
                   <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
                     <Icon name="SparklesIcon" size={16} className="text-indigo-400" />
@@ -353,7 +348,7 @@ export default function LandingPage() {
                       <p className="text-foreground text-xs">"What is the complexity of 1D Peak Finding?"</p>
                     </div>
 
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30">
+                    <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30">
                       <p className="text-[11px] font-bold text-cyan-300 mb-0.5">AI Answer (Anti-Spoiler RAG):</p>
                       <p className="text-foreground-muted text-xs leading-relaxed">
                         In 1D arrays, divide & conquer checks array midpoints in <strong className="text-foreground">O(log n)</strong> time complexity.
@@ -379,11 +374,11 @@ export default function LandingPage() {
           {METRICS.map((m) => (
             <div
               key={`metric-${m.label}`}
-              className="p-5 rounded-2xl glass-card border border-indigo-500/15 text-left relative overflow-hidden card-hover"
+              className="p-5 rounded-2xl bg-surface-card border border-border/80 text-left relative overflow-hidden card-hover"
             >
               <div className="flex items-center justify-between mb-2">
                 <Icon name={m.icon as Parameters<typeof Icon>[0]['name']} size={20} className={m.color} />
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               </div>
               <p className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight mb-1 font-mono">
                 {m.value}
@@ -393,7 +388,7 @@ export default function LandingPage() {
           ))}
         </div>
 
-        {/* Ambient AI Model Badges */}
+        {/* AI Model Badges */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -403,7 +398,7 @@ export default function LandingPage() {
           {MODEL_BADGES.map((b) => (
             <div
               key={`model-${b.name}`}
-              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 backdrop-blur-md ${b.color}`}
+              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 ${b.color}`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-current" />
               <span className="font-bold">{b.name}</span>
@@ -465,7 +460,7 @@ export default function LandingPage() {
           </div>
 
           {/* Solution Card */}
-          <div className="p-8 rounded-3xl glass-card border border-indigo-500/40 relative overflow-hidden shadow-glow-indigo-sm">
+          <div className="p-8 rounded-3xl bg-surface-card border border-indigo-500/30 relative overflow-hidden shadow-lg">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
                 <Icon name="CheckIcon" size={20} />
@@ -510,7 +505,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -6 }}
-              className={`p-8 rounded-3xl bg-gradient-to-br ${f.color} glass-card border relative overflow-hidden transition-all duration-300`}
+              className={`p-8 rounded-3xl bg-gradient-to-br ${f.color} bg-surface-card border border-border/80 relative overflow-hidden transition-all duration-300`}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className={`p-3.5 rounded-2xl bg-surface-card border border-border ${f.iconColor}`}>
@@ -568,7 +563,7 @@ export default function LandingPage() {
                 initial={false}
                 className={`rounded-2xl transition-all duration-300 overflow-hidden ${
                   isOpen
-                    ? 'glass-card border border-indigo-500/50 shadow-glow-indigo-sm bg-[#151926]/95'
+                    ? 'bg-surface-card border border-indigo-500/40'
                     : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
                 }`}
               >
@@ -579,7 +574,7 @@ export default function LandingPage() {
                   <span className="flex items-center gap-3">
                     <span
                       className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        isOpen ? 'bg-cyan-400 shadow-glow-cyan' : 'bg-indigo-500/40'
+                        isOpen ? 'bg-cyan-400' : 'bg-indigo-500/40'
                       }`}
                     />
                     {faq.q}
@@ -587,7 +582,7 @@ export default function LandingPage() {
                   <div
                     className={`p-2 rounded-xl transition-all duration-300 ${
                       isOpen
-                        ? 'bg-indigo-600 text-white shadow-glow-indigo-sm rotate-180'
+                        ? 'bg-indigo-600 text-white rotate-180'
                         : 'bg-surface-elevated text-muted-foreground'
                     }`}
                   >
@@ -617,8 +612,7 @@ export default function LandingPage() {
 
       {/* ── CTA Banner ── */}
       <section className="py-20 px-6 max-w-5xl mx-auto">
-        <div className="p-12 rounded-3xl glass-card border border-indigo-500/40 text-center relative overflow-hidden shadow-glow-indigo">
-          <div className="absolute top-0 right-0 w-80 h-80 orb-indigo opacity-50" />
+        <div className="p-12 rounded-3xl bg-surface-card border border-indigo-500/30 text-center relative overflow-hidden shadow-2xl">
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-6">
             Ready to Upgrade How You Learn from Videos?
           </h2>
@@ -627,7 +621,7 @@ export default function LandingPage() {
           </p>
           <button
             onClick={() => { setAuthMode('signup'); setShowAuthModal(true); }}
-            className="btn-primary px-8 py-4 rounded-2xl text-base font-bold text-white shadow-glow-indigo"
+            className="btn-primary px-8 py-4 rounded-2xl text-base font-bold text-white"
           >
             Start Free Trial Now
           </button>
@@ -653,12 +647,12 @@ export default function LandingPage() {
       {/* ── Embedded Auth Modal ── */}
       <AnimatePresence>
         {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md p-8 rounded-3xl glass-card border border-indigo-500/30 relative"
+              className="w-full max-w-md p-8 rounded-3xl bg-surface-card border border-border/80 shadow-2xl relative"
             >
               <button
                 onClick={() => setShowAuthModal(false)}
@@ -702,7 +696,7 @@ export default function LandingPage() {
                 </div>
                 <button
                   type="submit"
-                  className="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-sm shadow-glow-indigo-sm"
+                  className="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-sm"
                 >
                   {authMode === 'signup' ? 'Sign Up' : 'Sign In'}
                 </button>
