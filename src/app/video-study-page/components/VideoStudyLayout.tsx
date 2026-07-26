@@ -3,10 +3,14 @@ import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
 import VoiceModal from './VoiceModal';
 import Icon from '@/components/ui/AppIcon';
+import { useTildePTT } from '@/hooks/useTildePTT';
 
 export default function VideoStudyLayout() {
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [activeTimestamp, setActiveTimestamp] = useState('24:10');
+
+  const ptt = useTildePTT({
+    onSeekTimestamp: (ts) => setActiveTimestamp(ts),
+  });
 
   return (
     <div className="flex flex-col min-h-full flex-1 bg-obsidian">
@@ -44,7 +48,7 @@ export default function VideoStudyLayout() {
           <VideoPane
             activeTimestamp={activeTimestamp}
             onTimestampClick={(ts) => setActiveTimestamp(ts)}
-            onOpenVoiceModal={() => setShowVoiceModal(true)}
+            onOpenVoiceModal={() => ptt.startListening()}
           />
         </div>
 
@@ -59,7 +63,7 @@ export default function VideoStudyLayout() {
 
       {/* Fixed Viewport FAB for Mobile/Quick Voice Access */}
       <button
-        onClick={() => setShowVoiceModal(true)}
+        onClick={() => ptt.startListening()}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full btn-primary shadow-glow-indigo flex items-center justify-center ptt-pulse z-40 lg:hidden"
         aria-label="Push to Talk — voice question"
         title="Hold down ~ or tap to ask voice question"
@@ -67,9 +71,18 @@ export default function VideoStudyLayout() {
         <Icon name="MicrophoneIcon" size={24} className="text-white" />
       </button>
 
-      {/* Voice Modal */}
-      {showVoiceModal && (
-        <VoiceModal onClose={() => setShowVoiceModal(false)} />
+      {/* Voice Modal (Triggered via ~ Key or UI Button) */}
+      {ptt.isOpen && (
+        <VoiceModal
+          stage={ptt.stage}
+          recognizedText={ptt.recognizedText}
+          aiResponse={ptt.aiResponse}
+          activeStep={ptt.activeStep}
+          onStartListening={ptt.startListening}
+          onStopListening={ptt.stopListeningAndProcess}
+          onClose={ptt.closeModal}
+          onSeekTimestamp={(ts) => setActiveTimestamp(ts)}
+        />
       )}
     </div>
   );

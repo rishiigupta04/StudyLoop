@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from '@/components/ui/AppIcon';
-
-type VoiceState = 'idle' | 'listening' | 'processing' | 'responding';
+import { PTTStage } from '@/hooks/useTildePTT';
 
 const pipelineSteps = [
   { id: 'step-asr', label: 'Whisper ASR', desc: 'Speech to Text' },
@@ -19,58 +18,32 @@ const exampleCommands = [
 ];
 
 interface VoiceModalProps {
+  stage: PTTStage;
+  recognizedText: string;
+  aiResponse: string;
+  activeStep: number;
+  onStartListening: () => void;
+  onStopListening: () => void;
   onClose: () => void;
+  onSeekTimestamp?: (ts: string) => void;
 }
 
-export default function VoiceModal({ onClose }: VoiceModalProps) {
-  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
-  const [recognizedText, setRecognizedText] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [activeStep, setActiveStep] = useState(-1);
-
+export default function VoiceModal({
+  stage,
+  recognizedText,
+  aiResponse,
+  activeStep,
+  onStartListening,
+  onStopListening,
+  onClose,
+  onSeekTimestamp,
+}: VoiceModalProps) {
   const waveBarCount = 24;
-
-  const startListening = () => {
-    setVoiceState('listening');
-    setRecognizedText('');
-    setAiResponse('');
-    setActiveStep(-1);
-
-    // BACKEND INTEGRATION: WebSocket /ws/voice — stream audio chunks to Whisper ASR
-    setTimeout(() => {
-      setRecognizedText('What is the time complexity of peak finding?');
-      setVoiceState('processing');
-      runPipeline();
-    }, 2000);
-  };
-
-  const runPipeline = () => {
-    let step = 0;
-    const interval = setInterval(() => {
-      setActiveStep(step);
-      step++;
-      if (step >= pipelineSteps.length) {
-        clearInterval(interval);
-        setAiResponse(
-          'Peak finding using divide and conquer has O(log n) time complexity for 1D arrays. For 2D arrays, the optimal approach runs in O(n log n). You can see this explained at 24 minutes and 10 seconds in the video.'
-        );
-        setVoiceState('responding');
-      }
-    }, 400);
-  };
-
-  const handleClose = () => {
-    setVoiceState('idle');
-    setRecognizedText('');
-    setAiResponse('');
-    setActiveStep(-1);
-    onClose();
-  };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md"
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-md mx-4 modal-fade-in">
         <div className="glass-card rounded-3xl p-6 shadow-modal border border-indigo-500/30 relative">
@@ -79,29 +52,29 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
             <div className="flex items-center gap-3">
               <div
                 className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                  voiceState === 'listening'
+                  stage === 'listening'
                     ? 'bg-indigo-600 ptt-pulse'
-                    : voiceState === 'processing' || voiceState === 'responding'
+                    : stage === 'processing' || stage === 'responding'
                     ? 'gradient-indigo-cyan'
                     : 'bg-surface-elevated border border-border'
                 }`}
               >
                 <Icon
-                  name={voiceState === 'responding' ? 'SpeakerWaveIcon' : 'MicrophoneIcon'}
+                  name={stage === 'responding' ? 'SpeakerWaveIcon' : 'MicrophoneIcon'}
                   size={20}
                   className="text-white"
                 />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-foreground">
-                  {voiceState === 'idle' && 'Voice Copilot'}
-                  {voiceState === 'listening' && 'Listening…'}
-                  {voiceState === 'processing' && 'Processing…'}
-                  {voiceState === 'responding' && 'AI Speaking…'}
+                  {stage === 'idle' && 'Voice Copilot Active'}
+                  {stage === 'listening' && 'Listening… (Keep holding ~)'}
+                  {stage === 'processing' && 'Processing Intent…'}
+                  {stage === 'responding' && 'AI Responding…'}
                 </h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <span>Hold</span>
-                  <kbd className="px-1 py-0.2 rounded bg-surface-elevated border border-border text-indigo-300 font-mono text-[10px]">
+                  <kbd className="px-1 py-0.2 rounded bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 font-mono text-[10px]">
                     ~ Tilde
                   </kbd>
                   <span>key or button</span>
@@ -109,7 +82,7 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               </div>
             </div>
             <button
-              onClick={handleClose}
+              onClick={onClose}
               className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Close voice modal"
             >
@@ -123,9 +96,9 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               <div
                 key={`wave-${i}`}
                 className={`w-1 rounded-full waveform-bar ${
-                  voiceState === 'listening' || voiceState === 'responding'
+                  stage === 'listening' || stage === 'responding'
                     ? 'bg-indigo-400'
-                    : voiceState === 'processing'
+                    : stage === 'processing'
                     ? 'bg-cyan-400'
                     : 'bg-surface-elevated'
                 }`}
@@ -133,14 +106,14 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
                   height: `${20 + (i % 7) * 6}px`,
                   animationDuration: `${0.4 + (i % 5) * 0.12}s`,
                   animationDelay: `${i * 0.04}s`,
-                  opacity: voiceState === 'idle' ? 0.35 : 1,
+                  opacity: stage === 'idle' ? 0.35 : 1,
                 }}
               />
             ))}
           </div>
 
           {/* Recognized Speech */}
-          {(recognizedText || voiceState === 'listening') && (
+          {(recognizedText || stage === 'listening') && (
             <div className="bg-surface-card rounded-2xl p-3.5 mb-4 border border-border">
               <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1.5">
                 <Icon name="MicrophoneIcon" size={12} className="text-indigo-400" />
@@ -148,10 +121,11 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               </p>
               <p className="text-sm text-foreground font-medium">
                 {recognizedText || (
-                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-indigo-300">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>●</span>
                     <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>●</span>
+                    <span className="text-xs text-muted-foreground ml-1">Speak into microphone...</span>
                   </span>
                 )}
               </p>
@@ -159,10 +133,10 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
           )}
 
           {/* Pipeline Status */}
-          {voiceState === 'processing' && (
+          {stage === 'processing' && (
             <div className="mb-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
-                LangGraph Pipeline
+                LangGraph Multi-Agent DAG
               </p>
               {pipelineSteps.map((step, i) => (
                 <div key={step.id} className="flex items-center gap-2.5">
@@ -200,32 +174,41 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
                 <span className="text-xs font-bold text-indigo-400">AI Response</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{aiResponse}</p>
-              <button className="mt-2 text-xs font-bold text-indigo-400 hover:text-cyan-400 flex items-center gap-1 transition-colors">
+              <button
+                onClick={() => {
+                  if (onSeekTimestamp) onSeekTimestamp('24:10');
+                  onClose();
+                }}
+                className="mt-2 text-xs font-bold text-indigo-400 hover:text-cyan-400 flex items-center gap-1 transition-colors"
+              >
                 <Icon name="PlayIcon" size={12} />
                 Jump to 24:10 →
               </button>
             </div>
           )}
 
-          {/* PTT Button */}
+          {/* PTT Button for Mouse Users */}
           <button
-            onMouseDown={startListening}
-            disabled={voiceState === 'processing'}
+            onMouseDown={onStartListening}
+            onMouseUp={onStopListening}
+            onTouchStart={onStartListening}
+            onTouchEnd={onStopListening}
+            disabled={stage === 'processing'}
             className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
-              voiceState === 'listening'
+              stage === 'listening'
                 ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
                 : 'btn-primary text-white shadow-glow-indigo-sm'
             }`}
           >
             <Icon name="MicrophoneIcon" size={18} />
-            {voiceState === 'idle' && 'Hold to Speak (~)'}
-            {voiceState === 'listening' && 'Listening… Release to send'}
-            {voiceState === 'processing' && 'Processing question…'}
-            {voiceState === 'responding' && 'AI Speaking…'}
+            {stage === 'idle' && 'Hold Button or ~ Key to Speak'}
+            {stage === 'listening' && 'Listening… Release to send'}
+            {stage === 'processing' && 'Processing question…'}
+            {stage === 'responding' && 'AI Speaking…'}
           </button>
 
           {/* Example Commands */}
-          {voiceState === 'idle' && (
+          {stage === 'idle' && (
             <div className="mt-4">
               <p className="text-xs text-muted-foreground mb-2 font-medium">Try saying:</p>
               <div className="grid grid-cols-2 gap-2">
