@@ -5,22 +5,18 @@ import Icon from '@/components/ui/AppIcon';
 
 interface NavItem {
   label: string;
-  labelHi: string;
   href: string;
   icon: string;
   badge?: number;
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', labelHi: 'होम', href: '/dashboard-home', icon: 'HomeIcon', badge: undefined },
-  { label: 'Study', labelHi: 'अध्ययन', href: '/video-study-page', icon: 'PlayCircleIcon', badge: 1 },
-  { label: 'Library', labelHi: 'लाइब्रेरी', href: '/library', icon: 'BookOpenIcon', badge: 14 },
-  { label: 'Notes', labelHi: 'नोट्स', href: '/notes', icon: 'DocumentTextIcon', badge: 67 },
-  { label: 'Chat History', labelHi: 'चैट इतिहास', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon', badge: 5 },
+  { label: 'Dashboard', href: '/dashboard-home', icon: 'HomeIcon', badge: undefined },
+  { label: 'Study', href: '/video-study-page', icon: 'PlayCircleIcon', badge: 1 },
+  { label: 'Library', href: '/library', icon: 'BookOpenIcon', badge: 14 },
+  { label: 'Notes', href: '/notes', icon: 'DocumentTextIcon', badge: 67 },
+  { label: 'Chat History', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon', badge: 5 },
 ];
-
-const langOptions = ['EN', 'HI', 'Hinglish'] as const;
-type Lang = typeof langOptions[number];
 
 interface SidebarProps {
   activeRoute: string;
@@ -28,7 +24,6 @@ interface SidebarProps {
 
 export default function Sidebar({ activeRoute }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [activeLang, setActiveLang] = useState<Lang>('Hinglish');
 
   return (
     <aside
@@ -79,7 +74,6 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
                 <>
                   <div className="flex-1 overflow-hidden">
                     <span className="text-sm font-medium truncate block">{item.label}</span>
-                    <span className="text-xs text-muted-foreground truncate block leading-tight">{item.labelHi}</span>
                   </div>
                   {item.badge !== undefined && (
                     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full tabular-nums flex-shrink-0 ${
@@ -101,28 +95,6 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Language Toggle */}
-      {!collapsed && (
-        <div className="px-3 py-3 border-t border-border">
-          <p className="text-xs text-muted-foreground mb-2 font-medium tracking-wide uppercase">Language / भाषा</p>
-          <div className="flex gap-1 bg-muted rounded-lg p-1">
-            {langOptions.map((lang) => (
-              <button
-                key={`lang-${lang}`}
-                onClick={() => setActiveLang(lang)}
-                className={`flex-1 text-xs font-semibold py-1 rounded-md transition-all duration-150 ${
-                  activeLang === lang
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {lang}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* User Profile */}
       <div className={`border-t border-border p-3 ${collapsed ? 'flex justify-center' : ''}`}>

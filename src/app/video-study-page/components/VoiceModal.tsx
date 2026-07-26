@@ -1,20 +1,19 @@
-'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 
 type VoiceState = 'idle' | 'listening' | 'processing' | 'responding';
 
 const pipelineSteps = [
-  { id: 'step-asr', label: 'Whisper ASR', labelHi: 'Speech → Text' },
-  { id: 'step-intent', label: 'DistilBERT Intent', labelHi: 'QUESTION' },
-  { id: 'step-rag', label: 'BGE-M3 RAG', labelHi: 'Retrieving chunks…' },
-  { id: 'step-llm', label: 'Qwen2.5 LLM', labelHi: 'Generating answer…' },
-  { id: 'step-tts', label: 'MeloTTS', labelHi: 'Text → Speech' },
+  { id: 'step-asr', label: 'Whisper ASR', desc: 'Speech to Text' },
+  { id: 'step-intent', label: 'DistilBERT Intent', desc: 'Intent Classifier' },
+  { id: 'step-rag', label: 'BGE-M3 RAG', desc: 'Retrieving context' },
+  { id: 'step-llm', label: 'Qwen2.5 LLM', desc: 'Generating answer' },
+  { id: 'step-tts', label: 'MeloTTS', desc: 'Text to Speech' },
 ];
 
 const exampleCommands = [
   { id: 'cmd-pause', text: '"pause"', desc: 'Pause video' },
-  { id: 'cmd-back', text: '"thoda peeche jao"', desc: 'Go back 10s' },
+  { id: 'cmd-back', text: '"go back 10 seconds"', desc: 'Rewind 10s' },
   { id: 'cmd-skip', text: '"skip to complexity"', desc: 'Jump to chapter' },
   { id: 'cmd-note', text: '"note this down"', desc: 'Capture note' },
 ];
@@ -27,7 +26,6 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [recognizedText, setRecognizedText] = useState('');
   const [aiResponse, setAiResponse] = useState('');
-  const [activeLang, setActiveLang] = useState<'EN' | 'HI' | 'Hinglish'>('Hinglish');
   const [activeStep, setActiveStep] = useState(-1);
 
   const waveBarCount = 24;
@@ -40,7 +38,7 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
 
     // BACKEND INTEGRATION: WebSocket /ws/voice — stream audio chunks to Whisper ASR
     setTimeout(() => {
-      setRecognizedText('Peak finding ki time complexity kya hai?');
+      setRecognizedText('What is the time complexity of peak finding?');
       setVoiceState('processing');
       runPipeline();
     }, 2000);
@@ -69,12 +67,6 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
     onClose();
   };
 
-  const langConfig = {
-    EN: { class: 'lang-badge-en', label: 'English Mode' },
-    HI: { class: 'lang-badge-hi', label: 'हिंदी मोड' },
-    Hinglish: { class: 'lang-badge-hinglish', label: 'Hinglish Mode' },
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
@@ -98,8 +90,8 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               <div>
                 <h3 className="text-sm font-bold text-foreground">
                   {voiceState === 'idle' && 'Voice Assistant'}
-                  {voiceState === 'listening' && 'Listening… / सुन रहा हूँ…'}
-                  {voiceState === 'processing' && 'Processing… / प्रोसेस हो रहा है…'}
+                  {voiceState === 'listening' && 'Listening…'}
+                  {voiceState === 'processing' && 'Processing…'}
                   {voiceState === 'responding' && 'AI Speaking…'}
                 </h3>
                 <p className="text-xs text-muted-foreground">Push-to-Talk · Whisper ASR</p>
@@ -112,23 +104,6 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
             >
               <Icon name="XMarkIcon" size={18} />
             </button>
-          </div>
-
-          {/* Language Toggle */}
-          <div className="flex gap-1 bg-muted rounded-lg p-1 mb-5">
-            {(['EN', 'HI', 'Hinglish'] as const).map((lang) => (
-              <button
-                key={`vlang-${lang}`}
-                onClick={() => setActiveLang(lang)}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all duration-150 ${
-                  activeLang === lang
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {lang}
-              </button>
-            ))}
           </div>
 
           {/* Waveform Animation */}
@@ -191,7 +166,7 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
                     }`}>
                       {step.label}
                     </span>
-                    <span className="text-xs text-muted-foreground">{step.labelHi}</span>
+                    <span className="text-xs text-muted-foreground">{step.desc}</span>
                   </div>
                 </div>
               ))}
@@ -204,9 +179,6 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
               <div className="flex items-center gap-1.5 mb-2">
                 <Icon name="SparklesIcon" size={12} className="text-primary" />
                 <span className="text-xs font-semibold text-primary">AI Response</span>
-                <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${langConfig[activeLang].class}`}>
-                  {activeLang}
-                </span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{aiResponse}</p>
               <button className="mt-2 text-xs font-semibold text-primary hover:text-accent flex items-center gap-1 transition-colors duration-150">
@@ -225,7 +197,7 @@ export default function VoiceModal({ onClose }: VoiceModalProps) {
             }`}
           >
             <Icon name="MicrophoneIcon" size={18} />
-            {voiceState === 'idle' && 'Hold to Talk / बोलने के लिए दबाएं'}
+            {voiceState === 'idle' && 'Hold to Talk'}
             {voiceState === 'listening' && 'Listening… Release to send'}
             {voiceState === 'processing' && 'Processing your question…'}
             {voiceState === 'responding' && 'AI is speaking…'}

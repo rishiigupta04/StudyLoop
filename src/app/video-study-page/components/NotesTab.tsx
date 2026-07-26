@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/AppIcon';
@@ -79,7 +78,7 @@ export default function NotesTab() {
     };
     setNotes((prev) => [note, ...prev]);
     setNewNoteText('');
-    toast.success('Note added! / नोट जोड़ा गया!');
+    toast.success('Note added!');
   };
 
   const toggleBookmark = (id: string) => {
@@ -107,7 +106,7 @@ export default function NotesTab() {
         <textarea
           value={newNoteText}
           onChange={(e) => setNewNoteText(e.target.value)}
-          placeholder="Add a note… / नोट लिखें… (current: 24:10)"
+          placeholder="Add a note… (current: 24:10)"
           rows={2}
           className="input-field w-full rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none mb-2"
         />
@@ -117,7 +116,7 @@ export default function NotesTab() {
           className="btn-orange w-full py-2 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
         >
           <Icon name="PlusIcon" size={14} />
-          Add Note / नोट जोड़ें
+          Add Note
         </button>
       </div>
 
@@ -197,7 +196,7 @@ export default function NotesTab() {
 
       {/* Export Bar */}
       <div className="p-3 border-t border-border flex-shrink-0">
-        <p className="text-xs text-muted-foreground mb-2 font-medium">Export Notes / एक्सपोर्ट:</p>
+        <p className="text-xs text-muted-foreground mb-2 font-medium">Export Notes:</p>
         <div className="flex gap-2">
           {[
             { id: 'export-notion', label: 'Notion', icon: '📓' },
@@ -206,7 +205,7 @@ export default function NotesTab() {
           ].map((btn) => (
             <button
               key={btn.id}
-              onClick={() => toast.success('Export initiated! / एक्सपोर्ट शुरू हो गया!')}
+              onClick={() => toast.success('Export initiated!')}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/50 transition-all duration-150"
             >
               <span>{btn.icon}</span>

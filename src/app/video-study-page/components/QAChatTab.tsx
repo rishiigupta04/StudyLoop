@@ -1,4 +1,3 @@
-'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/AppIcon';
@@ -8,7 +7,7 @@ interface Message {
   role: 'user' | 'ai';
   text: string;
   timestamp: string;
-  lang: 'EN' | 'HI' | 'Hinglish';
+  lang: 'EN';
   videoTimestamp?: string;
   isBookmarked: boolean;
 }
@@ -34,17 +33,17 @@ const initialMessages: Message[] = [
   {
     id: 'msg-003',
     role: 'user',
-    text: 'Peak finding kaise karte hain?',
+    text: 'How does 1D peak finding work?',
     timestamp: '2:35 PM',
-    lang: 'Hinglish',
+    lang: 'EN',
     isBookmarked: false,
   },
   {
     id: 'msg-004',
     role: 'ai',
-    text: 'Peak finding mein hum ek aisa element dhundte hain jo apne neighbors se bada ya equal ho. Divide and conquer approach use karke hum O(log n) time mein solve kar sakte hain.',
+    text: 'In 1D peak finding, we examine the middle element. If it is smaller than its left neighbor, we recurse on the left half; if smaller than its right neighbor, we recurse on the right half. Otherwise, it is a peak.',
     timestamp: '2:35 PM',
-    lang: 'HI',
+    lang: 'EN',
     videoTimestamp: '24:10',
     isBookmarked: true,
   },
@@ -66,12 +65,6 @@ const initialMessages: Message[] = [
     isBookmarked: false,
   },
 ];
-
-const langBadgeClass = {
-  EN: 'lang-badge-en',
-  HI: 'lang-badge-hi',
-  Hinglish: 'lang-badge-hinglish',
-};
 
 // BACKEND INTEGRATION: POST /api/qa/ask { videoId, question, lang, timestamp } → { answer, sourceTimestamp, lang }
 const mockAIResponses: Record<string, string> = {
@@ -178,9 +171,6 @@ export default function QAChatTab({ onTimestampClick }: QAChatTabProps) {
               {/* Meta row */}
               <div className={`flex items-center gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 <span className="text-xs text-muted-foreground tabular-nums">{msg.timestamp}</span>
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${langBadgeClass[msg.lang]}`}>
-                  {msg.lang}
-                </span>
                 {msg.role === 'ai' && msg.videoTimestamp && (
                   <button
                     onClick={() => onTimestampClick(msg.videoTimestamp!)}
@@ -239,14 +229,14 @@ export default function QAChatTab({ onTimestampClick }: QAChatTabProps) {
                   sendMessage();
                 }
               }}
-              placeholder="Ask anything about this video… / वीडियो के बारे में कुछ भी पूछें…"
+              placeholder="Ask anything about this video…"
               rows={1}
               className="input-field w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none"
               style={{ minHeight: '44px', maxHeight: '120px' }}
             />
           </div>
           <button
-            onClick={() => toast.info('Voice input — click the orange mic button on the video pane')}
+            onClick={() => toast.info('Voice input — click the mic button on the video pane')}
             className="p-2.5 rounded-xl bg-highlight/10 text-highlight hover:bg-highlight/20 transition-all duration-150 flex-shrink-0"
             aria-label="Voice input"
           >

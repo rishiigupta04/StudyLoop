@@ -10,7 +10,7 @@ interface VideoCard {
   chapters: number;
   notes: number;
   lastStudied: string;
-  language: 'EN' | 'HI' | 'Hinglish';
+  language: 'EN';
   status: 'completed' | 'in-progress' | 'not-started';
   thumbnail: string;
   thumbnailAlt: string;
@@ -77,24 +77,16 @@ const statusConfig = {
   'not-started': { label: 'Not Started', color: 'bg-muted text-muted-foreground border-border' }
 };
 
-const langConfig = {
-  EN: 'lang-badge-en',
-  HI: 'lang-badge-hi',
-  Hinglish: 'lang-badge-hinglish'
-};
-
 export default function RecentVideosGrid() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold text-foreground">Recent Videos</h2>
-          <p className="text-xs text-muted-foreground">हाल के वीडियो</p>
         </div>
         <Link
           to="/library"
           className="text-xs font-semibold text-primary hover:text-accent transition-colors duration-150 flex items-center gap-1">
-          
           View Library
           <Icon name="ArrowRightIcon" size={12} />
         </Link>
@@ -126,7 +118,7 @@ export default function RecentVideosGrid() {
                 </div>
                 {/* Language badge */}
                 <div className="absolute bottom-2 left-2">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${langConfig[video.language]}`}>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full lang-badge-en">
                     {video.language}
                   </span>
                 </div>

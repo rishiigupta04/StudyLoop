@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
@@ -24,7 +23,7 @@ export default function VideoStudyLayout() {
           <span className="text-xs text-muted-foreground hidden md:block">· MIT OpenCourseWare</span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="lang-badge-en text-xs font-semibold px-2.5 py-1 rounded-full">EN Transcript Active</span>
+          <span className="lang-badge-en text-xs font-semibold px-2.5 py-1 rounded-full">Transcript Active</span>
           <button className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-150">
             <Icon name="ShareIcon" size={16} />
           </button>

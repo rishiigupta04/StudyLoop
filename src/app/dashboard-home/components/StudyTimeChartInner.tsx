@@ -1,4 +1,3 @@
-'use client';
 import React from 'react';
 import {
   BarChart,
@@ -50,7 +49,7 @@ export default function StudyTimeChartInner() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-bold text-foreground">Study Time</h3>
-          <p className="text-xs text-muted-foreground">This week / इस सप्ताह</p>
+          <p className="text-xs text-muted-foreground">This week</p>
         </div>
         <div className="text-right">
           <p className="text-lg font-extrabold text-foreground tabular-nums">8h 25m</p>

@@ -1,4 +1,3 @@
-'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 
@@ -6,7 +5,7 @@ interface TranscriptChunk {
   id: string;
   timestamp: string;
   text: string;
-  lang: 'EN' | 'HI';
+  lang: 'EN';
 }
 
 const transcriptChunks: TranscriptChunk[] = [
@@ -87,7 +86,7 @@ export default function TranscriptTab({ activeTimestamp, onTimestampClick }: Tra
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search transcript… / ट्रांसक्रिप्ट खोजें…"
+            placeholder="Search transcript…"
             className="input-field w-full rounded-lg pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground"
           />
           {searchQuery && (

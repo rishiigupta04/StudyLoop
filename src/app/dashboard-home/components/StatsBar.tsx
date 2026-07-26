@@ -7,7 +7,6 @@ const stats = [
     icon: 'PlayCircleIcon',
     value: '14',
     label: 'Videos Studied',
-    labelHi: 'वीडियो पढ़े',
     color: 'text-accent',
     bgColor: 'bg-accent/10',
     trend: '+2 this week',
@@ -18,7 +17,6 @@ const stats = [
     icon: 'DocumentTextIcon',
     value: '67',
     label: 'Notes Captured',
-    labelHi: 'नोट्स',
     color: 'text-primary',
     bgColor: 'bg-primary/10',
     trend: '+8 today',
@@ -29,7 +27,6 @@ const stats = [
     icon: 'FireIcon',
     value: '5',
     label: 'Study Streak',
-    labelHi: 'स्ट्रीक',
     color: 'text-highlight',
     bgColor: 'bg-highlight/10',
     trend: '5 days 🔥',
@@ -40,7 +37,6 @@ const stats = [
     icon: 'ChatBubbleLeftEllipsisIcon',
     value: '143',
     label: 'Questions Asked',
-    labelHi: 'सवाल पूछे',
     color: 'text-success',
     bgColor: 'bg-success/10',
     trend: '+12 today',
@@ -70,7 +66,6 @@ export default function StatsBar() {
           </div>
           <p className="text-2xl font-extrabold text-foreground tabular-nums mb-0.5">{stat.value}</p>
           <p className="text-xs font-semibold text-muted-foreground">{stat.label}</p>
-          <p className="text-xs text-muted-foreground opacity-60">{stat.labelHi}</p>
         </div>
       ))}
     </div>

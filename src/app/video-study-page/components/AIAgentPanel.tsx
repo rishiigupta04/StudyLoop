@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import TranscriptTab from './TranscriptTab';
 import QAChatTab from './QAChatTab';
@@ -12,10 +11,10 @@ interface AIAgentPanelProps {
   onTimestampClick: (ts: string) => void;
 }
 
-const tabs: { id: Tab; label: string; labelHi: string; icon: string; badge?: number }[] = [
-  { id: 'transcript', label: 'Transcript', labelHi: 'ट्रांसक्रिप्ट', icon: 'DocumentMagnifyingGlassIcon' },
-  { id: 'qa', label: 'Q&A Chat', labelHi: 'सवाल-जवाब', icon: 'ChatBubbleLeftRightIcon', badge: 3 },
-  { id: 'notes', label: 'Notes', labelHi: 'नोट्स', icon: 'PencilSquareIcon', badge: 5 },
+const tabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
+  { id: 'transcript', label: 'Transcript', icon: 'DocumentMagnifyingGlassIcon' },
+  { id: 'qa', label: 'Q&A Chat', icon: 'ChatBubbleLeftRightIcon', badge: 3 },
+  { id: 'notes', label: 'Notes', icon: 'PencilSquareIcon', badge: 5 },
 ];
 
 export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAgentPanelProps) {
@@ -29,28 +28,25 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
           <button
             key={`tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center gap-0.5 px-3 py-3 text-xs font-semibold transition-all duration-150 relative ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-semibold transition-all duration-150 relative ${
               activeTab === tab.id
-                ? 'tab-active' :'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                ? 'tab-active' : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
             }`}
           >
-            <div className="flex items-center gap-1.5">
-              <Icon
-                name={tab.icon as Parameters<typeof Icon>[0]['name']}
-                size={14}
-              />
-              <span>{tab.label}</span>
-              {tab.badge !== undefined && (
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
-                  {tab.badge}
-                </span>
-              )}
-            </div>
-            <span className="text-xs opacity-60">{tab.labelHi}</span>
+            <Icon
+              name={tab.icon as Parameters<typeof Icon>[0]['name']}
+              size={14}
+            />
+            <span>{tab.label}</span>
+            {tab.badge !== undefined && (
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full tabular-nums ${
+                activeTab === tab.id
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground'
+              }`}>
+                {tab.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>

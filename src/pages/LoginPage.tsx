@@ -10,13 +10,9 @@ type LoginForm = {
   password: string;
 };
 
-const langOptions = ['EN', 'HI', 'Hinglish'] as const;
-type Lang = typeof langOptions[number];
-
 const demoCredentials = { email: 'student@studyloop.ai', password: 'demo123' };
 
 export default function LoginPage() {
-  const [activeLang, setActiveLang] = useState<Lang>('EN');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -37,7 +33,7 @@ export default function LoginPage() {
         data.email === demoCredentials.email &&
         data.password === demoCredentials.password
       ) {
-        toast.success('Welcome back, Arjun! / वापस स्वागत है!', {
+        toast.success('Welcome back, Arjun!', {
           icon: '🎉',
         });
         navigate('/dashboard-home');
@@ -75,23 +71,6 @@ export default function LoginPage() {
         }}
       />
 
-      {/* Language Toggle — Top Right */}
-      <div className="absolute top-6 right-6 flex gap-1 bg-secondary rounded-lg p-1 border border-border">
-        {langOptions.map((lang) => (
-          <button
-            key={`login-lang-${lang}`}
-            onClick={() => setActiveLang(lang)}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all duration-150 ${
-              activeLang === lang
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {lang}
-          </button>
-        ))}
-      </div>
-
       {/* Login Card */}
       <div className="w-full max-w-md relative z-10 fade-in">
         <div className="glass-card rounded-2xl p-8 shadow-modal">
@@ -102,19 +81,8 @@ export default function LoginPage() {
               <span className="font-extrabold text-2xl text-foreground tracking-tight">StudyLoop</span>
             </div>
             <p className="text-center text-sm text-muted-foreground leading-relaxed">
-              Bilingual, Voice-Native Study Copilot
-              <br />
-              <span className="text-xs opacity-75">द्विभाषी, वॉयस-नेटिव स्टडी कोपायलट</span>
+              Voice-Native AI Study Copilot
             </p>
-            {/* Language Badge */}
-            <div className="mt-3 flex items-center gap-2">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                activeLang === 'EN' ? 'lang-badge-en' :
-                activeLang === 'HI' ? 'lang-badge-hi' : 'lang-badge-hinglish'
-              }`}>
-                {activeLang === 'EN' ? 'English Mode' : activeLang === 'HI' ? 'हिंदी मोड' : 'Hinglish Mode'}
-              </span>
-            </div>
           </div>
 
           {/* Form */}
@@ -122,7 +90,7 @@ export default function LoginPage() {
             {/* Email */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
-                Email / ईमेल
+                Email
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -135,7 +103,7 @@ export default function LoginPage() {
                     errors.email ? 'border-destructive' : ''
                   }`}
                   {...register('email', {
-                    required: 'Email is required / ईमेल आवश्यक है',
+                    required: 'Email is required',
                     pattern: {
                       value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                       message: 'Invalid email format',
@@ -154,7 +122,7 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1.5">
-                Password / पासवर्ड
+                Password
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -167,7 +135,7 @@ export default function LoginPage() {
                     errors.password ? 'border-destructive' : ''
                   }`}
                   {...register('password', {
-                    required: 'Password is required / पासवर्ड आवश्यक है',
+                    required: 'Password is required',
                     minLength: {
                       value: 6,
                       message: 'Minimum 6 characters required',
@@ -220,7 +188,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <Icon name="ArrowRightCircleIcon" size={16} />
-                  <span>Sign In / साइन इन करें</span>
+                  <span>Sign In</span>
                 </>
               )}
             </button>
@@ -282,7 +250,7 @@ export default function LoginPage() {
           <p className="text-center text-xs text-muted-foreground mt-5">
             Don't have an account?{' '}
             <Link to="#" className="text-primary hover:text-accent font-semibold transition-colors duration-150">
-              Sign up free / मुफ्त में साइन अप करें
+              Sign up free
             </Link>
           </p>
         </div>

@@ -16,7 +16,7 @@ export default function LibraryShortcuts() {
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-sm font-bold text-foreground">Topics</h3>
-          <p className="text-xs text-muted-foreground">Quick access / त्वरित पहुंच</p>
+          <p className="text-xs text-muted-foreground">Quick access</p>
         </div>
         <Link
           to="/library"

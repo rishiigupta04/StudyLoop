@@ -12,7 +12,7 @@ export default function DashboardHero() {
 
   const handleStartStudying = () => {
     if (!url?.trim()) {
-      toast?.error('Please paste a YouTube URL first / पहले YouTube लिंक पेस्ट करें');
+      toast?.error('Please paste a YouTube URL first');
       return;
     }
     if (!url?.includes('youtube.com') && !url?.includes('youtu.be')) {
@@ -48,7 +48,7 @@ export default function DashboardHero() {
               </h1>
             </div>
             <p className="text-base text-muted-foreground">
-              वापस स्वागत है, अर्जुन! &nbsp;·&nbsp; What will you study today? / आज क्या पढ़ेंगे?
+              What will you study today?
             </p>
           </div>
 
@@ -63,7 +63,7 @@ export default function DashboardHero() {
                 value={url}
                 onChange={(e) => setUrl(e?.target?.value)}
                 onKeyDown={(e) => e?.key === 'Enter' && handleStartStudying()}
-                placeholder="Paste YouTube URL to start studying… / यूट्यूब लिंक पेस्ट करें…"
+                placeholder="Paste YouTube URL to start studying…"
                 className="input-field w-full rounded-xl pl-11 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground"
               />
             </div>
@@ -87,7 +87,7 @@ export default function DashboardHero() {
                 ) : (
                   <>
                     <Icon name="PlayIcon" size={16} />
-                    Start Studying / शुरू करें
+                    Start Studying
                   </>
                 )}
               </button>
@@ -100,7 +100,7 @@ export default function DashboardHero() {
               { icon: '🎤', label: 'Voice Q&A' },
               { icon: '📝', label: 'Auto Notes' },
               { icon: '⏱️', label: 'Timestamps' },
-              { icon: '🌐', label: 'EN / HI / Hinglish' },
+              { icon: '🌐', label: 'AI Voice Control' },
               { icon: '📤', label: 'Export to Notion' },
             ]?.map((feat) => (
               <span
