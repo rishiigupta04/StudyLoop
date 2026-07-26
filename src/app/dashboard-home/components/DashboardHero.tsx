@@ -55,30 +55,33 @@ export default function DashboardHero() {
               </h1>
             </div>
             <p className="text-sm md:text-base text-foreground-muted">
-              Paste any YouTube lecture to initiate voice copilot & anti-spoiler vector search.
+              Paste any YouTube lecture link to initiate voice copilot & anti-spoiler vector search.
             </p>
           </div>
 
-          {/* URL Input */}
+          {/* Futuristic Cyberpunk URL Input Bar */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                <Icon name="LinkIcon" size={18} />
+            <div className="flex-1 relative group rounded-2xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
+              <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[15px] overflow-hidden">
+                <div className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none">
+                  <Icon name="LinkIcon" size={18} />
+                </div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e?.target?.value)}
+                  onKeyDown={(e) => e?.key === 'Enter' && handleStartStudying()}
+                  placeholder="Paste YouTube video URL to start studying…"
+                  className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
+                />
               </div>
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e?.target?.value)}
-                onKeyDown={(e) => e?.key === 'Enter' && handleStartStudying()}
-                placeholder="Paste YouTube video URL to start studying…"
-                className="input-field w-full rounded-2xl pl-11 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60"
-              />
             </div>
+
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={fillDemo}
-                className="px-4 py-3.5 rounded-2xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
+                className="px-4 py-3.5 rounded-2xl bg-surface-card border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
               >
                 Fill Demo
               </button>

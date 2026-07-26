@@ -197,29 +197,31 @@ export default function LandingPage() {
           transition={{ delay: 0.3 }}
           className="max-w-2xl mx-auto mb-8"
         >
-          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl glass-card border border-indigo-500/25 shadow-landing-hero">
-            <div className="relative flex-1 flex items-center">
-              <Icon name="LinkIcon" size={20} className="absolute left-4 text-muted-foreground" />
-              <input
-                type="url"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="Paste YouTube video URL (e.g. MIT 6.006 Lecture)..."
-                className="w-full bg-surface-card/80 border border-border/60 rounded-xl pl-12 pr-4 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-indigo-500 transition-colors"
-              />
+          <form onSubmit={handleProcessUrl} className="relative flex flex-col sm:flex-row gap-3 p-2 rounded-2xl glass-card border border-indigo-500/25 shadow-glow-indigo">
+            <div className="relative flex-1 group rounded-xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
+              <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[11px] overflow-hidden">
+                <Icon name="LinkIcon" size={18} className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  placeholder="Paste YouTube video URL (e.g. MIT 6.006 Lecture)..."
+                  className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setUrlInput(DEMO_YOUTUBE_URL)}
-                className="px-3.5 py-3.5 rounded-xl border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
+                className="px-3.5 py-3.5 rounded-xl bg-surface-card border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
               >
                 Fill Demo
               </button>
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="btn-primary px-6 py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50"
+                className="btn-primary px-6 py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 shadow-glow-indigo-sm"
               >
                 {isProcessing ? (
                   <>

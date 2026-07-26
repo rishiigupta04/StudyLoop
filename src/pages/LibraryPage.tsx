@@ -203,7 +203,7 @@ export default function LibraryPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
+
   // Modals & Drawers
   const [showAddModal, setShowAddModal] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<LibraryVideo | null>(null);
@@ -226,8 +226,8 @@ export default function LibraryPage() {
         selectedCategory === 'All'
           ? true
           : selectedCategory === 'Starred'
-          ? v.isBookmarked
-          : v.category === selectedCategory;
+            ? v.isBookmarked
+            : v.category === selectedCategory;
 
       const matchesStatus =
         statusFilter === 'all' ? true : v.status === statusFilter;
@@ -402,20 +402,22 @@ export default function LibraryPage() {
         {/* Search, Filter & Sort Matrix */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-6">
           {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <Icon name="MagnifyingGlassIcon" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, topic or key takeaways..."
-              className="input-field w-full rounded-2xl pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <Icon name="XMarkIcon" size={16} />
-              </button>
-            )}
+          <div className="relative flex-1 max-w-md group rounded-2xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
+            <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[15px] overflow-hidden">
+              <Icon name="MagnifyingGlassIcon" size={18} className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by title, topic or key takeaways..."
+                className="w-full bg-transparent border-0 pl-11 pr-10 py-3 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-4 text-muted-foreground hover:text-foreground">
+                  <Icon name="XMarkIcon" size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Controls: Status Filter, Sort, View Switcher */}
@@ -447,18 +449,16 @@ export default function LibraryPage() {
             <div className="flex items-center gap-1 bg-surface-card border border-border/80 rounded-2xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                  viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <Icon name="Squares2X2Icon" size={16} />
                 Grid
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                  viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`p-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <Icon name="ListBulletIcon" size={16} />
                 List
@@ -468,16 +468,15 @@ export default function LibraryPage() {
         </div>
 
         {/* Category Filter Chips */}
-        <div className="flex items-center gap-2 mb-8 overflow-x-auto scrollbar-none pb-1">
+        <div className="flex flex-wrap gap-2 mb-8">
           {categories.map((cat) => (
             <button
               key={`cat-${cat}`}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
-                selectedCategory === cat
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${selectedCategory === cat
                   ? 'bg-indigo-600 text-white shadow-glow-indigo-sm'
                   : 'bg-surface-card border border-border/60 text-muted-foreground hover:text-foreground hover:border-indigo-500/30'
-              }`}
+                }`}
             >
               {cat}
             </button>
@@ -520,11 +519,10 @@ export default function LibraryPage() {
                     {/* Status Badge Overlay */}
                     <div className="absolute top-3 left-3 z-10">
                       <span
-                        className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${
-                          video.status === 'completed'
+                        className={`text-[11px] font-extrabold px-3 py-1 rounded-full border ${video.status === 'completed'
                             ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/50 shadow-md backdrop-blur-md'
                             : 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50 shadow-md backdrop-blur-md'
-                        }`}
+                          }`}
                       >
                         {video.status === 'completed' ? '✓ Completed' : '⏱ In Progress'}
                       </span>
@@ -750,15 +748,20 @@ export default function LibraryPage() {
 
                 <form onSubmit={handleAddVideo} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">YouTube URL</label>
-                    <input
-                      type="url"
-                      required
-                      value={newVideoUrl}
-                      onChange={(e) => setNewVideoUrl(e.target.value)}
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      className="w-full input-field rounded-xl px-4 py-3 text-sm"
-                    />
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">YouTube URL</label>
+                    <div className="relative group rounded-xl p-[1px] bg-gradient-to-r from-indigo-500/40 via-cyan-500/40 to-indigo-500/40 shadow-glow-indigo-sm hover:shadow-glow-indigo transition-all duration-300">
+                      <div className="relative flex items-center bg-[#151926]/95 backdrop-blur-xl rounded-[11px] overflow-hidden">
+                        <Icon name="LinkIcon" size={18} className="absolute left-4 text-indigo-400 group-focus-within:text-cyan-400 transition-colors pointer-events-none" />
+                        <input
+                          type="url"
+                          required
+                          value={newVideoUrl}
+                          onChange={(e) => setNewVideoUrl(e.target.value)}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          className="w-full bg-transparent border-0 pl-11 pr-4 py-3 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     TranscriptAPI will automatically extract captions and index 1024-dim BGE-M3 embeddings for RAG Q&A.
