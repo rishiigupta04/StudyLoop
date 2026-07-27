@@ -30,7 +30,6 @@ export default function DashboardHero() {
 
   const fillDemo = () => {
     setUrl(DEMO_URL);
-    toast?.success('Demo URL filled! Click "Start Studying" to continue.');
   };
 
   const featureBadges = [

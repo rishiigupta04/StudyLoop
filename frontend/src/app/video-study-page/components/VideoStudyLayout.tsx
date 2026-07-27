@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
 import VoiceModal from './VoiceModal';
 import Icon from '@/components/ui/AppIcon';
 import { useTildePTT } from '@/hooks/useTildePTT';
+import { useGamification } from '@/context/GamificationContext';
 
 export default function VideoStudyLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { awardXP } = useGamification();
   const [activeTimestamp, setActiveTimestamp] = useState('24:10');
 
   useEffect(() => {
@@ -21,6 +25,17 @@ export default function VideoStudyLayout() {
   });
 
   const videoTitle = location.state?.videoTitle || 'MIT 6.006 Introduction to Algorithms — Lecture 1';
+
+  const handleShareSession = () => {
+    const shareUrl = window.location.href;
+    navigator.clipboard.writeText(shareUrl);
+    awardXP(10, 'Shared Study Session!');
+    toast.success('Study session link & active timestamp copied to clipboard! (+10 XP)');
+  };
+
+  const handleOpenSettings = () => {
+    navigate('/settings');
+  };
 
   return (
     <div className="flex flex-col min-h-full flex-1 bg-obsidian">
@@ -42,10 +57,20 @@ export default function VideoStudyLayout() {
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
             Transcript Active
           </span>
-          <button className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={handleShareSession}
+            className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Share Study Session Link"
+            aria-label="Share Study Session Link"
+          >
             <Icon name="ShareIcon" size={16} />
           </button>
-          <button className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={handleOpenSettings}
+            className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Open Copilot Settings (/settings)"
+            aria-label="Open Copilot Settings"
+          >
             <Icon name="Cog6ToothIcon" size={16} />
           </button>
         </div>
