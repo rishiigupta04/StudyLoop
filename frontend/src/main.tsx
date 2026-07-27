@@ -10,9 +10,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <App />
       <Toaster
-        position="bottom-right"
+        position="top-right"
         visibleToasts={3}
-        expand={false}
+        expand={true}
+        gap={10}
         closeButton
         duration={3000}
         toastOptions={{
@@ -21,7 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             border: '1px solid rgba(124, 58, 237, 0.4)',
             color: '#F8FAFC',
             fontFamily: 'Inter, system-ui, sans-serif',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(124, 58, 237, 0.25)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(124, 58, 237, 0.25)',
             borderRadius: '16px',
             padding: '12px 16px',
           },
