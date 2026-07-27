@@ -99,7 +99,7 @@ export default function VideoStudyLayout() {
       {/* Fixed Viewport FAB for Mobile/Quick Voice Access */}
       <button
         onClick={() => ptt.startListening()}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full btn-primary shadow-glow-indigo flex items-center justify-center ptt-pulse z-40 lg:hidden"
+        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 w-14 h-14 rounded-full btn-primary shadow-glow-indigo flex items-center justify-center ptt-pulse z-40"
         aria-label="Push to Talk — voice question"
         title="Hold down ~ or tap to ask voice question"
       >

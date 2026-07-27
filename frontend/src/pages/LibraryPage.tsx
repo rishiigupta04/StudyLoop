@@ -271,32 +271,34 @@ export default function LibraryPage() {
     <AppLayout activeRoute="/library">
       <div className="min-h-screen bg-obsidian px-6 py-8 xl:px-10 2xl:px-16 max-w-screen-2xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-8 pb-6 border-b border-border/60">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <div className="flex items-center gap-3.5 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 flex-shrink-0 shadow-sm">
                 <Icon name="BookOpenIcon" size={22} />
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                Study Library & Courseware
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight leading-none">
+                  Study Library & Courseware
+                </h1>
+              </div>
             </div>
-            <p className="text-sm text-foreground-muted">
-              {videos.length} videos indexed with TranscriptAPI, BGE-M3 vector RAG & MeloTTS
+            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
+              {videos.length} lectures indexed with TranscriptAPI, BGE-M3 vector RAG & MeloTTS
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => handleExportPlaylist('All Library Notes')}
-              className="btn-ghost px-4 py-3 rounded-2xl text-xs font-bold text-indigo-300 flex items-center gap-2"
+              className="btn-ghost px-4 py-2.5 rounded-2xl text-xs font-bold text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/60 flex items-center gap-2"
             >
               <Icon name="ArrowDownTrayIcon" size={16} />
               Batch Export Notes
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary px-5 py-3 rounded-2xl text-sm font-bold text-white shadow-glow-indigo-sm flex items-center gap-2"
+              className="btn-primary px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-white shadow-glow-indigo-sm flex items-center gap-2"
             >
               <Icon name="PlusIcon" size={18} />
               Add Video

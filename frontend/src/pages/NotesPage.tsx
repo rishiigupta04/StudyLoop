@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
+import AppLayout from '@/components/AppLayout';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
 
@@ -302,32 +302,30 @@ export default function NotesPage() {
   const uniqueVideos = Array.from(new Set(notes.map((n) => n.videoTitle)));
 
   return (
-    <div className="flex h-screen bg-obsidian text-foreground overflow-hidden">
-      {/* Sidebar Navigation */}
-      <Sidebar activeRoute="/notes" />
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+    <AppLayout activeRoute="/notes">
+      <div className="flex-1 flex flex-col min-h-screen bg-obsidian">
         {/* Top Header */}
-        <header className="px-8 py-5 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
+        <header className="px-6 py-6 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-5 flex-shrink-0">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="flex items-center gap-3.5 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Icon name="DocumentTextIcon" size={22} />
               </div>
-              <h1 className="text-2xl font-black text-foreground tracking-tight">
-                Timestamped Study Notes
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold font-mono">
-                {notes.length} Notes Saved
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight leading-none">
+                  Timestamped Study Notes
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold font-mono">
+                  {notes.length} Notes Saved
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-foreground-muted">
+            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
               Auto-captured during video copilot sessions & linked to exact lecture timestamps.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => {
                 setCurrentQuizIndex(0);
@@ -335,21 +333,21 @@ export default function NotesPage() {
                 setQuizScore(0);
                 setShowQuizModal(true);
               }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 text-xs font-bold text-white shadow-md hover:brightness-110 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-indigo-600 text-xs font-bold text-white shadow-md hover:brightness-110 transition-all flex items-center gap-2"
             >
               <Icon name="SparklesIcon" size={16} />
               AI Flashcards Quiz
             </button>
             <button
               onClick={openNewNoteModal}
-              className="btn-primary px-4 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2"
+              className="btn-primary px-4 py-2.5 rounded-2xl text-xs font-bold text-white flex items-center gap-2 shadow-glow-indigo-sm"
             >
               <Icon name="PlusIcon" size={16} />
               New Note
             </button>
             <button
               onClick={() => setShowExportModal(true)}
-              className="px-4 py-2.5 rounded-xl bg-surface-card border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-surface-elevated hover:border-indigo-500/60 transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 rounded-2xl bg-surface-card border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-surface-elevated hover:border-indigo-500/60 transition-colors flex items-center gap-2"
             >
               <Icon name="ArrowUpOnSquareIcon" size={16} />
               Export Hub
@@ -787,7 +785,7 @@ export default function NotesPage() {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Manual Create / Edit Note Modal */}
       <AnimatePresence>
@@ -1092,6 +1090,6 @@ export default function NotesPage() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </AppLayout>
   );
 }

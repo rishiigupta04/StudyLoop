@@ -218,24 +218,27 @@ const FAQS = [
   },
 ];
 
+import MobileLandingDrawer from '@/components/mobile/MobileLandingDrawer';
+
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const [activeFrameIndex, setActiveFrameIndex] = useState(0);
+  const [isPlayingGif, setIsPlayingGif] = useState(true);
   const [urlInput, setUrlInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [activeFrameIndex, setActiveFrameIndex] = useState(0);
-  const [isPlayingGif, setIsPlayingGif] = useState(true);
   const [selectedEngine, setSelectedEngine] = useState<'local' | 'cloud'>('local');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
   const [isAnnualBilling, setIsAnnualBilling] = useState(true);
-  const navigate = useNavigate();
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
-  // GIF-like Auto-playing Frame Timeline Loop
   useEffect(() => {
     if (!isPlayingGif) return;
     const interval = setInterval(() => {
       setActiveFrameIndex((prev) => (prev + 1) % DEMO_FRAMES.length);
-    }, 4000);
+    }, 4500);
     return () => clearInterval(interval);
   }, [isPlayingGif]);
 
@@ -273,7 +276,7 @@ export default function LandingPage() {
             <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <button
               onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
@@ -288,8 +291,25 @@ export default function LandingPage() {
               Get Started Free
             </button>
           </div>
+
+          {/* Mobile Hamburger Button */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="p-2 rounded-xl bg-surface-elevated text-muted-foreground hover:text-foreground border border-border"
+              aria-label="Open navigation drawer"
+            >
+              <Icon name="Bars3Icon" size={22} />
+            </button>
+          </div>
         </div>
       </nav>
+
+      {/* Slide-out Mobile Landing Drawer */}
+      <MobileLandingDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+      />
 
       {/* ── Hero Section ── */}
       <section className="relative pt-36 pb-16 px-6 max-w-7xl mx-auto text-center">

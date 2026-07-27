@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
+import AppLayout from '@/components/AppLayout';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
 
@@ -34,31 +34,29 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-obsidian text-foreground overflow-hidden">
-      {/* Sidebar Navigation */}
-      <Sidebar activeRoute="/settings" />
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+    <AppLayout activeRoute="/settings">
+      <div className="flex-1 flex flex-col min-h-screen bg-obsidian">
         {/* Top Header */}
-        <header className="px-8 py-5 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
+        <header className="px-6 py-6 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-5 flex-shrink-0">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="flex items-center gap-3.5 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Icon name="Cog6ToothIcon" size={22} />
               </div>
-              <h1 className="text-2xl font-black text-foreground tracking-tight">
-                Account & Copilot Settings
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight leading-none">
+                  Account & Copilot Settings
+                </h1>
+              </div>
             </div>
-            <p className="text-xs text-foreground-muted">
+            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
               Manage your student profile, Push-to-Talk voice triggers, API integrations, and billing.
             </p>
           </div>
 
           <button
             onClick={handleSaveProfile}
-            className="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2"
+            className="btn-primary px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-white flex items-center gap-2 shadow-glow-indigo-sm self-start md:self-auto"
           >
             <Icon name="CheckIcon" size={16} />
             Save Changes (+20 XP)
@@ -347,7 +345,7 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -55,15 +55,17 @@ export default function DashboardHero() {
         <div className="relative z-10 p-6 md:p-8">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Icon name="BoltIcon" size={18} />
+            <div className="flex items-center gap-3.5 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 flex-shrink-0 shadow-sm">
+                <Icon name="BoltIcon" size={22} />
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-                AI Command Station
-              </h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight leading-none">
+                  AI Command Station
+                </h1>
+              </div>
             </div>
-            <p className="text-sm md:text-base text-foreground-muted">
+            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
               Paste any YouTube lecture link to initiate voice copilot & anti-spoiler vector search.
             </p>
           </div>
@@ -115,8 +117,8 @@ export default function DashboardHero() {
             </div>
           </div>
 
-          {/* Professional Modern Capability Badges */}
-          <div className="flex flex-wrap gap-2.5 mt-5">
+          {/* Professional Modern Capability Badges (Hidden on mobile phones < 640px) */}
+          <div className="hidden sm:flex flex-wrap gap-2.5 mt-5">
             {featureBadges.map((feat) => (
               <span
                 key={`feat-${feat.label}`}

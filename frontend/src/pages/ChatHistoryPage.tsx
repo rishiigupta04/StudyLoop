@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import Sidebar from '@/components/Sidebar';
+import AppLayout from '@/components/AppLayout';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
 
@@ -174,14 +174,13 @@ export default function ChatHistoryPage() {
   const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_SESSIONS);
   const [activeSessionId, setActiveSessionId] = useState<string>(INITIAL_SESSIONS[0].id);
   const [searchQuery, setSearchQuery] = useState('');
-  const [engineFilter, setEngineFilter] = useState<'all' | 'local' | 'cloud' | 'starred' | 'hinglish'>('all');
+  const [engineFilter, setEngineFilter] = useState<'all' | 'local' | 'cloud' | 'hinglish' | 'starred'>('all');
   const [playingTurnAudioId, setPlayingTurnAudioId] = useState<string | null>(null);
-
-  // New follow-up prompt state
   const [followUpQuery, setFollowUpQuery] = useState('');
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
 
-  const { awardXP } = useGamification();
   const navigate = useNavigate();
+  const { awardXP } = useGamification();
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
@@ -334,27 +333,25 @@ export default function ChatHistoryPage() {
   );
 
   return (
-    <div className="flex h-screen bg-obsidian text-foreground overflow-hidden">
-      {/* Sidebar Navigation */}
-      <Sidebar activeRoute="/chat-history" />
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+    <AppLayout activeRoute="/chat-history">
+      <div className="flex-1 flex flex-col min-h-screen bg-obsidian">
         {/* Top Header */}
-        <header className="px-8 py-5 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
+        <header className="px-6 py-6 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-5 flex-shrink-0">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+            <div className="flex items-center gap-3.5 mb-1.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-sm">
                 <Icon name="ChatBubbleLeftRightIcon" size={22} />
               </div>
-              <h1 className="text-2xl font-black text-foreground tracking-tight">
-                Copilot Chat History & Analytics
-              </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold font-mono">
-                {totalTurnsLogged} Turns Logged
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight leading-none">
+                  Copilot Chat History & Analytics
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold font-mono">
+                  {totalTurnsLogged} Turns Logged
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-foreground-muted">
+            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
               Bilingual voice Q&A logs, timestamp seeks, and AI reasoning traces across lecture sessions.
             </p>
           </div>
@@ -362,7 +359,7 @@ export default function ChatHistoryPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => exportSessionMarkdown(activeSession)}
-              className="px-4 py-2.5 rounded-xl bg-surface-card border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-surface-elevated hover:border-indigo-500/60 transition-colors flex items-center gap-2"
+              className="px-4 py-2.5 rounded-2xl bg-surface-card border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-surface-elevated hover:border-indigo-500/60 transition-colors flex items-center gap-2"
             >
               <Icon name="ArrowUpOnSquareIcon" size={16} />
               Export Session (.MD)
@@ -406,8 +403,8 @@ export default function ChatHistoryPage() {
 
         {/* Master-Detail Split Screen */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Master Panel: Sessions List & Search */}
-          <div className="w-full md:w-80 lg:w-96 border-r border-border/80 bg-[#121624] flex flex-col flex-shrink-0 overflow-hidden">
+          {/* Left Session Selector Sidebar */}
+          <div className={`w-full md:w-80 lg:w-96 border-r border-border/80 bg-[#121624] flex-col flex-shrink-0 overflow-hidden ${showMobileDetail ? 'hidden md:flex' : 'flex'}`}>
             {/* Search & Engine Filter */}
             <div className="p-4 border-b border-border/60 space-y-3">
               <div className="relative">
@@ -468,7 +465,10 @@ export default function ChatHistoryPage() {
                 return (
                   <div
                     key={session.id}
-                    onClick={() => setActiveSessionId(session.id)}
+                    onClick={() => {
+                      setActiveSessionId(session.id);
+                      setShowMobileDetail(true);
+                    }}
                     className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative group ${isActive
                         ? 'bg-indigo-950/40 border-indigo-500/60 shadow-md'
                         : 'bg-surface-card border-border/70 hover:border-indigo-500/30'
@@ -478,27 +478,24 @@ export default function ChatHistoryPage() {
                       <span className="text-[10px] font-bold text-indigo-400 truncate max-w-[180px]">
                         {session.channel}
                       </span>
-                      <span className="text-[10px] font-mono text-muted-foreground">{session.date}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{session.date}</span>
                     </div>
 
-                    <h3 className="text-xs font-bold text-foreground line-clamp-1 mb-2">
+                    <h4 className="text-xs font-bold text-foreground line-clamp-2 leading-snug mb-2 group-hover:text-indigo-300 transition-colors">
                       {session.videoTitle}
-                    </h3>
+                    </h4>
 
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span className="flex items-center gap-1 font-mono font-semibold text-cyan-300">
-                        <Icon name="ChatBubbleLeftIcon" size={12} />
-                        {session.turns.length} Turns
-                      </span>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground font-mono">{session.totalTurns} Q&A turns</span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteSession(session.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-opacity"
-                        title="Delete Session"
+                        className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-400 transition-opacity"
+                        title="Delete session"
                       >
-                        <Icon name="TrashIcon" size={12} />
+                        <Icon name="TrashIcon" size={14} />
                       </button>
                     </div>
                   </div>
@@ -507,19 +504,27 @@ export default function ChatHistoryPage() {
             </div>
           </div>
 
-          {/* Right Detail Panel: Full Conversation Log Inspector */}
-          <div className="flex-1 flex flex-col bg-[#0B0E17] overflow-hidden text-left">
+          {/* Right Session Inspector & Dialogue Detail Panel */}
+          <div className={`flex-1 flex-col h-full bg-obsidian overflow-hidden ${showMobileDetail ? 'flex' : 'hidden md:flex'}`}>
             {activeSession ? (
               <>
-                {/* Session Header Banner */}
-                <div className="px-8 py-4 bg-[#151926] border-b border-border/80 flex items-center justify-between gap-4 flex-shrink-0">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-0.5">
-                      Lecture Chat Log • {activeSession.channel}
-                    </span>
-                    <h2 className="text-lg font-bold text-foreground truncate max-w-2xl">
-                      {activeSession.videoTitle}
-                    </h2>
+                {/* Active Session Header Banner */}
+                <div className="p-4 border-b border-border/80 bg-surface-card/40 flex items-center justify-between gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <button
+                      onClick={() => setShowMobileDetail(false)}
+                      className="md:hidden p-2 rounded-xl bg-surface-elevated text-xs font-bold text-indigo-300 border border-border flex items-center gap-1 flex-shrink-0"
+                    >
+                      <Icon name="ChevronLeftIcon" size={16} />
+                      <span>Back</span>
+                    </button>
+                    <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                      <Icon name="PlayIcon" size={18} />
+                    </div>
+                    <div className="overflow-hidden text-left">
+                      <h3 className="text-sm font-extrabold text-foreground truncate">{activeSession?.videoTitle}</h3>
+                      <p className="text-xs text-muted-foreground font-mono truncate">{activeSession?.channel} • {activeSession?.date}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() =>
@@ -538,7 +543,7 @@ export default function ChatHistoryPage() {
                 </div>
 
                 {/* Turns Timeline Log */}
-                <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 scrollbar-thin">
                   {activeSession.turns.map((turn, idx) => {
                     const isAudioPlaying = playingTurnAudioId === turn.id;
                     return (
@@ -547,28 +552,30 @@ export default function ChatHistoryPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.05 }}
-                        className="p-6 rounded-3xl bg-[#151926] border border-border/80 relative space-y-4 shadow-lg"
+                        className="space-y-3"
                       >
-                        {/* User Speech Query Bubble */}
-                        <div className="flex items-start justify-between gap-4 pb-4 border-b border-border/60">
+                        {/* 1. User Speech Query Bubble */}
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 shadow-sm">
                           <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
                               🎙️
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-bold text-indigo-300">User Speech (Held ~)</span>
-                                <span className="px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-[10px] font-extrabold font-mono">
+                                <span className="text-xs font-extrabold text-indigo-300 uppercase tracking-wider">
+                                  User Voice Query
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-900/60 text-indigo-300 border border-indigo-500/30 text-[10px] font-extrabold font-mono">
                                   {turn.language}
                                 </span>
                               </div>
-                              <p className="text-sm font-semibold text-foreground leading-snug font-mono">
+                              <p className="text-sm font-semibold text-foreground leading-snug">
                                 "{turn.userQuery}"
                               </p>
                             </div>
                           </div>
 
-                          {/* Clickable Lecture Seek Badge */}
+                          {/* Timestamp Seek Chip */}
                           <button
                             onClick={() =>
                               handleNavigateToTimestamp(
@@ -578,98 +585,105 @@ export default function ChatHistoryPage() {
                                 turn.seconds
                               )
                             }
-                            className="px-3 py-1 rounded-xl bg-indigo-950 border border-indigo-500/40 text-cyan-300 font-mono font-bold text-xs hover:bg-indigo-900 transition-colors flex items-center gap-1.5 shrink-0"
-                            title="Seek video player to target timestamp"
+                            className="px-3 py-1.5 rounded-xl bg-indigo-900/80 border border-indigo-400/50 text-cyan-300 font-mono font-bold text-xs hover:bg-indigo-800 transition-colors flex items-center gap-1.5 shrink-0 self-end sm:self-auto"
+                            title="Jump video player to timestamp"
                           >
-                            <Icon name="PlayCircleIcon" size={14} className="text-indigo-400" />
+                            <Icon name="PlayCircleIcon" size={15} className="text-cyan-400" />
                             <span>{turn.timestamp}</span>
-                            <span className="text-[10px] text-muted-foreground font-normal">▸ Seek</span>
+                            <span className="text-[10px] text-muted-foreground">▸ Seek</span>
                           </button>
                         </div>
 
-                        {/* AI Copilot Answer & Engine Trace */}
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-cyan-600/20 border border-cyan-500/30 text-cyan-300 flex items-center justify-center font-bold text-xs shrink-0">
-                            ✨
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-2 mb-1.5">
-                              <span className="text-xs font-bold text-cyan-300">AI Voice Copilot</span>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${turn.engine === 'Local DistilBERT'
-                                      ? 'bg-cyan-950 text-cyan-300 border-cyan-500/30'
-                                      : 'bg-purple-950 text-purple-300 border-purple-500/30'
-                                    }`}
-                                >
-                                  {turn.engine} ({turn.latency})
-                                </span>
+                        {/* 2. AI Copilot Answer Bubble */}
+                        <div className="p-5 rounded-3xl bg-[#141824] border border-border/80 relative space-y-3 shadow-md">
+                          {/* AI Header Line */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/60">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
+                                ✨
                               </div>
+                              <span className="text-xs font-extrabold text-cyan-300">
+                                AI Voice Copilot Response
+                              </span>
                             </div>
 
-                            <p className="text-xs text-foreground-muted leading-relaxed font-sans whitespace-pre-wrap mb-4 bg-[#0B0E17] p-4 rounded-2xl border border-border/60">
-                              {turn.aiResponse}
-                            </p>
+                            <span
+                              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                                turn.engine === 'Local DistilBERT'
+                                  ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
+                                  : 'bg-purple-950 text-purple-300 border-purple-500/40'
+                              }`}
+                            >
+                              {turn.engine} • {turn.latency}
+                            </span>
+                          </div>
 
-                            {/* Simulated MeloTTS Audio Waveform Indicator */}
-                            {isAudioPlaying && (
-                              <div className="mb-4 p-3 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center gap-3 animate-pulse">
-                                <Icon name="SpeakerWaveIcon" size={16} className="text-cyan-300 animate-spin" />
-                                <span className="text-xs font-mono text-cyan-300 font-bold">MeloTTS Audio Synthesis Playback...</span>
-                                <div className="flex items-center gap-1 h-3 ml-auto">
-                                  {[40, 80, 30, 95, 60, 85, 45].map((h, i) => (
-                                    <div key={`wave-bar-${i}`} className="w-1 bg-cyan-400 rounded-full animate-bounce" style={{ height: `${h}%` }} />
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                          {/* Answer Body Text - High Contrast & Large Text */}
+                          <div className="text-sm text-foreground/95 leading-relaxed font-sans whitespace-pre-wrap p-4 rounded-2xl bg-[#0B0E17] border border-border/60">
+                            {turn.aiResponse}
+                          </div>
 
-                            {/* Turn Footer Actions */}
-                            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                              <span className="text-[10px] font-mono">Turn #{idx + 1}</span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => playSynthesizedVoice(turn.id)}
-                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${isAudioPlaying
-                                      ? 'bg-cyan-600 text-white border-cyan-400'
-                                      : 'bg-surface-elevated text-muted-foreground border-border hover:text-cyan-300'
-                                    }`}
-                                >
-                                  <Icon name="SpeakerWaveIcon" size={14} />
-                                  <span className="text-[10px] font-semibold">
-                                    {isAudioPlaying ? 'Playing Audio...' : 'Synthesize Voice'}
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() => saveTurnAsNote(turn)}
-                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${turn.savedAsNote
-                                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                                      : 'bg-surface-elevated text-muted-foreground border-border hover:text-emerald-300'
-                                    }`}
-                                >
-                                  <Icon name="BookmarkIcon" size={14} />
-                                  <span className="text-[10px] font-semibold">
-                                    {turn.savedAsNote ? 'Saved in Notes' : 'Save as Note (+15 XP)'}
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() => toggleTurnBookmark(activeSession.id, turn.id)}
-                                  className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-amber-400 transition-colors flex items-center gap-1"
-                                >
-                                  <Icon
-                                    name="StarIcon"
-                                    size={14}
-                                    className={turn.bookmarked ? 'text-amber-400 fill-amber-400' : ''}
+                          {/* MeloTTS Audio Synthesis Indicator */}
+                          {isAudioPlaying && (
+                            <div className="p-3 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 flex items-center gap-3 animate-pulse">
+                              <Icon name="SpeakerWaveIcon" size={16} className="text-cyan-300 animate-spin" />
+                              <span className="text-xs font-mono text-cyan-300 font-bold">
+                                MeloTTS Voice Playback Active...
+                              </span>
+                              <div className="flex items-center gap-1 h-3 ml-auto">
+                                {[40, 80, 30, 95, 60, 85, 45].map((h, i) => (
+                                  <div
+                                    key={`wave-bar-${i}`}
+                                    className="w-1 bg-cyan-400 rounded-full animate-bounce"
+                                    style={{ height: `${h}%` }}
                                   />
-                                </button>
-                                <button
-                                  onClick={() => deleteTurn(activeSession.id, turn.id)}
-                                  className="p-1.5 rounded-lg hover:bg-red-500/20 text-muted-foreground hover:text-red-400 transition-colors"
-                                  title="Delete Turn"
-                                >
-                                  <Icon name="TrashIcon" size={14} />
-                                </button>
+                                ))}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Action Toolbar */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              Turn #{idx + 1}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => playSynthesizedVoice(turn.id)}
+                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                  isAudioPlaying
+                                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-glow-indigo-sm'
+                                    : 'bg-surface-card text-muted-foreground border-border hover:text-cyan-300 hover:border-cyan-500/40'
+                                }`}
+                              >
+                                <Icon name="SpeakerWaveIcon" size={14} />
+                                <span>{isAudioPlaying ? 'Playing...' : 'Synthesize Voice'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => saveTurnAsNote(turn)}
+                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                  turn.savedAsNote
+                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-surface-card text-muted-foreground border-border hover:text-emerald-300 hover:border-emerald-500/40'
+                                }`}
+                              >
+                                <Icon name="BookmarkIcon" size={14} />
+                                <span>{turn.savedAsNote ? 'Saved in Notes' : 'Save as Note'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => toggleTurnBookmark(activeSession.id, turn.id)}
+                                className={`p-1.5 rounded-xl border transition-colors ${
+                                  turn.bookmarked
+                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                    : 'bg-surface-card text-muted-foreground border-border hover:text-amber-300'
+                                }`}
+                                title="Star turn"
+                              >
+                                <Icon name="StarIcon" size={14} className={turn.bookmarked ? 'text-amber-400 fill-amber-400' : ''} />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -705,7 +719,7 @@ export default function ChatHistoryPage() {
             )}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

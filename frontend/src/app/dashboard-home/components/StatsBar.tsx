@@ -28,7 +28,7 @@ const stats = [
     label: 'Study Streak',
     color: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10 border-emerald-500/20',
-    trend: '5 day streak',
+    trend: '5d streak',
   },
   {
     id: 'stat-questions',
@@ -43,7 +43,7 @@ const stats = [
 
 export default function StatsBar() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {stats.map((stat, i) => (
         <motion.div
           key={stat.id}
@@ -51,24 +51,27 @@ export default function StatsBar() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: i * 0.08 }}
           whileHover={{ y: -3 }}
-          className="glass-card rounded-2xl border border-indigo-500/15 p-5 relative overflow-hidden transition-all duration-200 card-hover"
+          className="glass-card rounded-2xl border border-indigo-500/15 p-5 relative overflow-hidden transition-all duration-200 card-hover flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between mb-3">
-            <div className={`w-10 h-10 rounded-xl ${stat.bgColor} border flex items-center justify-center`}>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className={`w-10 h-10 rounded-xl ${stat.bgColor} border flex items-center justify-center flex-shrink-0`}>
               <Icon
                 name={stat.icon as Parameters<typeof Icon>[0]['name']}
                 size={20}
                 className={stat.color}
               />
             </div>
-            <span className="text-xs font-semibold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <span className="text-[11px] font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 whitespace-nowrap flex-shrink-0">
               {stat.trend}
             </span>
           </div>
-          <p className="text-3xl font-extrabold text-foreground tabular-nums tracking-tight mb-1">
-            {stat.value}
-          </p>
-          <p className="text-xs font-medium text-foreground-muted">{stat.label}</p>
+
+          <div>
+            <p className="text-3xl font-extrabold text-foreground tabular-nums tracking-tight mb-1">
+              {stat.value}
+            </p>
+            <p className="text-xs font-semibold text-foreground-muted">{stat.label}</p>
+          </div>
         </motion.div>
       ))}
     </div>
