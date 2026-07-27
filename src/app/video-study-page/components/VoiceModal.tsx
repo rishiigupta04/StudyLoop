@@ -54,13 +54,12 @@ export default function VoiceModal({
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                  stage === 'listening'
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center ${stage === 'listening'
                     ? 'bg-indigo-600 ptt-pulse'
                     : stage === 'processing' || stage === 'responding'
-                    ? 'gradient-indigo-cyan'
-                    : 'bg-surface-elevated border border-border'
-                }`}
+                      ? 'gradient-indigo-cyan'
+                      : 'bg-surface-elevated border border-border'
+                  }`}
               >
                 <Icon
                   name={stage === 'responding' ? 'SpeakerWaveIcon' : 'MicrophoneIcon'}
@@ -98,13 +97,12 @@ export default function VoiceModal({
             {Array.from({ length: waveBarCount }).map((_, i) => (
               <div
                 key={`wave-${i}`}
-                className={`w-1 rounded-full waveform-bar ${
-                  stage === 'listening' || stage === 'responding'
+                className={`w-1 rounded-full waveform-bar ${stage === 'listening' || stage === 'responding'
                     ? 'bg-indigo-400'
                     : stage === 'processing'
-                    ? 'bg-cyan-400'
-                    : 'bg-surface-elevated'
-                }`}
+                      ? 'bg-cyan-400'
+                      : 'bg-surface-elevated'
+                  }`}
                 style={{
                   height: `${20 + (i % 7) * 6}px`,
                   animationDuration: `${0.4 + (i % 5) * 0.12}s`,
@@ -144,21 +142,19 @@ export default function VoiceModal({
               {pipelineSteps.map((step, i) => (
                 <div key={step.id} className="flex items-center gap-2.5">
                   <div
-                    className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                      i < activeStep
+                    className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${i < activeStep
                         ? 'bg-emerald-500'
                         : i === activeStep
-                        ? 'bg-indigo-500 animate-pulse'
-                        : 'bg-surface-elevated'
-                    }`}
+                          ? 'bg-indigo-500 animate-pulse'
+                          : 'bg-surface-elevated'
+                      }`}
                   >
                     {i < activeStep && <Icon name="CheckIcon" size={10} className="text-white" />}
                   </div>
                   <div className="flex-1 flex items-center justify-between">
                     <span
-                      className={`text-xs font-medium ${
-                        i <= activeStep ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
+                      className={`text-xs font-medium ${i <= activeStep ? 'text-foreground' : 'text-muted-foreground'
+                        }`}
                     >
                       {step.label}
                     </span>
@@ -197,11 +193,10 @@ export default function VoiceModal({
             onTouchStart={onStartListening}
             onTouchEnd={onStopListening}
             disabled={stage === 'processing'}
-            className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
-              stage === 'listening'
+            className={`w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${stage === 'listening'
                 ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
                 : 'btn-primary text-white shadow-glow-indigo-sm'
-            }`}
+              }`}
           >
             <Icon name="MicrophoneIcon" size={18} />
             {stage === 'idle' && 'Hold Button or ~ Key to Speak'}

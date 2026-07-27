@@ -400,8 +400,8 @@ export default function LandingPage() {
                       setIsPlayingGif(false);
                     }}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${activeFrameIndex === i
-                        ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
+                      ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
                       }`}
                   >
                     <span>{f.interactionType}</span>
@@ -587,8 +587,8 @@ export default function LandingPage() {
             <button
               onClick={() => setSelectedEngine('local')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${selectedEngine === 'local'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <Icon name="BoltIcon" size={16} />
@@ -597,8 +597,8 @@ export default function LandingPage() {
             <button
               onClick={() => setSelectedEngine('cloud')}
               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${selectedEngine === 'cloud'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-cyan-600 text-white shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <Icon name="CloudIcon" size={16} />
@@ -1057,8 +1057,8 @@ export default function LandingPage() {
                 key={`faq-${idx}`}
                 initial={false}
                 className={`rounded-2xl transition-all duration-300 overflow-hidden ${isOpen
-                    ? 'bg-surface-card border border-indigo-500/40'
-                    : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
+                  ? 'bg-surface-card border border-indigo-500/40'
+                  : 'bg-surface-card/60 border border-border/80 hover:border-indigo-500/30'
                   }`}
               >
                 <button
@@ -1074,8 +1074,8 @@ export default function LandingPage() {
                   </span>
                   <div
                     className={`p-2 rounded-xl transition-all duration-300 ${isOpen
-                        ? 'bg-indigo-600 text-white rotate-180'
-                        : 'bg-surface-elevated text-muted-foreground'
+                      ? 'bg-indigo-600 text-white rotate-180'
+                      : 'bg-surface-elevated text-muted-foreground'
                       }`}
                   >
                     <Icon name="ChevronDownIcon" size={18} />

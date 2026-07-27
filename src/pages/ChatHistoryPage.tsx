@@ -206,9 +206,9 @@ export default function ChatHistoryPage() {
       prev.map((s) =>
         s.id === sessionId
           ? {
-              ...s,
-              turns: s.turns.map((t) => (t.id === turnId ? { ...t, bookmarked: !t.bookmarked } : t)),
-            }
+            ...s,
+            turns: s.turns.map((t) => (t.id === turnId ? { ...t, bookmarked: !t.bookmarked } : t)),
+          }
           : s
       )
     );
@@ -246,10 +246,10 @@ export default function ChatHistoryPage() {
       prev.map((s) =>
         s.id === sessionId
           ? {
-              ...s,
-              totalTurns: s.totalTurns - 1,
-              turns: s.turns.filter((t) => t.id !== turnId),
-            }
+            ...s,
+            totalTurns: s.totalTurns - 1,
+            turns: s.turns.filter((t) => t.id !== turnId),
+          }
           : s
       )
     );
@@ -425,41 +425,36 @@ export default function ChatHistoryPage() {
               <div className="grid grid-cols-5 gap-1 p-1 bg-obsidian rounded-xl border border-border/80 text-[10px] font-bold">
                 <button
                   onClick={() => setEngineFilter('all')}
-                  className={`py-1.5 rounded-lg transition-colors ${
-                    engineFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   All
                 </button>
                 <button
                   onClick={() => setEngineFilter('local')}
-                  className={`py-1.5 rounded-lg transition-colors ${
-                    engineFilter === 'local' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'local' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   ⚡ Local
                 </button>
                 <button
                   onClick={() => setEngineFilter('cloud')}
-                  className={`py-1.5 rounded-lg transition-colors ${
-                    engineFilter === 'cloud' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'cloud' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   🌐 Cloud
                 </button>
                 <button
                   onClick={() => setEngineFilter('hinglish')}
-                  className={`py-1.5 rounded-lg transition-colors ${
-                    engineFilter === 'hinglish' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'hinglish' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   🌐 Hinglish
                 </button>
                 <button
                   onClick={() => setEngineFilter('starred')}
-                  className={`py-1.5 rounded-lg transition-colors ${
-                    engineFilter === 'starred' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'starred' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   ⭐ Starred
                 </button>
@@ -474,11 +469,10 @@ export default function ChatHistoryPage() {
                   <div
                     key={session.id}
                     onClick={() => setActiveSessionId(session.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative group ${
-                      isActive
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative group ${isActive
                         ? 'bg-indigo-950/40 border-indigo-500/60 shadow-md'
                         : 'bg-surface-card border-border/70 hover:border-indigo-500/30'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-[10px] font-bold text-indigo-400 truncate max-w-[180px]">
@@ -603,11 +597,10 @@ export default function ChatHistoryPage() {
                               <span className="text-xs font-bold text-cyan-300">AI Voice Copilot</span>
                               <div className="flex items-center gap-2">
                                 <span
-                                  className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                                    turn.engine === 'Local DistilBERT'
+                                  className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${turn.engine === 'Local DistilBERT'
                                       ? 'bg-cyan-950 text-cyan-300 border-cyan-500/30'
                                       : 'bg-purple-950 text-purple-300 border-purple-500/30'
-                                  }`}
+                                    }`}
                                 >
                                   {turn.engine} ({turn.latency})
                                 </span>
@@ -637,11 +630,10 @@ export default function ChatHistoryPage() {
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => playSynthesizedVoice(turn.id)}
-                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${
-                                    isAudioPlaying
+                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${isAudioPlaying
                                       ? 'bg-cyan-600 text-white border-cyan-400'
                                       : 'bg-surface-elevated text-muted-foreground border-border hover:text-cyan-300'
-                                  }`}
+                                    }`}
                                 >
                                   <Icon name="SpeakerWaveIcon" size={14} />
                                   <span className="text-[10px] font-semibold">
@@ -650,11 +642,10 @@ export default function ChatHistoryPage() {
                                 </button>
                                 <button
                                   onClick={() => saveTurnAsNote(turn)}
-                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${
-                                    turn.savedAsNote
+                                  className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1 ${turn.savedAsNote
                                       ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
                                       : 'bg-surface-elevated text-muted-foreground border-border hover:text-emerald-300'
-                                  }`}
+                                    }`}
                                 >
                                   <Icon name="BookmarkIcon" size={14} />
                                   <span className="text-[10px] font-semibold">
