@@ -10,7 +10,7 @@ const DEMO_YOUTUBE_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const DEMO_FRAMES = [
   {
     frameTitle: 'Interaction 1: Bilingual Concept Query',
-    interactionType: '💡 Concept Q&A',
+    interactionType: 'Concept Q&A',
     timestamp: '12:10',
     lossValue: 'J(θ) = 4.82 (High Loss)',
     query: 'Bhai, Gradient Descent me initial learning rate alpha kitna select karein?',
@@ -20,7 +20,7 @@ const DEMO_FRAMES = [
   },
   {
     frameTitle: 'Interaction 2: Semantic Topic Jump',
-    interactionType: '⏭️ Jump to Concept',
+    interactionType: 'Jump to Concept',
     timestamp: '34:20',
     lossValue: 'J(θ) = 1.15 (Chain Rule)',
     query: 'Go to where Backpropagation and Chain Rule were explained',
@@ -30,7 +30,7 @@ const DEMO_FRAMES = [
   },
   {
     frameTitle: 'Interaction 3: Hands-Free Voice Skipping',
-    interactionType: '⏪ Skip 10 Seconds',
+    interactionType: 'Skip 10 Seconds',
     timestamp: '34:10',
     lossValue: 'J(θ) = 1.18 (Rewound -10s)',
     query: 'Go back skip 10 seconds, missed that matrix multiply step',
@@ -40,7 +40,7 @@ const DEMO_FRAMES = [
   },
   {
     frameTitle: 'Interaction 4: Notion & Flashcard Export',
-    interactionType: '📝 1-Click Export',
+    interactionType: '1-Click Export',
     timestamp: '42:15',
     lossValue: 'J(θ) = 0.04 (Minimum)',
     query: 'Generate active recall quiz and export all notes to Notion!',
@@ -135,11 +135,11 @@ const SCENARIOS = [
 ];
 
 const UNIVERSITIES = [
-  { name: 'MIT OpenCourseWare', logo: '🏛️' },
-  { name: 'Stanford Online', logo: '🌲' },
-  { name: 'Harvard edX', logo: '🎓' },
-  { name: 'IIT Kharagpur', logo: '🔬' },
-  { name: 'NPTEL India', logo: '📚' },
+  { name: 'MIT OpenCourseWare', icon: 'BuildingLibraryIcon' },
+  { name: 'Stanford Online', icon: 'AcademicCapIcon' },
+  { name: 'Harvard edX', icon: 'BookOpenIcon' },
+  { name: 'IIT Kharagpur', icon: 'BeakerIcon' },
+  { name: 'NPTEL India', icon: 'BookmarkIcon' },
 ];
 
 const FEATURES = [
@@ -393,24 +393,24 @@ export default function LandingPage() {
         >
           <div className="relative rounded-3xl overflow-hidden bg-surface-card border border-border/80 p-2 shadow-2xl">
             {/* Window Header with Frame Stepper Controls */}
-            <div className="bg-[#151926] px-4 py-3 rounded-t-2xl flex flex-wrap items-center justify-between gap-3 border-b border-border/60">
-              <div className="flex items-center gap-2">
+            <div className="bg-[#151926] px-3 sm:px-4 py-3 rounded-t-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-border/60">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
-                <span className="ml-2 text-xs font-mono text-muted-foreground hidden sm:inline-block">
+                <span className="ml-2 text-xs font-mono text-muted-foreground hidden md:inline-block">
                   studyloop.ai/video-study-page (Stanford CS229: Gradient Descent Loss Landscape)
                 </span>
               </div>
 
-              {/* Interactive GIF Timeline Frame Controller */}
-              <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1">
+              {/* Touch-Scrollable Interactive GIF Timeline Frame Controller */}
+              <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1 overflow-x-auto scrollbar-none max-w-full">
                 <button
                   onClick={() => setIsPlayingGif(!isPlayingGif)}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-600/50 transition-colors"
+                  className="px-2.5 py-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-600/50 transition-colors whitespace-nowrap flex-shrink-0"
                 >
-                  <Icon name={isPlayingGif ? 'PauseIcon' : 'PlayIcon'} size={12} />
-                  <span>{isPlayingGif ? 'Auto Loop GIF' : 'Paused'}</span>
+                  <Icon name={isPlayingGif ? 'PauseIcon' : 'PlayIcon'} size={14} />
+                  <span>{isPlayingGif ? 'Auto Loop' : 'Paused'}</span>
                 </button>
                 {DEMO_FRAMES.map((f, i) => (
                   <button
@@ -419,10 +419,11 @@ export default function LandingPage() {
                       setActiveFrameIndex(i);
                       setIsPlayingGif(false);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${activeFrameIndex === i
-                      ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
-                      }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                      activeFrameIndex === i
+                        ? 'bg-cyan-500 text-black font-extrabold shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-elevated'
+                    }`}
                   >
                     <span>{f.interactionType}</span>
                   </button>
@@ -438,10 +439,10 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.25 }}
-                className="grid lg:grid-cols-3 gap-2 bg-[#0B0E17] p-3 rounded-b-2xl min-h-[420px] text-left relative overflow-hidden"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-2 bg-[#0B0E17] p-2.5 sm:p-3 rounded-b-2xl min-h-[420px] text-left relative overflow-hidden"
               >
                 {/* Main Video Screen displaying 3D Gradient Descent Loss Landscape */}
-                <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/80 border border-border/60 flex flex-col justify-between p-4 min-h-[320px]">
+                <div className="lg:col-span-2 relative rounded-xl overflow-hidden bg-black/80 border border-border/60 flex flex-col justify-between p-3.5 sm:p-4 min-h-[300px] sm:min-h-[320px]">
                   {/* High-Tech 3D Gradient Descent Loss Surface Image */}
                   <img
                     src={currentFrame.image}
@@ -452,29 +453,29 @@ export default function LandingPage() {
 
                   {/* Top HUD Overlay */}
                   <div className="relative z-10 flex flex-wrap items-center justify-between gap-2">
-                    <span className="px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/40 text-xs font-bold font-mono">
+                    <span className="px-2.5 py-1 rounded-full bg-indigo-950/90 text-indigo-300 border border-indigo-500/40 text-[11px] sm:text-xs font-bold font-mono truncate max-w-full">
                       Stanford CS229 Loss Surface @ {currentFrame.timestamp}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[11px] sm:text-xs font-mono font-bold">
                       {currentFrame.lossValue}
                     </span>
                   </div>
 
                   {/* Frame Description Indicator */}
                   <div className="relative z-10 my-3">
-                    <span className="px-3 py-1 rounded-lg bg-surface-card/90 border border-border text-[11px] font-bold text-foreground inline-block">
+                    <span className="px-2.5 py-1 rounded-lg bg-surface-card/90 border border-border text-[11px] font-bold text-foreground inline-block">
                       {currentFrame.frameTitle}
                     </span>
                   </div>
 
                   {/* Simulated PTT Speech Bubble in Active Frame */}
                   <div className="relative z-10 text-center py-2">
-                    <div className="inline-flex flex-col items-center gap-2 p-3.5 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 shadow-xl max-w-lg mx-auto">
-                      <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
-                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse text-cyan-400" />
-                        <span className="font-mono">User Speech (~ Held): "{currentFrame.query}"</span>
+                    <div className="inline-flex flex-col items-center gap-2 p-3 sm:p-3.5 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 shadow-xl max-w-lg mx-auto w-full">
+                      <div className="flex items-center justify-center gap-1.5 text-cyan-300 font-bold text-xs">
+                        <Icon name="MicrophoneIcon" size={16} className="animate-pulse text-cyan-400 flex-shrink-0" />
+                        <span className="font-mono leading-snug">User Speech (~ Held): "{currentFrame.query}"</span>
                       </div>
-                      <div className="flex items-center gap-1 h-3.5">
+                      <div className="flex items-center justify-center gap-1 h-3.5">
                         {[40, 80, 30, 95, 60, 85, 45, 75, 35].map((h, i) => (
                           <div
                             key={`bar-${i}`}
@@ -487,10 +488,10 @@ export default function LandingPage() {
                   </div>
 
                   {/* Video Control Bar */}
-                  <div className="relative z-10 flex items-center justify-between text-xs text-muted-foreground border-t border-white/10 pt-2">
+                  <div className="relative z-10 flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground border-t border-white/10 pt-2">
                     <span className="font-mono text-cyan-300">{currentFrame.timestamp} / 52:30</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-foreground">Anti-Spoiler Bound: @ {currentFrame.timestamp}</span>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-foreground">Anti-Spoiler Bound: @ {currentFrame.timestamp}</span>
                     </div>
                   </div>
                 </div>
@@ -578,10 +579,10 @@ export default function LandingPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-6">
             Trusted by students studying courseware from
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 opacity-75">
+          <div className="flex flex-wrap justify-center items-center gap-6 md:gap-12 opacity-85">
             {UNIVERSITIES.map((u) => (
-              <div key={`uni-${u.name}`} className="flex items-center gap-2 text-sm font-bold text-foreground-muted hover:opacity-100 transition-opacity">
-                <span className="text-lg">{u.logo}</span>
+              <div key={`uni-${u.name}`} className="flex items-center gap-2 text-xs sm:text-sm font-bold text-foreground-muted hover:text-foreground transition-colors">
+                <Icon name={u.icon as Parameters<typeof Icon>[0]['name']} size={18} className="text-indigo-400" />
                 <span>{u.name}</span>
               </div>
             ))}
