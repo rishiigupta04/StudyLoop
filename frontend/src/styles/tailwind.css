@@ -392,6 +392,15 @@
     border-radius: 2px;
   }
 
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* ── PTT / Voice ── */
   .ptt-pulse {
     animation: ptt-pulse-anim 2s ease-in-out infinite;

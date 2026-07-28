@@ -399,12 +399,12 @@ export default function LandingPage() {
                 <span className="w-3 h-3 rounded-full bg-yellow-500/80 inline-block" />
                 <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
                 <span className="ml-2 text-xs font-mono text-muted-foreground hidden md:inline-block">
-                  studyloop.ai/video-study-page (Stanford CS229: Gradient Descent Loss Landscape)
+                  studyloop.ai/video-study-page
                 </span>
               </div>
 
               {/* Touch-Scrollable Interactive GIF Timeline Frame Controller */}
-              <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1 overflow-x-auto scrollbar-none max-w-full">
+              <div className="flex items-center gap-1.5 bg-obsidian border border-border/60 rounded-xl p-1 overflow-x-auto sm:overflow-x-visible flex-wrap sm:flex-nowrap scrollbar-none max-w-full">
                 <button
                   onClick={() => setIsPlayingGif(!isPlayingGif)}
                   className="px-2.5 py-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-indigo-600/50 transition-colors whitespace-nowrap flex-shrink-0"
