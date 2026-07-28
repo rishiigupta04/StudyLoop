@@ -73,9 +73,10 @@ const mockAIResponses: Record<string, string> = {
 
 interface QAChatTabProps {
   onTimestampClick: (ts: string) => void;
+  onOpenVoiceModal?: () => void;
 }
 
-export default function QAChatTab({ onTimestampClick }: QAChatTabProps) {
+export default function QAChatTab({ onTimestampClick, onOpenVoiceModal }: QAChatTabProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -236,11 +237,18 @@ export default function QAChatTab({ onTimestampClick }: QAChatTabProps) {
             />
           </div>
           <button
-            onClick={() => toast.info('Voice input — click the mic button on the video pane')}
-            className="p-2.5 rounded-xl bg-highlight/10 text-highlight hover:bg-highlight/20 transition-all duration-150 flex-shrink-0"
+            onClick={() => {
+              if (onOpenVoiceModal) {
+                onOpenVoiceModal();
+              } else {
+                toast.info('Voice input — hold ~ key or click Voice Copilot in header');
+              }
+            }}
+            className="p-2.5 rounded-xl bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600/40 border border-indigo-500/30 transition-all duration-150 flex-shrink-0"
             aria-label="Voice input"
+            title="Voice question (hold ~ key)"
           >
-            <Icon name="MicrophoneIcon" size={18} />
+            <Icon name="MicrophoneIcon" size={18} className="text-indigo-400" />
           </button>
           <button
             onClick={sendMessage}

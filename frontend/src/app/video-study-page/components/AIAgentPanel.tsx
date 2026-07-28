@@ -9,6 +9,7 @@ type Tab = 'transcript' | 'qa' | 'notes';
 interface AIAgentPanelProps {
   activeTimestamp: string;
   onTimestampClick: (ts: string) => void;
+  onOpenVoiceModal?: () => void;
 }
 
 const tabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
@@ -17,7 +18,7 @@ const tabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
   { id: 'notes', label: 'Notes', icon: 'PencilSquareIcon', badge: 5 },
 ];
 
-export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAgentPanelProps) {
+export default function AIAgentPanel({ activeTimestamp, onTimestampClick, onOpenVoiceModal }: AIAgentPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('transcript');
 
   return (
@@ -60,7 +61,7 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick }: AIAg
           />
         )}
         {activeTab === 'qa' && (
-          <QAChatTab onTimestampClick={onTimestampClick} />
+          <QAChatTab onTimestampClick={onTimestampClick} onOpenVoiceModal={onOpenVoiceModal} />
         )}
         {activeTab === 'notes' && (
           <NotesTab />

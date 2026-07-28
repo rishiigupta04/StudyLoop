@@ -58,6 +58,15 @@ export default function VideoStudyLayout() {
             Transcript Active
           </span>
           <button
+            onClick={() => ptt.startListening()}
+            className="px-2.5 py-1 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-indigo-600/40 transition-colors shadow-glow-indigo-sm"
+            title="Hold ~ or click to ask voice question"
+          >
+            <Icon name="MicrophoneIcon" size={14} className="text-indigo-400 ptt-pulse" />
+            <span className="hidden sm:inline font-bold">Voice Copilot</span>
+            <kbd className="hidden md:inline-block px-1.5 py-0.2 text-[10px] font-mono rounded bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 font-semibold">~</kbd>
+          </button>
+          <button
             onClick={handleShareSession}
             className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             title="Share Study Session Link"
@@ -92,19 +101,10 @@ export default function VideoStudyLayout() {
           <AIAgentPanel
             activeTimestamp={activeTimestamp}
             onTimestampClick={(ts) => setActiveTimestamp(ts)}
+            onOpenVoiceModal={() => ptt.startListening()}
           />
         </div>
       </div>
-
-      {/* Fixed Viewport FAB for Mobile/Quick Voice Access */}
-      <button
-        onClick={() => ptt.startListening()}
-        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 w-14 h-14 rounded-full btn-primary shadow-glow-indigo flex items-center justify-center ptt-pulse z-40"
-        aria-label="Push to Talk — voice question"
-        title="Hold down ~ or tap to ask voice question"
-      >
-        <Icon name="MicrophoneIcon" size={24} className="text-white" />
-      </button>
 
       {/* Voice Modal (Triggered via ~ Key or UI Button) */}
       {ptt.isOpen && (
