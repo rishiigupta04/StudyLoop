@@ -10,8 +10,9 @@
 :root {
   /* Core palette */
   --background: #0B0E17;
-  --surface-card: #151926;
-  --surface-elevated: #1E2235;
+  /* RGB channels so Tailwind's surface-* colors take opacity modifiers */
+  --surface-card: 21 25 38;         /* #151926 */
+  --surface-elevated: 30 34 53;     /* #1E2235 */
   --foreground: #F1F5F9;
   --foreground-muted: #94A3B8;
 

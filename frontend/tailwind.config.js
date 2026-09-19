@@ -49,6 +49,10 @@ export default {
         destructive: 'var(--destructive)',
 
         // ── Electric Indigo & Obsidian design system ──
+        surface: {
+          card: 'rgb(var(--surface-card) / <alpha-value>)',
+          elevated: 'rgb(var(--surface-elevated) / <alpha-value>)',
+        },
         obsidian: {
           DEFAULT: '#0B0E17',
           50: '#1a1f2e',
