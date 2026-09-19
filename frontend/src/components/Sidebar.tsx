@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import AppLogo from '@/components/ui/AppLogo';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
+import { initials, useAuth } from '@/context/AuthContext';
 
 interface NavItem {
   label: string;
@@ -28,17 +29,19 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { xp, level, levelTitle, streakDays, prevLevelXP, nextLevelXP } = useGamification();
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const displayName = (user?.user_metadata?.full_name as string | undefined) || user?.email?.split('@')[0] || 'Student';
 
   const currentLevelXP = xp - prevLevelXP;
   const levelTargetXP = nextLevelXP - prevLevelXP;
   const xpPercent = Math.min(100, Math.max(0, (currentLevelXP / levelTargetXP) * 100));
 
-  const handleSignOut = (e: React.MouseEvent) => {
+  const handleSignOut = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    toast.success('Signed out successfully!');
-    navigate('/');
-    window.location.href = '/';
+    await signOut();
+    toast.success('Signed out');
+    navigate('/', { replace: true });
   };
 
   const handleGoToSettings = () => {
@@ -181,14 +184,14 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
             title="Open Account & Settings (/settings)"
           >
             <div className="w-8 h-8 rounded-full gradient-indigo-cyan flex items-center justify-center flex-shrink-0 text-white text-xs font-extrabold shadow-glow-indigo-sm group-hover/usr:scale-105 transition-transform">
-              RG
+              {initials(user)}
             </div>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-semibold text-foreground truncate group-hover/usr:text-indigo-300 transition-colors">
-                  Rishiraj Gupta
+                  {displayName}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">rishiraj@studyloop.ai</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             )}
           </button>

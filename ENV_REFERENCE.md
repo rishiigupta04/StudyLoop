@@ -1,68 +1,33 @@
-# STUDYLOOP — Environment Variables Reference
+# STUDYLOOP — Environment Variables (v2, 18 Sep 2026)
 
-> All frontend environment variables **must** use the `VITE_` prefix to be exposed to client-side code by Vite.
-> Backend variables (used only in FastAPI) do **not** need this prefix.
+**Rule:** anything prefixed `VITE_` is compiled into the public JavaScript bundle. Only public values may use it.
+Every provider key (TranscriptAPI, Groq, Gemini, HF, Supabase service role) lives in `backend/.env` / the Render dashboard.
 
----
+## Frontend — `frontend/.env` (and Vercel → Project → Environment Variables)
 
-## Frontend Variables (`.env` at project root)
+| Variable | Required | Example | Notes |
+|---|:-:|---|---|
+| `VITE_SUPABASE_URL` | yes | `https://abc.supabase.co` | public |
+| `VITE_SUPABASE_ANON_KEY` | yes | `sb_publishable_...` (legacy: `eyJ...`) | publishable key; public by design (RLS protects data) |
+| `VITE_API_URL` | yes | `http://localhost:8000` / `https://studyloop-api.onrender.com` | backend origin, no trailing `/api` |
+| `VITE_SITE_URL` | no | `http://localhost:4028` | |
 
-| Variable | Required | Default | Description |
-| :--- | :---: | :--- | :--- |
-| `VITE_SUPABASE_URL` | Yes | — | Supabase project URL (e.g. `https://abc.supabase.co`) |
-| `VITE_SUPABASE_ANON_KEY` | Yes | — | Supabase anonymous/public API key |
-| `VITE_TRANSCRIPT_API_KEY` | No | — | TranscriptAPI bearer token. When absent, service returns mock data. |
-| `VITE_SITE_URL` | No | `http://localhost:4028` | Public site URL for SEO/meta tags |
-| `VITE_WS_URL` | No | `ws://localhost:8000` | WebSocket server URL for voice bridge |
+❌ Removed: `VITE_TRANSCRIPT_API_KEY`, `VITE_GROQ_API_KEY*`, `VITE_HF_API_TOKEN`, `VITE_API_BASE_URL`. **Delete them in Vercel too and rotate the keys** — they were publicly readable.
 
-### Example `.env`
+## Backend — `backend/.env` (template: `backend/.env.example`; Render dashboard in prod)
 
-```bash
-# Supabase
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOi...your-anon-key
-
-# TranscriptAPI (optional — mock data used when absent)
-VITE_TRANSCRIPT_API_KEY=your-transcript-api-key
-
-# WebSocket backend (Phase 3+)
-VITE_WS_URL=ws://localhost:8000
-
-# Site
-VITE_SITE_URL=http://localhost:4028
-```
-
----
-
-## Backend Variables (FastAPI `.env` in `backend/` directory — Phase 4+)
-
-| Variable | Required | Description |
-| :--- | :---: | :--- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string with pgvector extension |
-| `REDIS_URL` | Yes | Redis connection string (e.g. `redis://localhost:6379/0`) |
-| `HF_API_KEY` | Yes | HuggingFace Inference API key for Whisper ASR, Qwen2.5 LLM, BGE-M3 |
-| `TRANSCRIPT_API_KEY` | Yes | TranscriptAPI bearer token (server-side for secure ingestion) |
-| `SECRET_KEY` | Yes | JWT signing secret for auth tokens |
-| `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Yes | Supabase **service role** key (admin access, never expose to client) |
-| `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `http://localhost:4028`) |
-
----
-
-## Migration Notes
-
-> [!WARNING]
-> The legacy `.env` file contains `NEXT_PUBLIC_*` variables from the original Next.js codebase. These must be migrated to `VITE_*` prefix for Vite compatibility. `NEXT_PUBLIC_*` variables are **not** exposed to client code by Vite.
-
-| Legacy Variable | New Variable |
-| :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | `VITE_SUPABASE_URL` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `VITE_SUPABASE_ANON_KEY` |
-| `NEXT_PUBLIC_SITE_URL` | `VITE_SITE_URL` |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Removed (not needed for MVP) |
-| `NEXT_PUBLIC_ADSENSE_ID` | Removed (not needed for MVP) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Removed (not needed for MVP) |
-| `OPENAI_API_KEY` | Removed (using HuggingFace API instead) |
-| `GEMINI_API_KEY` | Removed (using HuggingFace API instead) |
-| `ANTHROPIC_API_KEY` | Removed (using HuggingFace API instead) |
-| `PERPLEXITY_API_KEY` | Removed (using HuggingFace API instead) |
+| Variable | Required | Notes |
+|---|:-:|---|
+| `ENV` | yes | `dev` \| `prod`. In `dev` with no Supabase config, requests run as a demo user. |
+| `CORS_ORIGINS` | yes | comma-separated, e.g. `http://localhost:4028,https://studylooop.vercel.app` |
+| `SUPABASE_URL` | yes | JWKS token verification (this project signs ES256) + PostgREST writes |
+| `SUPABASE_JWT_SECRET` | legacy only | only if the project still signs with the HS256 shared secret |
+| `SUPABASE_SERVICE_KEY` | yes (0b+) | `sb_secret_...` (or legacy service_role JWT) — backend writes `study_sessions`, later shared tables. Never `VITE_`. |
+| `REQUIRE_AUTH` | yes | `true` everywhere real; `false` only for an anonymous local demo |
+| `DATABASE_URL` | Tier 1a+ | Supabase pooler connection string (pgvector + checkpointer) |
+| `TRANSCRIPT_API_KEY` | yes | TranscriptAPI.com bearer token |
+| `GROQ_API_KEY` | Tier 1b+ | primary LLM |
+| `GEMINI_API_KEY` | Tier 1b+ | LLM fallback |
+| `HF_TOKEN` | Tier 1a+ | hosted BGE-M3 embeddings |
+| `CLASSIFIER` | no | `regex` (Tier 0) → `onnx` (Tier 1c) |
+| `CONFIDENCE_THRESHOLD` | no | tuned from the confusion matrix in Tier 1c |

@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { useAppFullscreen } from '@/hooks/useAppFullscreen';
+import type { YouTubePlayerApi } from '@/hooks/useYouTubePlayer';
+import { PLAYBACK_RATES } from '@/lib/playerActions';
+import { formatClock } from '@/lib/time';
 
 interface Chapter {
   id: string;
@@ -114,15 +117,17 @@ interface VideoPaneProps {
   activeTimestamp: string;
   onTimestampClick: (ts: string) => void;
   onOpenVoiceModal: () => void;
+  player: YouTubePlayerApi;
+  playerHostRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export default function VideoPane({
   activeTimestamp,
   onTimestampClick,
   onOpenVoiceModal,
+  player,
+  playerHostRef,
 }: VideoPaneProps) {
-  const [speed, setSpeed] = useState('1x');
-  const [isMuted, setIsMuted] = useState(false);
   const [currentChapter, setCurrentChapter] = useState('ch-peak1d');
   const [activeTab, setActiveTab] = useState<'summary' | 'chapters'>('summary');
   
@@ -130,9 +135,10 @@ export default function VideoPane({
   const { isFullscreen, toggleFullscreen } = useAppFullscreen(paneContainerRef);
 
   const activeChapter = chapters.find((c) => c.id === currentChapter);
-  const progressPercent = activeChapter ? (activeChapter.timeSeconds / totalSeconds) * 100 : 30;
+  const duration = player.duration || totalSeconds;
+  const progressPercent = duration > 0 ? Math.min(100, (player.currentTime / duration) * 100) : 0;
 
-  const speeds = ['0.75x', '1x', '1.25x', '1.5x', '2x'];
+  const speeds = PLAYBACK_RATES.filter((r) => r >= 0.75);
 
   return (
     <div
@@ -144,12 +150,13 @@ export default function VideoPane({
       {/* YouTube Embed Container */}
       <div className="relative w-full bg-black flex items-center justify-center flex-shrink-0 max-h-[48vh] sm:max-h-[52vh] overflow-hidden">
         <div className="w-full aspect-video relative max-h-[48vh] sm:max-h-[52vh]">
-          <iframe
-            src="https://www.youtube.com/embed/dQw4w9WgXcQ?modestbranding=1&rel=0&showinfo=0&fs=0&enablejsapi=1"
-            title="MIT 6.006 Introduction to Algorithms - Lecture 1"
-            className="absolute inset-0 w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          />
+          {/* Real YouTube IFrame player (useYouTubePlayer mounts into this host) */}
+          <div ref={playerHostRef} className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
+          {player.status !== 'ready' && (
+            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground pointer-events-none">
+              {player.status === 'error' ? player.error : 'Loading player…'}
+            </div>
+          )}
         </div>
       </div>
 
@@ -157,7 +164,13 @@ export default function VideoPane({
       <div className="bg-surface-card/90 border-b border-border/80 px-4 py-2.5 flex-shrink-0">
         {/* Progress bar */}
         <div className="mb-2.5 relative">
-          <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden cursor-pointer">
+          <div
+            className="h-1.5 bg-surface-elevated rounded-full overflow-hidden cursor-pointer"
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              player.seekTo(((e.clientX - r.left) / r.width) * duration);
+            }}
+          >
             <div
               className="h-full rounded-full bg-indigo-500 progress-bar-fill shadow-glow-indigo-sm"
               style={{ width: `${progressPercent}%` }}
@@ -173,7 +186,7 @@ export default function VideoPane({
               }}
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-obsidian transition-all duration-150 hover:scale-125 z-10"
               style={{
-                left: `${(ch.timeSeconds / totalSeconds) * 100}%`,
+                left: `${(ch.timeSeconds / duration) * 100}%`,
                 background: ch.id === currentChapter ? '#7C3AED' : '#64748B',
               }}
               title={`${ch.time} — ${ch.title}`}
@@ -187,29 +200,32 @@ export default function VideoPane({
           {/* Left: Playback buttons */}
           <div className="flex items-center gap-1">
             <button
+              onClick={() => player.seekTo(Math.max(0, player.getCurrentTime() - 10))}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               title="Rewind 10s"
             >
               <Icon name="BackwardIcon" size={16} />
             </button>
             <button
+              onClick={() => (player.isPlaying ? player.pause() : player.play())}
               className="p-2 rounded-xl btn-primary text-white mx-1 shadow-glow-indigo-sm"
-              title="Pause"
+              title={player.isPlaying ? 'Pause' : 'Play'}
             >
-              <Icon name="PauseIcon" size={16} />
+              <Icon name={player.isPlaying ? 'PauseIcon' : 'PlayIcon'} size={16} />
             </button>
             <button
+              onClick={() => player.seekTo(Math.min(duration, player.getCurrentTime() + 10))}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               title="Forward 10s"
             >
               <Icon name="ForwardIcon" size={16} />
             </button>
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => (player.muted ? player.unmute() : player.mute())}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
-              title={isMuted ? 'Unmute' : 'Mute'}
+              title={player.muted ? 'Unmute' : 'Mute'}
             >
-              <Icon name={isMuted ? 'SpeakerXMarkIcon' : 'SpeakerWaveIcon'} size={16} />
+              <Icon name={player.muted ? 'SpeakerXMarkIcon' : 'SpeakerWaveIcon'} size={16} />
             </button>
           </div>
 
@@ -229,20 +245,20 @@ export default function VideoPane({
           {/* Right: Time, Speed & App Fullscreen Toggle */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
-              {activeChapter?.time} / 1:20:00
+              {formatClock(player.currentTime)} / {formatClock(duration)}
             </span>
             <div className="flex gap-0.5 bg-surface-elevated rounded-lg p-0.5 border border-border/60">
               {speeds.map((s) => (
                 <button
                   key={`speed-${s}`}
-                  onClick={() => setSpeed(s)}
+                  onClick={() => player.setRate(s)}
                   className={`text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
-                    speed === s
+                    player.rate === s
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {s}
+                  {s}x
                 </button>
               ))}
             </div>

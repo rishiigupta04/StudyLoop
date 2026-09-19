@@ -1,3 +1,6 @@
+> [!WARNING]
+> Parts of this doc are **superseded** by [`STUDYLOOP_ROADMAP_V2.md`](./STUDYLOOP_ROADMAP_V2.md): no Whisper/audio streaming (browser ASR sends text), no Redis, no self-hosted Qwen/6 GB VRAM budget, and the LangGraph shape in roadmap §2 replaces the 9-node DAG.
+
 # STUDYLOOP — Comprehensive System Architecture
 
 > **A Bilingual, Voice-Native Study Copilot for Video-Based Learning**  

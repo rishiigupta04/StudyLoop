@@ -1,3 +1,6 @@
+> [!WARNING]
+> Superseded by [`backend/migrations/001_init.sql`](./backend/migrations/001_init.sql) (schema v2: `videos`, `transcript_chunks` with `end_s`, `study_sessions`, `notes`, `interaction_logs`).
+
 # STUDYLOOP — Database Schema Reference
 
 > Complete SQL DDL for PostgreSQL + pgvector. Run in Supabase SQL Editor or via `psql`.

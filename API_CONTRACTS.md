@@ -1,3 +1,6 @@
+> [!WARNING]
+> Being replaced per [`STUDYLOOP_ROADMAP_V2.md`](./STUDYLOOP_ROADMAP_V2.md) §2/§7: auth is Supabase-direct (no `/api/auth/*`), voice uses the `/ws/session` protocol. Live today: `GET /health`, `GET /api/videos/{id}/transcript` (always 200; `has_transcript` + `fail_reason` + `retryable`), and `WS /ws/session` (protocol documented at the top of `backend/app/ws.py`).
+
 # STUDYLOOP — API Contract Reference
 
 > Complete REST and WebSocket API specification for frontend ↔ backend communication.

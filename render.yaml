@@ -1,0 +1,33 @@
+﻿# Render Blueprint â€” backend only (frontend stays on Vercel, DB on Supabase).
+services:
+  - type: web
+    name: studyloop-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: prod
+      - key: CORS_ORIGINS
+        value: https://studylooop.vercel.app
+      - key: CLASSIFIER
+        value: regex
+      - key: REQUIRE_AUTH
+        value: "true"    # Tier 0b: the frontend signs in with Supabase Auth
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: TRANSCRIPT_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HF_TOKEN
+        sync: false

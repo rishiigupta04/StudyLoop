@@ -9,22 +9,28 @@ import NotesPage from './pages/NotesPage';
 import ChatHistoryPage from './pages/ChatHistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
+import RequireAuth from './components/RequireAuth';
+import { AuthProvider } from './context/AuthContext';
 import { GamificationProvider } from './context/GamificationContext';
+
+const guarded = (page: React.ReactNode) => <RequireAuth>{page}</RequireAuth>;
 
 export default function App() {
   return (
-    <GamificationProvider>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard-home" element={<DashboardHomePage />} />
-        <Route path="/video-study-page" element={<VideoStudyPage />} />
-        <Route path="/library" element={<LibraryPage />} />
-        <Route path="/notes" element={<NotesPage />} />
-        <Route path="/chat-history" element={<ChatHistoryPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </GamificationProvider>
+    <AuthProvider>
+      <GamificationProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/dashboard-home" element={guarded(<DashboardHomePage />)} />
+          <Route path="/video-study-page" element={guarded(<VideoStudyPage />)} />
+          <Route path="/library" element={guarded(<LibraryPage />)} />
+          <Route path="/notes" element={guarded(<NotesPage />)} />
+          <Route path="/chat-history" element={guarded(<ChatHistoryPage />)} />
+          <Route path="/settings" element={guarded(<SettingsPage />)} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </GamificationProvider>
+    </AuthProvider>
   );
 }

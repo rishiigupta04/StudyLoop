@@ -1,7 +1,10 @@
 /**
- * TranscriptAPI Service for StudyLoop Web
- * Official API Base URL: https://transcriptapi.com/api/v2
+ * Transcript service — calls the StudyLoop backend, which proxies TranscriptAPI server-side.
+ * TranscriptAPI works even for captions-disabled videos, so a missing transcript is an explained
+ * failure (`failReason`), never a silent fallback to fake content (roadmap D10b).
  */
+
+import { apiGet } from './apiClient';
 
 export interface TranscriptSegment {
   text: string;
@@ -17,161 +20,116 @@ export interface VideoMetadata {
   thumbnail_url: string;
 }
 
+export type TranscriptFailReason =
+  | 'invalid_video'
+  | 'unavailable'
+  | 'no_speech'
+  | 'rate_limited'
+  | 'credits_exhausted'
+  | 'no_plan'
+  | 'provider_auth'
+  | 'provider_error'
+  | 'timeout'
+  | 'not_configured'
+  | 'backend_unreachable';
+
+export type TranscriptSource = 'creator' | 'youtube_asr' | 'api_generated';
+
 export interface TranscriptResponse {
   video_id: string;
-  language: string;
+  hasTranscript: boolean;
+  language: string | null;
+  source: TranscriptSource | null;
   transcript: TranscriptSegment[];
-  metadata?: VideoMetadata;
-  length_seconds?: number;
-  lengthText?: string;
+  metadata?: VideoMetadata | null;
+  length_seconds?: number | null;
   isHinglish?: boolean;
+  failReason?: TranscriptFailReason | null;
+  retryable?: boolean;
 }
 
-const TRANSCRIPT_API_BASE_URL = 'https://transcriptapi.com/api/v2';
-
-/**
- * Helper to extract YouTube Video ID from any URL format
- */
-export function extractYouTubeId(urlOrId: string): string {
-  if (!urlOrId) return 'dQw4w9WgXcQ';
-  const trimmed = urlOrId.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-    return trimmed;
-  }
-  const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  return match ? match[1] : trimmed;
+interface BackendTranscript {
+  video_id: string;
+  has_transcript: boolean;
+  language: string | null;
+  source: TranscriptSource | null;
+  segments: { text: string; start: number; duration: number }[];
+  metadata: VideoMetadata | null;
+  length_seconds: number | null;
+  fail_reason: TranscriptFailReason | null;
+  retryable: boolean;
 }
 
-/**
- * Format seconds into HH:MM:SS or MM:SS
- */
+/** User-facing copy for each failure. Playback-only mode stays available in every case. */
+export const TRANSCRIPT_FAIL_MESSAGES: Record<TranscriptFailReason, { en: string; hi: string }> = {
+  invalid_video: { en: "That doesn't look like a YouTube video link.", hi: 'यह YouTube वीडियो का लिंक नहीं लग रहा।' },
+  unavailable: {
+    en: 'This video is private, live, removed or restricted — voice playback still works, but Q&A and smart seek are off.',
+    hi: 'यह वीडियो private, live या restricted है — voice से playback चलेगा, पर Q&A और smart seek बंद हैं।',
+  },
+  no_speech: { en: 'No speech found in this video, so Q&A is off.', hi: 'इस वीडियो में बोली गई बात नहीं मिली, इसलिए Q&A बंद है।' },
+  rate_limited: { en: 'Transcript service is busy — retry in a moment.', hi: 'Transcript service busy है — थोड़ी देर में retry करें।' },
+  credits_exhausted: { en: 'Transcript credits are used up.', hi: 'Transcript credits खत्म हो गए हैं।' },
+  no_plan: { en: 'Transcript service needs an active plan on the server.', hi: 'Server पर transcript service का plan active नहीं है।' },
+  provider_auth: { en: 'Transcript service is misconfigured.', hi: 'Transcript service की setting गलत है।' },
+  provider_error: { en: 'Transcript service had an error — retry.', hi: 'Transcript service में error आया — retry करें।' },
+  timeout: { en: 'Transcribing took too long — retry.', hi: 'Transcript बनने में ज़्यादा समय लगा — retry करें।' },
+  not_configured: { en: 'Transcript service is not configured on the server.', hi: 'Server पर transcript service set नहीं है।' },
+  backend_unreachable: { en: "Can't reach the StudyLoop server — retry.", hi: 'StudyLoop server से connect नहीं हो पा रहा — retry करें।' },
+};
+
+/** Extract an 11-char YouTube video ID from any URL format (or return null). */
+export function extractYouTubeId(urlOrId: string): string | null {
+  const trimmed = (urlOrId || '').trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?(?:.*&)?v=))([\w-]{11})/
+  );
+  return match ? match[1] : null;
+}
+
+/** Format seconds into H:MM:SS or M:SS */
 export function formatSecondsToTimestamp(totalSecs: number): string {
   const hrs = Math.floor(totalSecs / 3600);
   const mins = Math.floor((totalSecs % 3600) / 60);
   const secs = Math.floor(totalSecs % 60);
-
   const pad = (n: number) => n.toString().padStart(2, '0');
-
-  if (hrs > 0) {
-    return `${hrs}:${pad(mins)}:${pad(secs)}`;
-  }
-  return `${mins}:${pad(secs)}`;
+  return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${mins}:${pad(secs)}`;
 }
 
 /**
- * Fallback Mock Data for Offline / Demo Mode
+ * Fetch a video's transcript via the backend. Never throws: failures come back as
+ * `hasTranscript: false` + `failReason` so the UI can drop into playback-only mode with a clear message.
  */
-const MOCK_DEMO_TRANSCRIPT: TranscriptResponse = {
-  video_id: 'dQw4w9WgXcQ',
-  language: 'en',
-  length_seconds: 4800,
-  lengthText: '1:20:00',
-  metadata: {
-    title: 'MIT 6.006 Introduction to Algorithms — Lecture 1',
-    author_name: 'MIT OpenCourseWare',
-    author_url: 'https://www.youtube.com/@mitocw',
-    thumbnail_url: 'https://img.rocket.new/generatedImages/rocket_gen_img_1f91741a0-1779812637968.png',
-  },
-  transcript: [
-    { start: 0, duration: 272, text: 'Welcome to 6.006, Introduction to Algorithms. My name is Erik Demaine and this is my co-lecturer, Jason Ku.', timestamp: '0:00' },
-    { start: 272, duration: 463, text: "This course is about how to solve computational problems and how to communicate that you've solved them correctly and efficiently.", timestamp: '4:32' },
-    { start: 735, duration: 715, text: 'An algorithm is a computational procedure for solving a problem. What makes a good algorithm? Correctness, efficiency, and clarity.', timestamp: '12:15' },
-    { start: 1450, duration: 875, text: "Let's talk about peak finding. A peak in a 1D array is an element greater than or equal to its neighbors. Every non-empty array has at least one peak.", timestamp: '24:10' },
-    { start: 2325, duration: 825, text: 'For a 2D peak, we need a different approach. The greedy ascent algorithm walks uphill from any starting point but can be O(n²) in the worst case.', timestamp: '38:45' },
-    { start: 3150, duration: 950, text: 'Time complexity: we analyze algorithms by counting operations as a function of input size n. Asymptotic notation captures the dominant term.', timestamp: '52:30' },
-    { start: 4100, duration: 700, text: 'To summarize: peak finding demonstrates the difference between O(n) naive scan, O(log n) divide and conquer for 1D, and O(n log n) for 2D.', timestamp: '1:08:20' },
-  ],
-};
-
-/**
- * Fetch video metadata & available languages (Free Endpoint)
- */
-export async function fetchVideoInfo(videoUrl: string, apiKey?: string) {
-  const key = apiKey || import.meta.env.VITE_TRANSCRIPT_API_KEY;
-  if (!key) {
-    return {
-      video_id: extractYouTubeId(videoUrl),
-      available_languages: [{ code: 'en', name: 'English' }],
-    };
-  }
+export async function fetchVideoTranscript(videoUrlOrId: string): Promise<TranscriptResponse> {
+  const videoId = extractYouTubeId(videoUrlOrId);
+  const empty = (failReason: TranscriptFailReason, retryable: boolean): TranscriptResponse => ({
+    video_id: videoId || videoUrlOrId,
+    hasTranscript: false,
+    language: null,
+    source: null,
+    transcript: [],
+    failReason,
+    retryable,
+  });
+  if (!videoId) return empty('invalid_video', false);
 
   try {
-    const videoId = extractYouTubeId(videoUrl);
-    const res = await fetch(`${TRANSCRIPT_API_BASE_URL}/youtube/info?video_url=${encodeURIComponent(videoId)}`, {
-      headers: {
-        Authorization: `Bearer ${key}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(`TranscriptAPI Info returned HTTP ${res.status}`);
-    }
-
-    return await res.json();
-  } catch (err) {
-    console.warn('TranscriptAPI info fetch failed, falling back to basic info:', err);
+    const data = await apiGet<BackendTranscript>(`/api/videos/${videoId}/transcript`);
     return {
-      video_id: extractYouTubeId(videoUrl),
-      available_languages: [{ code: 'en', name: 'English' }],
-    };
-  }
-}
-
-/**
- * Fetch Video Transcript via TranscriptAPI
- * Supports Hindi/Hinglish priority matching (hi, asr-hi, en, asr-en)
- */
-export async function fetchVideoTranscript(
-  videoUrl: string,
-  apiKey?: string
-): Promise<TranscriptResponse> {
-  const key = apiKey || import.meta.env.VITE_TRANSCRIPT_API_KEY;
-
-  if (!key) {
-    console.info('No VITE_TRANSCRIPT_API_KEY set. Operating in high-quality Mock / Demo mode.');
-    return MOCK_DEMO_TRANSCRIPT;
-  }
-
-  try {
-    const videoId = extractYouTubeId(videoUrl);
-
-    // Language Priority: Try Hindi/Hinglish creator captions first, then auto-generated Hindi (asr-hi), then English
-    const languagePriority = 'hi,asr-hi,en,asr-en';
-
-    const url = `${TRANSCRIPT_API_BASE_URL}/youtube/transcript?video_url=${encodeURIComponent(videoId)}&language=${languagePriority}&send_metadata=true&include_timestamp=true&format=json`;
-
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${key}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(`TranscriptAPI error: ${res.statusText} (${res.status})`);
-    }
-
-    const data = await res.json();
-
-    const isHindiOrHinglish = data.language?.includes('hi') || data.language?.includes('asr-hi');
-
-    const formattedTranscript: TranscriptSegment[] = (data.transcript || []).map((seg: any) => ({
-      text: seg.text,
-      start: seg.start,
-      duration: seg.duration,
-      timestamp: formatSecondsToTimestamp(seg.start),
-    }));
-
-    return {
-      video_id: data.video_id || videoId,
-      language: data.language || 'en',
-      isHinglish: isHindiOrHinglish,
-      transcript: formattedTranscript,
+      video_id: data.video_id,
+      hasTranscript: data.has_transcript,
+      language: data.language,
+      source: data.source,
+      isHinglish: Boolean(data.language?.includes('hi')),
+      transcript: data.segments.map((s) => ({ ...s, timestamp: formatSecondsToTimestamp(s.start) })),
       metadata: data.metadata,
       length_seconds: data.length_seconds,
-      lengthText: data.lengthText,
+      failReason: data.fail_reason,
+      retryable: data.retryable,
     };
-  } catch (error) {
-    console.error('Failed to fetch transcript from TranscriptAPI, using fallback:', error);
-    return MOCK_DEMO_TRANSCRIPT;
+  } catch (err) {
+    console.warn('[transcriptService] backend unreachable:', err);
+    return empty('backend_unreachable', true);
   }
 }

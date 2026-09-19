@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import App from './App';
+import { warmUpBackend } from './services/apiClient';
 import './styles/tailwind.css';
+
+// Wake a sleeping free-tier backend as early as possible (roadmap D11).
+warmUpBackend();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

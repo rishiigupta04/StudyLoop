@@ -1,3 +1,6 @@
+> [!WARNING]
+> This roadmap is **superseded** by [`STUDYLOOP_ROADMAP_V2.md`](./STUDYLOOP_ROADMAP_V2.md) (18 Sep 2026). Kept for history — do not build from it.
+
 # STUDYLOOP — Phase-by-Phase Execution Roadmap
 
 > **Strategy**: Incremental, non-breaking development roadmap. Each phase has explicit entry criteria, deliverables, verification gates, and rollback boundaries. No phase proceeds until the previous phase passes its verification gate.

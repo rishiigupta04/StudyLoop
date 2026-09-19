@@ -194,7 +194,7 @@ curl -X GET "https://transcriptapi.com/api/v2/youtube/transcript
 | Info Fetch | **Free** |
 
 > [!TIP]
-> Always call `GET /youtube/info` first (free) to confirm transcript availability before spending a transcript credit. Redis caching (Phase 4) eliminates re-fetching the same video's transcript.
+> **Updated 18 Sep 2026 (roadmap D10b):** do NOT pre-gate on `/youtube/info`. TranscriptAPI can return transcripts even for videos with captions disabled, and `/info` would report no tracks for those. Call `/youtube/transcript` directly from the backend; the `videos` table caches results so each video costs a credit once. TODO(Stage A): record latency, credit cost and returned `language` for one captions-disabled video here.
 
 ---
 

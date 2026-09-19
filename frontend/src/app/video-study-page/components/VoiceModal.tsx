@@ -1,21 +1,22 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@/components/ui/AppIcon';
-import { PTTStage } from '@/hooks/useTildePTT';
+import type { PTTStage, TurnMeta } from '@/hooks/useTildePTT';
 
 const pipelineSteps = [
-  { id: 'step-asr', label: 'Whisper ASR', desc: 'Speech to Text' },
-  { id: 'step-intent', label: 'DistilBERT Intent', desc: 'Intent Classifier' },
-  { id: 'step-rag', label: 'BGE-M3 RAG', desc: 'Retrieving context' },
-  { id: 'step-llm', label: 'Qwen2.5 LLM', desc: 'Generating answer' },
-  { id: 'step-tts', label: 'MeloTTS', desc: 'Text to Speech' },
+  { id: 'step-asr', label: 'Browser ASR', desc: 'Speech → text (en-IN / hi-IN)' },
+  { id: 'step-norm', label: 'Normalize', desc: 'Devanagari → Hinglish, numbers' },
+  { id: 'step-intent', label: 'Intent Classifier', desc: 'Fast path vs. agents' },
+  { id: 'step-exec', label: 'Action / Answer', desc: 'Player command or reply' },
 ];
 
 const exampleCommands = [
-  { id: 'cmd-pause', text: '"pause"', desc: 'Pause video' },
-  { id: 'cmd-back', text: '"go back 10 seconds"', desc: 'Rewind 10s' },
-  { id: 'cmd-skip', text: '"skip to complexity"', desc: 'Jump to chapter' },
-  { id: 'cmd-note', text: '"note this down"', desc: 'Capture note' },
+  { id: 'cmd-pause', text: '"pause" · "रुको"', desc: 'Pause / play' },
+  { id: 'cmd-back', text: '"thoda peeche jao"', desc: 'Rewind 10s' },
+  { id: 'cmd-time', text: '"12:30 pe jao"', desc: 'Jump to a time' },
+  { id: 'cmd-speed', text: '"speed dedh karo"', desc: 'Speed 1.5×' },
+  { id: 'cmd-undo', text: '"undo" · "wapas wahin"', desc: 'Undo a jump' },
+  { id: 'cmd-help', text: '"help"', desc: 'All commands' },
 ];
 
 interface VoiceModalProps {
@@ -27,7 +28,17 @@ interface VoiceModalProps {
   onStopListening: () => void;
   onClose: () => void;
   onSeekTimestamp?: (ts: string) => void;
+  meta?: TurnMeta | null;
+  asrSupported?: boolean;
 }
+
+const ROUTE_LABEL: Record<string, string> = {
+  fast: 'Fast path',
+  seek: 'Semantic seek',
+  rag: 'Transcript Q&A',
+  notes: 'Notes agent',
+  llm: 'LLM fallback',
+};
 
 export default function VoiceModal({
   stage,
@@ -37,7 +48,8 @@ export default function VoiceModal({
   onStartListening,
   onStopListening,
   onClose,
-  onSeekTimestamp,
+  meta,
+  asrSupported = true,
 }: VoiceModalProps) {
   const waveBarCount = 24;
 
@@ -173,17 +185,31 @@ export default function VoiceModal({
                 <span className="text-xs font-bold text-indigo-400">AI Response</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed">{aiResponse}</p>
-              <button
-                onClick={() => {
-                  if (onSeekTimestamp) onSeekTimestamp('24:10');
-                  onClose();
-                }}
-                className="mt-2 text-xs font-bold text-indigo-400 hover:text-cyan-400 flex items-center gap-1 transition-colors"
-              >
-                <Icon name="PlayIcon" size={12} />
-                Jump to 24:10 →
-              </button>
+              {meta && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
+                  <span
+                    className={`px-1.5 py-0.5 rounded ${
+                      meta.route === 'fast' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-surface-elevated'
+                    }`}
+                  >
+                    {ROUTE_LABEL[meta.route || ''] || meta.route}
+                  </span>
+                  {meta.intent && (
+                    <span className="px-1.5 py-0.5 rounded bg-surface-elevated">
+                      {meta.intent} · {Math.round((meta.confidence || 0) * 100)}%
+                    </span>
+                  )}
+                  {meta.serverMs !== undefined && (
+                    <span className="px-1.5 py-0.5 rounded bg-surface-elevated">server {meta.serverMs.toFixed(1)} ms</span>
+                  )}
+                  <span className="px-1.5 py-0.5 rounded bg-surface-elevated">round-trip {meta.roundTripMs} ms</span>
+                </div>
+              )}
             </div>
+          )}
+
+          {!asrSupported && (
+            <p className="text-xs text-amber-300 mb-3">Voice input needs Chrome or Edge (Firefox has no speech recognition).</p>
           )}
 
           {/* PTT Button for Mouse Users */}
@@ -201,8 +227,8 @@ export default function VoiceModal({
             <Icon name="MicrophoneIcon" size={18} />
             {stage === 'idle' && 'Hold Button or ~ Key to Speak'}
             {stage === 'listening' && 'Listening… Release to send'}
-            {stage === 'processing' && 'Processing question…'}
-            {stage === 'responding' && 'AI Speaking…'}
+            {stage === 'processing' && 'Processing…'}
+            {stage === 'responding' && 'Hold to speak again'}
           </button>
 
           {/* Example Commands */}
