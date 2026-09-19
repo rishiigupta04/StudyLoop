@@ -1,10 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_URL, getAccessToken } from '@/services/apiClient';
 import type { PlayerAction } from '@/lib/playerActions';
+import type { VideoStatusInfo } from '@/services/transcriptService';
 
 export type Lang = 'en' | 'hi';
 /** 'unauthorized': the server rejected our token (close 4401) — reconnecting won't help, sign in again */
 export type SocketStatus = 'connecting' | 'open' | 'closed' | 'unauthorized';
+
+/** A transcript moment an answer relies on (seekable chip). */
+export interface Citation {
+  start_s: number;
+}
+
+export interface SendOptions {
+  /** Streamed answer tokens (`answer.delta`) as they arrive. */
+  onDelta?: (text: string) => void;
+}
 
 interface TurnMeta {
   turn_id: string;
@@ -16,7 +27,7 @@ interface TurnMeta {
 }
 export type ServerTurn =
   | (TurnMeta & { type: 'action'; action: PlayerAction; message: string })
-  | (TurnMeta & { type: 'answer.done'; text: string })
+  | (TurnMeta & { type: 'answer.done'; text: string; citations?: Citation[]; cancelled?: boolean })
   | { type: 'error'; turn_id?: string; code: string; message: string };
 
 export interface TurnResult {
@@ -46,16 +57,21 @@ export function useStudySocket(opts: {
   const { videoId, language, getPlayback } = opts;
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(newId());
-  const pendingRef = useRef(new Map<string, { resolve: (r: TurnResult) => void; t0: number; timer: number }>());
+  const pendingRef = useRef(
+    new Map<string, { resolve: (r: TurnResult) => void; t0: number; timer: number; onDelta?: (t: string) => void; arm: () => number }>()
+  );
   const openWaitersRef = useRef<Array<() => void>>([]);
   const languageRef = useRef(language);
   const getPlaybackRef = useRef(getPlayback);
   const [status, setStatus] = useState<SocketStatus>('connecting');
+  // transcript ingestion progress for this video, pushed as `video.status` (Tier 1a)
+  const [videoStatus, setVideoStatus] = useState<VideoStatusInfo | null>(null);
   getPlaybackRef.current = getPlayback;
 
   // new video → new viewing session (yesterday's Q&A must not leak into today's)
   useEffect(() => {
     sessionIdRef.current = newId();
+    setVideoStatus(null);
   }, [videoId]);
 
   useEffect(() => {
@@ -99,7 +115,19 @@ export function useStudySocket(opts: {
           }, 5000);
           return;
         }
+        if (msg.type === 'video.status') {
+          if (msg.video_id === videoId) setVideoStatus(msg as unknown as VideoStatusInfo);
+          return;
+        }
         const pending = msg.turn_id ? pendingRef.current.get(msg.turn_id) : undefined;
+        if (msg.type === 'answer.delta') {
+          if (pending) {
+            window.clearTimeout(pending.timer);
+            pending.timer = pending.arm(); // still streaming: the turn is alive
+            pending.onDelta?.(String(msg.text ?? ''));
+          }
+          return;
+        }
         if (pending && msg.turn_id) {
           window.clearTimeout(pending.timer);
           pendingRef.current.delete(msg.turn_id);
@@ -150,7 +178,7 @@ export function useStudySocket(opts: {
   );
 
   const sendUtterance = useCallback(
-    async (text: string): Promise<TurnResult> => {
+    async (text: string, opts: SendOptions = {}): Promise<TurnResult> => {
       const turn_id = newId();
       const t0 = performance.now();
       if (status === 'unauthorized') {
@@ -166,11 +194,12 @@ export function useStudySocket(opts: {
         };
       }
       return new Promise<TurnResult>((resolve) => {
-        const timer = window.setTimeout(() => {
-          pendingRef.current.delete(turn_id);
-          resolve({ msg: { type: 'error', turn_id, code: 'timeout', message: 'The server took too long.' }, roundTripMs: TURN_TIMEOUT_MS });
-        }, TURN_TIMEOUT_MS);
-        pendingRef.current.set(turn_id, { resolve, t0: performance.now(), timer });
+        const arm = () =>
+          window.setTimeout(() => {
+            pendingRef.current.delete(turn_id);
+            resolve({ msg: { type: 'error', turn_id, code: 'timeout', message: 'The server took too long.' }, roundTripMs: TURN_TIMEOUT_MS });
+          }, TURN_TIMEOUT_MS);
+        pendingRef.current.set(turn_id, { resolve, t0: performance.now(), timer: arm(), onDelta: opts.onDelta, arm });
         wsRef.current!.send(
           JSON.stringify({ type: 'utterance', turn_id, text, language: languageRef.current, ...getPlaybackRef.current() })
         );
@@ -180,10 +209,10 @@ export function useStudySocket(opts: {
   );
 
   const cancelTurn = useCallback(() => {
-    // barge-in: tell the server to stop streaming stale turns (meaningful once answers stream in Tier 1b)
+    // barge-in: tell the server to stop streaming stale answers (their answer.done comes back cancelled)
     const ws = wsRef.current;
     pendingRef.current.forEach((_, id) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: 'turn.cancel', turn_id: id })));
   }, []);
 
-  return { status, sessionId: sessionIdRef.current, sendUtterance, cancelTurn };
+  return { status, videoStatus, sessionId: sessionIdRef.current, sendUtterance, cancelTurn };
 }

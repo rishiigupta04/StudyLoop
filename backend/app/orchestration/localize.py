@@ -34,21 +34,66 @@ STRINGS: dict[str, dict[Lang, str]] = {
     "VOLUME_set": {"en": "Volume {level}%", "hi": "आवाज़ {level}%"},
     "STOP_SPEAKING": {"en": "Okay", "hi": "ठीक है"},
     # not built yet — honest placeholders until their tier lands
-    "SOON_SEMANTIC_SEEK": {
-        "en": "Jumping to a topic arrives with transcript search (Tier 1b). You can say a time, like 'go to 12:30'.",
-        "hi": "Topic पर jump करना transcript search के साथ आएगा। अभी आप समय बोल सकते हैं, जैसे '12:30 पर जाओ'।",
+    # semantic seek + Q&A (Tier 1b)
+    "SEEK_TOPIC": {"en": "Jumped to {clock}", "hi": "{clock} पर पहुँच गए"},
+    "SEEK_TOPIC_ALT": {
+        "en": "Jumped to {clock}. It also comes up at {alt}.",
+        "hi": "{clock} पर पहुँच गए। यह {alt} पर भी आता है।",
     },
-    "SOON_ASK": {
-        "en": "Answering questions about the video arrives with transcript Q&A (Tier 1b).",
-        "hi": "वीडियो के बारे में सवालों के जवाब transcript Q&A के साथ आएँगे।",
+    "TOPIC_NOT_FOUND": {
+        "en": "I couldn't find that topic in this video. Try other words, or say a time like 'go to 12:30'.",
+        "hi": "यह topic इस वीडियो में नहीं मिला। दूसरे शब्दों में बोलें, या समय बोलें, जैसे '12:30 पर जाओ'।",
     },
-    "SOON_SUMMARIZE": {
-        "en": "Summaries arrive with transcript Q&A (Tier 1b).",
-        "hi": "Summary transcript Q&A के साथ आएगी।",
+    "NOT_COVERED_YET": {
+        "en": "The lecture hasn't covered that yet. Keep watching, or say 'skip to' the topic to jump ahead.",
+        "hi": "Lecture में यह अभी तक नहीं आया है। देखते रहिए, या 'उस topic पर जाओ' बोलकर आगे जाइए।",
+    },
+    "NOTHING_WATCHED": {
+        "en": "There's nothing to summarize yet. Watch a bit first.",
+        "hi": "अभी summary के लिए कुछ नहीं है। पहले थोड़ा देख लीजिए।",
+    },
+    "LLM_NOT_CONFIGURED": {
+        "en": "Q&A isn't set up on this server yet. Playback commands and topic jumps still work.",
+        "hi": "इस server पर अभी Q&A set नहीं है। Playback commands और topic jump चलते रहेंगे।",
+    },
+    "LLM_NOT_CONFIGURED_AT": {
+        "en": "Q&A isn't set up on this server yet, but the most relevant part you've watched is at {clock}.",
+        "hi": "इस server पर अभी Q&A set नहीं है, पर आपके देखे हिस्से में सबसे relevant हिस्सा {clock} पर है।",
+    },
+    "LLM_UNAVAILABLE": {
+        "en": "The answer service is busy right now. Please ask again in a moment.",
+        "hi": "Answer service अभी busy है। थोड़ी देर में फिर पूछिए।",
+    },
+    "LLM_UNAVAILABLE_AT": {
+        "en": "The answer service is busy right now, but the most relevant part you've watched is at {clock}.",
+        "hi": "Answer service अभी busy है, पर आपके देखे हिस्से में सबसे relevant हिस्सा {clock} पर है।",
     },
     "SOON_TAKE_NOTE": {
         "en": "Voice notes arrive in Tier 1e. For now, use the Notes tab.",
         "hi": "Voice notes जल्द आएँगे। अभी Notes tab इस्तेमाल करें।",
+    },
+    # transcript-dependent intents when the transcript isn't usable (Tier 1a) — player commands still work
+    "TRANSCRIPT_PREPARING": {
+        "en": "I'm still preparing this video's transcript. Playback commands work meanwhile.",
+        "hi": "इस वीडियो का transcript अभी तैयार हो रहा है। तब तक playback commands चलते रहेंगे।",
+    },
+    "NO_TRANSCRIPT_unavailable": {
+        "en": "This video is private, live, removed or restricted, so I can't read its transcript. "
+        "Playback commands still work.",
+        "hi": "यह वीडियो private, live, हटाया गया या restricted है, इसलिए transcript नहीं मिल सका। "
+        "Playback commands चलते रहेंगे।",
+    },
+    "NO_TRANSCRIPT_no_speech": {
+        "en": "I found no speech in this video, so there's nothing to search. Playback commands still work.",
+        "hi": "इस वीडियो में बोली गई बात नहीं मिली, इसलिए search नहीं हो सकता। Playback commands चलते रहेंगे।",
+    },
+    "NO_TRANSCRIPT_invalid_video": {
+        "en": "That isn't a YouTube video I can read. Playback commands still work.",
+        "hi": "यह ऐसा YouTube वीडियो नहीं है जिसे मैं पढ़ सकूँ। Playback commands चलते रहेंगे।",
+    },
+    "NO_TRANSCRIPT_failed": {
+        "en": "I couldn't load this video's transcript. Try Retry in the Transcript tab; playback commands still work.",
+        "hi": "इस वीडियो का transcript load नहीं हो सका। Transcript tab में Retry दबाएँ; playback commands चलते रहेंगे।",
     },
     "NOT_UNDERSTOOD": {
         "en": "Sorry, I didn't catch that. Try 'pause', 'go back 10 seconds' or 'speed 1.5', or say 'help'.",

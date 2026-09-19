@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@/components/ui/AppIcon';
 import type { PTTStage, TurnMeta } from '@/hooks/useTildePTT';
+import AnswerText from './AnswerText';
 
 const pipelineSteps = [
   { id: 'step-asr', label: 'Browser ASR', desc: 'Speech → text (en-IN / hi-IN)' },
@@ -15,8 +16,10 @@ const exampleCommands = [
   { id: 'cmd-back', text: '"thoda peeche jao"', desc: 'Rewind 10s' },
   { id: 'cmd-time', text: '"12:30 pe jao"', desc: 'Jump to a time' },
   { id: 'cmd-speed', text: '"speed dedh karo"', desc: 'Speed 1.5×' },
+  { id: 'cmd-topic', text: '"skip to the part about…"', desc: 'Jump to a topic' },
+  { id: 'cmd-ask', text: '"yeh kya hai?"', desc: 'Ask about what you watched' },
+  { id: 'cmd-sum', text: '"summarize so far"', desc: 'Recap up to now' },
   { id: 'cmd-undo', text: '"undo" · "wapas wahin"', desc: 'Undo a jump' },
-  { id: 'cmd-help', text: '"help"', desc: 'All commands' },
 ];
 
 interface VoiceModalProps {
@@ -48,6 +51,7 @@ export default function VoiceModal({
   onStartListening,
   onStopListening,
   onClose,
+  onSeekTimestamp,
   meta,
   asrSupported = true,
 }: VoiceModalProps) {
@@ -184,7 +188,9 @@ export default function VoiceModal({
                 <Icon name="SparklesIcon" size={14} className="text-indigo-400" />
                 <span className="text-xs font-bold text-indigo-400">AI Response</span>
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{aiResponse}</p>
+              <p className="text-sm text-foreground leading-relaxed" aria-live="polite">
+                <AnswerText text={aiResponse} onSeek={onSeekTimestamp} />
+              </p>
               {meta && (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
                   <span

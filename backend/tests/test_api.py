@@ -3,10 +3,12 @@ import time
 import jwt
 from fastapi.testclient import TestClient
 
-from app.api.videos import get_transcript_client
+from app.api.videos import ingest_service
 from app.config import Settings, get_settings
 from app.main import create_app
+from app.services.ingest import IngestService
 from app.services.transcripts import TranscriptResult
+from app.services.video_repo import InMemoryVideoRepo
 
 SECRET = "x" * 40
 
@@ -19,7 +21,8 @@ def make_client(settings: Settings, fake_result=None) -> TestClient:
         async def fetch(self, v):
             return fake_result or TranscriptResult(video_id=v, ok=False)
 
-    app.dependency_overrides[get_transcript_client] = lambda: Fake()
+    svc = IngestService(InMemoryVideoRepo(), Fake(), [])
+    app.dependency_overrides[ingest_service] = lambda: svc
     return TestClient(app)
 
 
@@ -70,3 +73,20 @@ def test_settings_parse_comma_separated_origins(monkeypatch):
 def test_settings_load_example_env_file():
     s = Settings(_env_file=".env.example")
     assert s.classifier == "regex" and len(s.cors_origins) == 2
+
+
+def test_post_video_returns_202_and_status_endpoint():
+    from app.services.transcripts import Segment
+
+    ok = TranscriptResult(video_id="aircAruvnKk", ok=True, language="en", segments=[Segment("hi", 0, 3)])
+    c = make_client(Settings(_env_file=None, env="test"), fake_result=ok)
+    r = c.post("/api/videos", json={"video": "https://youtu.be/aircAruvnKk"})
+    assert r.status_code == 202 and r.json()["video_id"] == "aircAruvnKk"
+    assert r.json()["status"] in ("fetching", "embedding", "ready")
+    status = c.get("/api/videos/aircAruvnKk").json()
+    assert status["status"] == "ready" and status["has_transcript"] is True
+    t = c.get("/api/videos/aircAruvnKk/transcript").json()
+    assert t["segments"] == [{"text": "hi", "start": 0.0, "duration": 3.0}]
+
+    bad = c.post("/api/videos", json={"video": "nope"})
+    assert bad.status_code == 202 and bad.json()["fail_reason"] == "invalid_video"

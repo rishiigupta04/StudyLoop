@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executePlayerAction, type PlayerControls } from '@/lib/playerActions';
-import { speak, stopSpeaking } from '@/lib/tts';
+import { createSpeechStream, stopSpeaking, type SpeechStream } from '@/lib/tts';
 import type { AsrLang, SpeechRecognitionApi } from './useSpeechRecognition';
-import type { Lang, TurnResult } from './useStudySocket';
+import type { Citation, Lang, SendOptions, TurnResult } from './useStudySocket';
 
 export type PTTStage = 'idle' | 'listening' | 'processing' | 'responding';
 
@@ -14,13 +14,14 @@ export interface TurnMeta {
   serverMs?: number;
   roundTripMs: number;
   isAction: boolean;
+  citations?: Citation[];
 }
 
 interface UseTildePTTOptions {
   language: Lang;
   asr: SpeechRecognitionApi;
   player: PlayerControls & { duck: () => void; unduck: () => void };
-  sendUtterance: (text: string) => Promise<TurnResult>;
+  sendUtterance: (text: string, opts?: SendOptions) => Promise<TurnResult>;
   cancelTurn?: () => void;
   onTurn?: (userText: string, reply: string, meta: TurnMeta) => void;
 }
@@ -44,11 +45,15 @@ export function useTildePTT(options: UseTildePTTOptions) {
   const [error, setError] = useState<string | null>(null);
   const stageRef = useRef<PTTStage>('idle');
   const closeTimer = useRef<number | undefined>(undefined);
+  const turnSeq = useRef(0); // a newer command supersedes an answer still in flight
+  const speechRef = useRef<SpeechStream | null>(null);
   stageRef.current = stage;
 
   const startListening = useCallback(() => {
     const { asr, language, player, cancelTurn } = optsRef.current;
     window.clearTimeout(closeTimer.current);
+    turnSeq.current += 1;
+    speechRef.current?.cancel();
     stopSpeaking(); // barge-in: new command interrupts stale audio
     cancelTurn?.();
     player.duck();
@@ -80,10 +85,31 @@ export function useTildePTT(options: UseTildePTTOptions) {
       return;
     }
     setActiveStep(1);
-    const { msg, roundTripMs } = await sendUtterance(text);
+    const seq = ++turnSeq.current;
+    speechRef.current?.cancel();
+    // D8: the lecture stays ducked while the answer is spoken, and comes back once it's done
+    const speech = createSpeechStream(language, () => {
+      if (turnSeq.current === seq) player.unduck();
+    });
+    speechRef.current = speech;
+    let streamed = '';
+    const { msg, roundTripMs } = await sendUtterance(text, {
+      onDelta: (d) => {
+        if (turnSeq.current !== seq) return;
+        if (!streamed) {
+          setStage('responding');
+          setActiveStep(3);
+        }
+        streamed += d;
+        setAiResponse(streamed);
+        speech.push(d);
+      },
+    });
+    if (turnSeq.current !== seq) return; // superseded by a newer command while this one was in flight
     setActiveStep(3);
 
     if (msg.type === 'error') {
+      speech.cancel();
       player.unduck();
       setError(msg.message);
       setAiResponse(msg.message);
@@ -98,10 +124,12 @@ export function useTildePTT(options: UseTildePTTOptions) {
       serverMs: msg.timings?.server_total,
       roundTripMs,
       isAction: msg.type === 'action',
+      citations: msg.type === 'answer.done' ? msg.citations || [] : [],
     };
     setMeta(m);
 
     if (msg.type === 'action') {
+      speech.cancel();
       player.unduck(); // restore before the action so VOLUME/MUTE actions apply to the real level
       executePlayerAction(player, msg.action);
       setAiResponse(msg.message);
@@ -112,11 +140,16 @@ export function useTildePTT(options: UseTildePTTOptions) {
         setStage('idle');
       }, ACTION_AUTOCLOSE_MS);
     } else {
-      player.unduck();
       setAiResponse(msg.text);
       setStage('responding');
       onTurn?.(text, msg.text, m);
-      void speak(msg.text, language);
+      if (msg.cancelled) {
+        speech.cancel();
+        player.unduck();
+        return;
+      }
+      if (!streamed) speech.push(msg.text); // template answers (no transcript, not covered yet…) don't stream
+      speech.end();
     }
   }, []);
 
@@ -184,6 +217,8 @@ export function useTildePTT(options: UseTildePTTOptions) {
 
   const closeModal = useCallback(() => {
     window.clearTimeout(closeTimer.current);
+    turnSeq.current += 1;
+    speechRef.current?.cancel();
     optsRef.current.asr.abort();
     optsRef.current.player.unduck();
     stopSpeaking();

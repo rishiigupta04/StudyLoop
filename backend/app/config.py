@@ -27,8 +27,20 @@ class Settings(BaseSettings):
     transcript_timeout_s: float = 60.0
 
     groq_api_key: str = ""
+    # Groq's lineup (Sep 2026) no longer serves Llama 3.3; gpt-oss is multilingual (Devanagari) + tool calling
+    groq_model: str = "openai/gpt-oss-120b"  # answers (RAG, summaries)
+    groq_router_model: str = "openai/gpt-oss-20b"  # llm_router tool call; empty = groq_model
+    groq_reasoning_effort: str = "low"  # gpt-oss reasons before answering; low keeps first-token latency down
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    llm_timeout_s: float = 30.0
+    # LangGraph checkpointer: "memory" (dev) or "postgres" (prod; needs DATABASE_URL — on Render use the
+    # Supabase *session pooler* URL, the direct db.<ref>.supabase.co host is IPv6-only)
+    checkpointer: Literal["memory", "postgres"] = "memory"
     hf_token: str = ""
+    hf_inference_base: str = "https://router.huggingface.co/hf-inference"
+    embed_timeout_s: float = 30.0
+    e5_model_dir: str = ""  # optional CPU fallback embedder (Tier 1a); empty = off
 
     classifier: Literal["regex", "onnx"] = "regex"
     confidence_threshold: float = 0.85

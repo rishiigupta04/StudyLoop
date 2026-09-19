@@ -35,10 +35,24 @@ class FailReason(str, Enum):
     PROVIDER_ERROR = "provider_error"  # 5xx / malformed — transient
     TIMEOUT = "timeout"  # transient
     NOT_CONFIGURED = "not_configured"  # TRANSCRIPT_API_KEY missing
+    # ingestion-side (Tier 1a): the transcript itself may be fine
+    EMBED_ERROR = "embed_error"  # embedding provider failed — transcript is stored, retry re-embeds only
+    INTERNAL = "internal"  # unexpected error / storage failure
 
     @property
     def retryable(self) -> bool:
-        return self in {FailReason.RATE_LIMITED, FailReason.PROVIDER_ERROR, FailReason.TIMEOUT}
+        return self in {
+            FailReason.RATE_LIMITED,
+            FailReason.PROVIDER_ERROR,
+            FailReason.TIMEOUT,
+            FailReason.EMBED_ERROR,
+            FailReason.INTERNAL,
+        }
+
+    @property
+    def permanent(self) -> bool:
+        """A fact about the video (→ `unavailable`), not about our providers or config (→ `failed`)."""
+        return self in {FailReason.UNAVAILABLE, FailReason.NO_SPEECH, FailReason.INVALID_VIDEO}
 
 
 class TranscriptSource(str, Enum):
@@ -105,7 +119,7 @@ class TranscriptClient:
     def __init__(self, settings: Settings, http: httpx.AsyncClient | None = None, cache_size: int = 256):
         self._s = settings
         self._http = http
-        # Stand-in cache until Tier 1a moves this into the `videos` table.
+        # Per-process guard only; the durable cache is the `videos` table (services/ingest.py).
         self._cache: OrderedDict[str, tuple[float, TranscriptResult]] = OrderedDict()
         self._cache_size = cache_size
 
@@ -196,7 +210,7 @@ class TranscriptClient:
 
         segments = [
             Segment(
-                text=str(s.get("text", "")).strip(),
+                text=" ".join(str(s.get("text", "")).split()),  # creator captions carry line breaks
                 start=float(s.get("start", 0)),
                 duration=float(s.get("duration", 0)),
             )

@@ -1,10 +1,11 @@
 /**
- * Transcript service — calls the StudyLoop backend, which proxies TranscriptAPI server-side.
+ * Transcript service — calls the StudyLoop backend, which ingests from TranscriptAPI server-side and
+ * caches the result in the shared `videos` table (Tier 1a: no re-fetch = no credit).
  * TranscriptAPI works even for captions-disabled videos, so a missing transcript is an explained
  * failure (`failReason`), never a silent fallback to fake content (roadmap D10b).
  */
 
-import { apiGet } from './apiClient';
+import { apiGet, apiPost } from './apiClient';
 
 export interface TranscriptSegment {
   text: string;
@@ -31,17 +32,46 @@ export type TranscriptFailReason =
   | 'provider_error'
   | 'timeout'
   | 'not_configured'
+  | 'embed_error'
+  | 'internal'
   | 'backend_unreachable';
+
+/** Ingestion status machine (backend `video_repo`); progress arrives as `video.status` on the socket. */
+export type VideoStatus =
+  | 'pending'
+  | 'fetching'
+  | 'transcribing'
+  | 'embedding'
+  | 'ready'
+  | 'unavailable'
+  | 'failed';
+
+export const IN_PROGRESS_STATUSES: VideoStatus[] = ['pending', 'fetching', 'transcribing', 'embedding'];
+
+/** One `video.status` event / `GET /api/videos/{id}` body. */
+export interface VideoStatusInfo {
+  video_id: string;
+  status: VideoStatus;
+  has_transcript: boolean;
+  fail_reason: TranscriptFailReason | null;
+  retryable: boolean;
+  title?: string | null;
+  language?: string | null;
+  source?: TranscriptSource | null;
+  duration_s?: number | null;
+  embed_model?: string | null;
+}
 
 export type TranscriptSource = 'creator' | 'youtube_asr' | 'api_generated';
 
 export interface TranscriptResponse {
   video_id: string;
+  status: VideoStatus;
   hasTranscript: boolean;
   language: string | null;
   source: TranscriptSource | null;
   transcript: TranscriptSegment[];
-  metadata?: VideoMetadata | null;
+  metadata?: Partial<VideoMetadata> | null;
   length_seconds?: number | null;
   isHinglish?: boolean;
   failReason?: TranscriptFailReason | null;
@@ -50,11 +80,12 @@ export interface TranscriptResponse {
 
 interface BackendTranscript {
   video_id: string;
+  status: VideoStatus;
   has_transcript: boolean;
   language: string | null;
   source: TranscriptSource | null;
   segments: { text: string; start: number; duration: number }[];
-  metadata: VideoMetadata | null;
+  metadata: Partial<VideoMetadata> | null;
   length_seconds: number | null;
   fail_reason: TranscriptFailReason | null;
   retryable: boolean;
@@ -75,6 +106,11 @@ export const TRANSCRIPT_FAIL_MESSAGES: Record<TranscriptFailReason, { en: string
   provider_error: { en: 'Transcript service had an error — retry.', hi: 'Transcript service में error आया — retry करें।' },
   timeout: { en: 'Transcribing took too long — retry.', hi: 'Transcript बनने में ज़्यादा समय लगा — retry करें।' },
   not_configured: { en: 'Transcript service is not configured on the server.', hi: 'Server पर transcript service set नहीं है।' },
+  embed_error: {
+    en: 'The transcript loaded, but indexing it for search failed — retry.',
+    hi: 'Transcript आ गया, पर search के लिए index नहीं हो पाया — retry करें।',
+  },
+  internal: { en: 'Something went wrong while preparing the transcript — retry.', hi: 'Transcript तैयार करते समय गड़बड़ हुई — retry करें।' },
   backend_unreachable: { en: "Can't reach the StudyLoop server — retry.", hi: 'StudyLoop server से connect नहीं हो पा रहा — retry करें।' },
 };
 
@@ -105,6 +141,7 @@ export async function fetchVideoTranscript(videoUrlOrId: string): Promise<Transc
   const videoId = extractYouTubeId(videoUrlOrId);
   const empty = (failReason: TranscriptFailReason, retryable: boolean): TranscriptResponse => ({
     video_id: videoId || videoUrlOrId,
+    status: failReason === 'invalid_video' ? 'unavailable' : 'failed',
     hasTranscript: false,
     language: null,
     source: null,
@@ -118,6 +155,7 @@ export async function fetchVideoTranscript(videoUrlOrId: string): Promise<Transc
     const data = await apiGet<BackendTranscript>(`/api/videos/${videoId}/transcript`);
     return {
       video_id: data.video_id,
+      status: data.status,
       hasTranscript: data.has_transcript,
       language: data.language,
       source: data.source,
@@ -131,5 +169,18 @@ export async function fetchVideoTranscript(videoUrlOrId: string): Promise<Transc
   } catch (err) {
     console.warn('[transcriptService] backend unreachable:', err);
     return empty('backend_unreachable', true);
+  }
+}
+
+/**
+ * Start (or join) server-side ingestion. `retry` skips the failed-ingest cooldown (the Retry button).
+ * Progress streams over the session socket as `video.status`; this only returns the current status.
+ */
+export async function requestIngest(videoId: string, retry = false): Promise<VideoStatusInfo | null> {
+  try {
+    return await apiPost<VideoStatusInfo>('/api/videos', { video: videoId, retry });
+  } catch (err) {
+    console.warn('[transcriptService] ingest request failed:', err);
+    return null;
   }
 }

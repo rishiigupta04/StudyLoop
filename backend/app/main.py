@@ -15,23 +15,32 @@ logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
-    # Compile the graph and run one throwaway turn so the first real voice command isn't slow
-    # (cold import + graph compile cost ~70 ms otherwise).
-    from app.orchestration.graph import get_graph, new_turn_input
+async def lifespan(app: FastAPI):
+    from app.orchestration.checkpointer import init_checkpointer
+    from app.orchestration.graph import get_graph, new_turn_input, set_checkpointer
 
+    settings = get_settings()
+    saver, desc = await asyncio.to_thread(init_checkpointer, settings)
+    set_checkpointer(saver)
+    app.state.checkpointer = desc
+    logging.getLogger("studyloop").info("checkpointer: %s", desc)
+
+    # Run one throwaway turn so the first real voice command isn't slow
+    # (cold import + graph compile cost ~70 ms otherwise).
     tid = f"warmup-{uuid.uuid4()}"
     get_graph().invoke(
         new_turn_input(session_id=tid, user_id="warmup", video_id="-", language="en", raw_text="pause"),
         {"configurable": {"thread_id": tid}},
     )
-    settings = get_settings()
     if settings.supabase_url:
         ok = await asyncio.to_thread(warm_jwks, settings)
         logging.getLogger("studyloop").info(
             "JWKS %s", "loaded" if ok else "unavailable (will retry on first token)"
         )
     yield
+    close = getattr(saver, "close", None)
+    if close is not None:  # write-behind checkpointer: persist the last turns before exiting
+        await asyncio.to_thread(close)
 
 
 def create_app() -> FastAPI:

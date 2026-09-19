@@ -12,7 +12,7 @@ def graph():
     return build_graph(checkpointer=MemorySaver())
 
 
-def run(graph, text, lang="en", thread=None):
+def run(graph, text, lang="en", thread=None, **extra):
     thread = thread or str(uuid.uuid4())
     return graph.invoke(
         new_turn_input(
@@ -24,6 +24,7 @@ def run(graph, text, lang="en", thread=None):
             max_watched_s=100.0,
             turn_id=str(uuid.uuid4()),
             raw_text=text,
+            **extra,
         ),
         {"configurable": {"thread_id": thread}},
     )
@@ -60,15 +61,41 @@ def test_localized_confirmation_in_hindi(graph):
     assert out["response_text"] == "10 सेकंड पीछे"
 
 
-def test_slow_path_stubs_are_honest(graph):
-    ask = run(graph, "what is gradient descent")
-    assert ask["action"] is None and ask["route"] == "rag" and "Tier 1b" in ask["response_text"]
-    seek = run(graph, "skip to the part about backpropagation")
-    assert seek["route"] == "seek" and seek["action"] is None
+def test_slow_paths_degrade_honestly_without_index_or_llm(graph):
+    # transcript "ready" but nothing indexed for this video and no LLM configured (hermetic tests)
+    ask = run(graph, "what is gradient descent", transcript_status="ready")
+    assert ask["action"] is None and ask["route"] == "rag" and ask["answer_key"] == "LLM_NOT_CONFIGURED"
+    seek = run(graph, "skip to the part about backpropagation", transcript_status="ready")
+    assert seek["route"] == "seek" and seek["action"] is None and seek["answer_key"] == "TOPIC_NOT_FOUND"
     note = run(graph, "note this down", lang="hi")
     assert note["route"] == "notes" and "Notes" in note["response_text"]
     oos = run(graph, "the weather is nice")
     assert oos["route"] == "llm" and oos["answer_key"] == "NOT_UNDERSTOOD"
+
+
+@pytest.mark.parametrize(
+    "status,reason,key",
+    [
+        ("pending", None, "TRANSCRIPT_PREPARING"),
+        ("transcribing", None, "TRANSCRIPT_PREPARING"),
+        ("embedding", None, "TRANSCRIPT_PREPARING"),
+        ("unavailable", "unavailable", "NO_TRANSCRIPT_unavailable"),
+        ("unavailable", "no_speech", "NO_TRANSCRIPT_no_speech"),
+        ("unavailable", "weird", "NO_TRANSCRIPT_unavailable"),
+        ("failed", "no_plan", "NO_TRANSCRIPT_failed"),
+        ("failed", "embed_error", "NO_TRANSCRIPT_failed"),
+    ],
+)
+@pytest.mark.parametrize("lang", ["en", "hi"])
+def test_transcript_dependent_intents_name_the_reason(graph, status, reason, key, lang):
+    from app.orchestration.localize import t
+
+    for text, route in (("what is gradient descent", "rag"), ("skip to the part about backprop", "seek")):
+        out = run(graph, text, lang=lang, transcript_status=status, transcript_fail_reason=reason)
+        assert out["route"] == route and out["action"] is None
+        assert out["answer_key"] == key and out["response_text"] == t(key, lang)
+    # player commands never depend on the transcript
+    assert run(graph, "pause", lang=lang, transcript_status=status)["action"] == {"type": "PAUSE"}
 
 
 def test_missing_slot_falls_back(graph):

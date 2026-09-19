@@ -42,6 +42,14 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  return apiGet<T>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 /**
  * Fire-and-forget ping so a sleeping free-tier backend starts waking up while the user is still
  * on the landing page (roadmap D11). Never throws.

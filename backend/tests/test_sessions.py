@@ -16,6 +16,7 @@ from app.auth import resolve_user
 from app.config import Settings, get_settings
 from app.main import create_app
 from app.services.sessions import SupabaseSessionStore, valid_session_id
+from tests.conftest import recv
 
 SECRET = "z" * 40
 
@@ -124,10 +125,10 @@ def test_signed_in_session_is_recorded_and_closed(ws_client):
     sid = str(uuid.uuid4())
     with ws_client(store).websocket_connect("/ws/session") as ws:
         ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo", "session_id": sid, "token": token()})
-        assert ws.receive_json() == {"type": "ready", "session_id": sid, "classifier": "regex"}
+        assert recv(ws) == {"type": "ready", "session_id": sid, "classifier": "regex"}
         ws.send_json({"type": "playback", "playback_s": 90, "max_watched_s": 95})
         ws.send_json({"type": "utterance", "turn_id": "t1", "text": "pause"})
-        assert ws.receive_json()["action"] == {"type": "PAUSE"}
+        assert recv(ws)["action"] == {"type": "PAUSE"}
     assert store.starts == [
         {
             "session_id": sid,
@@ -144,22 +145,22 @@ def test_anonymous_sessions_are_not_recorded(ws_client):
     store = FakeStore()
     with ws_client(store).websocket_connect("/ws/session") as ws:
         ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo"})
-        assert ws.receive_json()["type"] == "ready"
+        assert recv(ws)["type"] == "ready"
     assert store.starts == [] and store.ends == []
 
 
 def test_bad_client_session_id_is_replaced(ws_client):
     with ws_client(FakeStore()).websocket_connect("/ws/session") as ws:
         ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo", "session_id": "abc", "token": token()})
-        uuid.UUID(ws.receive_json()["session_id"])
+        uuid.UUID(recv(ws)["session_id"])
 
 
 def test_database_failure_never_breaks_voice(ws_client):
     with ws_client(FakeStore(fail=True)).websocket_connect("/ws/session") as ws:
         ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo", "token": token()})
-        assert ws.receive_json()["type"] == "ready"
+        assert recv(ws)["type"] == "ready"
         ws.send_json({"type": "utterance", "turn_id": "t1", "text": "go back 10 seconds"})
-        assert ws.receive_json()["type"] == "action"
+        assert recv(ws)["type"] == "action"
 
 
 def test_require_auth_rejects_missing_and_forged_tokens(ws_client):
@@ -167,7 +168,7 @@ def test_require_auth_rejects_missing_and_forged_tokens(ws_client):
     for tok in (None, jwt.encode({"sub": "x", "aud": "authenticated"}, "forged" * 8, algorithm="HS256")):
         with c.websocket_connect("/ws/session") as ws:
             ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo", "token": tok})
-            assert ws.receive_json()["code"] == "unauthorized"
+            assert recv(ws)["code"] == "unauthorized"
 
 
 # ---------------------------------------------------------------- ES256 via JWKS (how this project signs)

@@ -13,6 +13,9 @@ services:
         value: https://studylooop.vercel.app
       - key: CLASSIFIER
         value: regex
+      - key: CHECKPOINTER
+        value: postgres    # Tier 1b conversation memory; DATABASE_URL must be the Supabase *session pooler*
+                           # URL (the direct db.<ref>.supabase.co host is IPv6-only; Render can't reach it)
       - key: REQUIRE_AUTH
         value: "true"    # Tier 0b: the frontend signs in with Supabase Auth
       - key: SUPABASE_URL

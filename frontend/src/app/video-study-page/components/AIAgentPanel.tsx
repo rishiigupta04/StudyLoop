@@ -1,25 +1,43 @@
 import React, { useState } from 'react';
 import TranscriptTab from './TranscriptTab';
-import QAChatTab from './QAChatTab';
+import QAChatTab, { type ChatMessage } from './QAChatTab';
 import NotesTab from './NotesTab';
 import Icon from '@/components/ui/AppIcon';
+import type { Lang } from '@/hooks/useStudySocket';
+import type { VideoTranscriptState } from '@/hooks/useVideoTranscript';
 
 type Tab = 'transcript' | 'qa' | 'notes';
 
 interface AIAgentPanelProps {
-  activeTimestamp: string;
+  transcript: VideoTranscriptState;
+  chat: ChatMessage[];
+  chatBusy: boolean;
+  onSendChat: (text: string) => void;
+  currentTime: number;
+  language: Lang;
   onTimestampClick: (ts: string) => void;
   onOpenVoiceModal?: () => void;
 }
 
-const tabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
+const baseTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
   { id: 'transcript', label: 'Transcript', icon: 'DocumentMagnifyingGlassIcon' },
-  { id: 'qa', label: 'Q&A Chat', icon: 'ChatBubbleLeftRightIcon', badge: 3 },
+  { id: 'qa', label: 'Q&A Chat', icon: 'ChatBubbleLeftRightIcon' },
   { id: 'notes', label: 'Notes', icon: 'PencilSquareIcon', badge: 5 },
 ];
 
-export default function AIAgentPanel({ activeTimestamp, onTimestampClick, onOpenVoiceModal }: AIAgentPanelProps) {
+export default function AIAgentPanel({
+  transcript,
+  chat,
+  chatBusy,
+  onSendChat,
+  currentTime,
+  language,
+  onTimestampClick,
+  onOpenVoiceModal,
+}: AIAgentPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('transcript');
+  const answers = chat.filter((m) => m.role === 'ai' && !m.streaming).length;
+  const tabs = baseTabs.map((t) => (t.id === 'qa' ? { ...t, badge: answers || undefined } : t));
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-surface-card/40">
@@ -56,12 +74,22 @@ export default function AIAgentPanel({ activeTimestamp, onTimestampClick, onOpen
       <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === 'transcript' && (
           <TranscriptTab
-            activeTimestamp={activeTimestamp}
+            transcript={transcript}
+            currentTime={currentTime}
+            language={language}
             onTimestampClick={onTimestampClick}
           />
         )}
         {activeTab === 'qa' && (
-          <QAChatTab onTimestampClick={onTimestampClick} onOpenVoiceModal={onOpenVoiceModal} />
+          <QAChatTab
+            messages={chat}
+            busy={chatBusy}
+            onSend={onSendChat}
+            onTimestampClick={onTimestampClick}
+            onOpenVoiceModal={onOpenVoiceModal}
+            language={language}
+            transcriptStatus={transcript.status}
+          />
         )}
         {activeTab === 'notes' && (
           <NotesTab />

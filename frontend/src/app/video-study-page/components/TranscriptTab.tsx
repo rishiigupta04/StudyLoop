@@ -1,83 +1,131 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
-
-interface TranscriptChunk {
-  id: string;
-  timestamp: string;
-  text: string;
-  lang: 'EN';
-}
-
-const transcriptChunks: TranscriptChunk[] = [
-  {
-    id: 'tc-0000',
-    timestamp: '0:00',
-    text: 'Welcome to 6.006, Introduction to Algorithms. My name is Erik Demaine and this is my co-lecturer, Jason Ku.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-0432',
-    timestamp: '4:32',
-    text: 'This course is about how to solve computational problems and how to communicate that you\'ve solved them correctly and efficiently.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-1215',
-    timestamp: '12:15',
-    text: 'An algorithm is a computational procedure for solving a problem. What makes a good algorithm? Correctness, efficiency, and clarity.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-2410',
-    timestamp: '24:10',
-    text: 'Let\'s talk about peak finding. A peak in a 1D array is an element greater than or equal to its neighbors. Every non-empty array has at least one peak.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-3845',
-    timestamp: '38:45',
-    text: 'For a 2D peak, we need a different approach. The greedy ascent algorithm walks uphill from any starting point but can be O(n²) in the worst case.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-5230',
-    timestamp: '52:30',
-    text: 'Time complexity: we analyze algorithms by counting operations as a function of input size n. Asymptotic notation captures the dominant term.',
-    lang: 'EN',
-  },
-  {
-    id: 'tc-10820',
-    timestamp: '1:08:20',
-    text: 'To summarize: peak finding demonstrates the difference between O(n) naive scan, O(log n) divide and conquer for 1D, and O(n log n) for 2D.',
-    lang: 'EN',
-  },
-];
+import type { Lang } from '@/hooks/useStudySocket';
+import type { VideoTranscriptState } from '@/hooks/useVideoTranscript';
+import { TRANSCRIPT_FAIL_MESSAGES, type VideoStatus } from '@/services/transcriptService';
 
 interface TranscriptTabProps {
-  activeTimestamp: string;
+  transcript: VideoTranscriptState;
+  currentTime: number;
+  language: Lang;
   onTimestampClick: (ts: string) => void;
 }
 
-export default function TranscriptTab({ activeTimestamp, onTimestampClick }: TranscriptTabProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const activeRef = useRef<HTMLDivElement>(null);
+type Copy = { en: string; hi: string };
 
-  const filtered = transcriptChunks.filter(
-    (c) =>
-      c.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.timestamp.includes(searchQuery)
+const PROGRESS_COPY: Partial<Record<VideoStatus, Copy & { sub?: Copy }>> = {
+  pending: { en: 'Preparing transcript…', hi: 'Transcript तैयार हो रहा है…' },
+  fetching: { en: 'Fetching transcript…', hi: 'Transcript लाया जा रहा है…' },
+  transcribing: {
+    en: 'Transcribing this video…',
+    hi: 'इस वीडियो का transcript बनाया जा रहा है…',
+    sub: {
+      en: 'No captions available, so it is being generated. Long lectures can take a couple of minutes.',
+      hi: 'Captions नहीं हैं, इसलिए transcript बनाया जा रहा है। लंबे lectures में कुछ मिनट लग सकते हैं।',
+    },
+  },
+};
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Index of the segment playing at `t` (the last one starting at or before it), or -1. */
+function activeIndex(starts: number[], t: number): number {
+  let lo = 0;
+  let hi = starts.length - 1;
+  let ans = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (starts[mid] <= t) {
+      ans = mid;
+      lo = mid + 1;
+    } else hi = mid - 1;
+  }
+  return ans;
+}
+
+function Spinner() {
+  return <div className="w-8 h-8 rounded-full border-2 border-indigo-400/30 border-t-indigo-400 animate-spin" />;
+}
+
+export default function TranscriptTab({ transcript, currentTime, language, onTimestampClick }: TranscriptTabProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLDivElement>(null);
+  const { segments, status, failReason, retryable, retrying, retry, hasTranscript, source } = transcript;
+  const hi = language === 'hi';
+
+  const starts = useMemo(() => segments.map((s) => s.start), [segments]);
+  const active = activeIndex(starts, currentTime + 0.25);
+
+  const query = searchQuery.trim().toLowerCase();
+  const filtered = useMemo(
+    () =>
+      segments
+        .map((s, i) => ({ ...s, i }))
+        .filter((s) => !query || s.text.toLowerCase().includes(query) || s.timestamp.includes(query)),
+    [segments, query]
   );
 
+  // follow playback inside the list only (never scroll the page), and not while searching
   useEffect(() => {
-    if (activeRef.current) {
-      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [activeTimestamp]);
+    const list = listRef.current;
+    const el = activeRef.current;
+    if (!list || !el || query) return;
+    list.scrollTo({ top: el.offsetTop - list.clientHeight / 2 + el.clientHeight / 2, behavior: 'smooth' });
+  }, [active, query]);
 
+  const failure = failReason ? TRANSCRIPT_FAIL_MESSAGES[failReason] : null;
+  const progress = PROGRESS_COPY[status];
+
+  const retryButton = retryable && (
+    <button
+      onClick={() => void retry()}
+      disabled={retrying}
+      className="mt-1 px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-200 border border-indigo-500/30 text-xs font-semibold hover:bg-indigo-600/40 transition-colors disabled:opacity-50"
+    >
+      {retrying ? (hi ? 'कोशिश हो रही है…' : 'Retrying…') : hi ? 'फिर से कोशिश करें' : 'Retry'}
+    </button>
+  );
+
+  // ---------------------------------------------------------------- no segments yet
+  if (!segments.length) {
+    if (progress && !failure) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3" role="status" aria-live="polite">
+          <Spinner />
+          <p className="text-sm font-medium text-foreground">{progress[language]}</p>
+          {progress.sub && <p className="text-xs text-muted-foreground max-w-xs">{progress.sub[language]}</p>}
+          <p className="text-xs text-muted-foreground">
+            {hi ? 'तब तक voice से playback चलता रहेगा।' : 'Voice playback control works meanwhile.'}
+          </p>
+        </div>
+      );
+    }
+    if (hasTranscript) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3" role="status">
+          <Spinner />
+          <p className="text-sm text-muted-foreground">{hi ? 'Transcript load हो रहा है…' : 'Loading transcript…'}</p>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-6 text-center gap-3" role="alert">
+        <Icon name="ExclamationTriangleIcon" size={28} className="text-amber-400" />
+        <p className="text-sm font-medium text-foreground">{hi ? 'Transcript उपलब्ध नहीं है' : 'No transcript for this video'}</p>
+        {failure && <p className="text-xs text-muted-foreground max-w-xs">{failure[language]}</p>}
+        <p className="text-xs text-muted-foreground">
+          {hi ? 'Voice से play, pause, seek और speed चलते रहेंगे।' : 'Voice play, pause, seek and speed still work.'}
+        </p>
+        {retryButton}
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------- segments
   return (
-    <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="p-3 border-b border-border flex-shrink-0">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="p-3 border-b border-border flex-shrink-0 space-y-2">
         <div className="relative">
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             <Icon name="MagnifyingGlassIcon" size={14} />
@@ -86,76 +134,87 @@ export default function TranscriptTab({ activeTimestamp, onTimestampClick }: Tra
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search transcript…"
+            placeholder={hi ? 'Transcript में खोजें…' : 'Search transcript…'}
+            aria-label="Search transcript"
             className="input-field w-full rounded-lg pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150"
             >
               <Icon name="XMarkIcon" size={12} />
             </button>
           )}
         </div>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>
+            {segments.length} {hi ? 'पंक्तियाँ' : 'lines'}
+            {source && source !== 'creator' && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-surface-elevated">Auto-generated</span>
+            )}
+          </span>
+          {status === 'embedding' && (
+            <span className="flex items-center gap-1" role="status">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {hi ? 'Search के लिए index हो रहा है…' : 'Indexing for search…'}
+            </span>
+          )}
+          {status === 'failed' && failure && (
+            <span className="flex items-center gap-1.5 text-amber-300" title={failure[language]}>
+              {hi ? 'Search index नहीं बना' : 'Search index failed'}
+              {retryable && (
+                <button onClick={() => void retry()} disabled={retrying} className="underline hover:text-amber-100 disabled:opacity-50">
+                  Retry
+                </button>
+              )}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Chunks */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-2">
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-3 space-y-1 relative">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-center">
             <Icon name="MagnifyingGlassIcon" size={28} className="text-muted-foreground mb-2" />
-            <p className="text-sm font-medium text-foreground">No results found</p>
-            <p className="text-xs text-muted-foreground mt-1">Try a different search term</p>
+            <p className="text-sm font-medium text-foreground">{hi ? 'कुछ नहीं मिला' : 'No results found'}</p>
+            <p className="text-xs text-muted-foreground mt-1">{hi ? 'कोई और शब्द आज़माएँ' : 'Try a different search term'}</p>
           </div>
         ) : (
-          filtered.map((chunk) => {
-            const isActive = chunk.timestamp === activeTimestamp;
+          filtered.map((seg) => {
+            const isActive = seg.i === active;
             return (
               <div
-                key={chunk.id}
+                key={seg.i}
                 ref={isActive ? activeRef : null}
-                onClick={() => onTimestampClick(chunk.timestamp)}
-                className={`rounded-xl p-3 cursor-pointer transition-all duration-200 border ${
-                  isActive
-                    ? 'transcript-active border-primary/30' :'border-transparent hover:bg-muted/40 hover:border-border'
+                onClick={() => onTimestampClick(seg.timestamp)}
+                className={`rounded-xl px-3 py-2 cursor-pointer transition-colors duration-200 border ${
+                  isActive ? 'transcript-active border-primary/30' : 'border-transparent hover:bg-muted/40 hover:border-border'
                 }`}
               >
                 <div className="flex items-start gap-2.5">
-                  <button
-                    className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md flex-shrink-0 tabular-nums transition-colors duration-150 ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary'
+                  <span
+                    className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md flex-shrink-0 tabular-nums ${
+                      isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {chunk.timestamp}
-                  </button>
-                  <p className={`text-sm leading-relaxed flex-1 ${
-                    isActive ? 'text-foreground' : 'text-secondary-foreground'
-                  }`}>
-                    {searchQuery
-                      ? chunk.text.split(new RegExp(`(${searchQuery})`, 'gi')).map((part, i) =>
-                          part.toLowerCase() === searchQuery.toLowerCase() ? (
-                            <mark
-                              key={`highlight-${chunk.id}-${i}`}
-                              className="bg-highlight/30 text-highlight rounded px-0.5"
-                            >
+                    {seg.timestamp}
+                  </span>
+                  <p className={`text-sm leading-relaxed flex-1 ${isActive ? 'text-foreground' : 'text-secondary-foreground'}`}>
+                    {query
+                      ? seg.text.split(new RegExp(`(${escapeRegExp(query)})`, 'gi')).map((part, j) =>
+                          part.toLowerCase() === query ? (
+                            <mark key={j} className="bg-highlight/30 text-highlight rounded px-0.5">
                               {part}
                             </mark>
                           ) : (
-                            <span key={`text-${chunk.id}-${i}`}>{part}</span>
+                            <span key={j}>{part}</span>
                           )
                         )
-                      : chunk.text}
+                      : seg.text}
                   </p>
                 </div>
-                {isActive && (
-                  <div className="flex items-center gap-1.5 mt-2 ml-14">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    <span className="text-xs text-primary font-medium">Currently playing</span>
-                  </div>
-                )}
               </div>
             );
           })

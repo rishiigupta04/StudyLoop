@@ -19,6 +19,9 @@ class StudyState(TypedDict, total=False):
     playback_s: float
     max_watched_s: float
     turn_id: str
+    # transcript ingestion state of this video (Tier 1a, from the `video.status` stream)
+    transcript_status: str
+    transcript_fail_reason: str | None
     # per-turn pipeline fields (reset on every turn — see graph.new_turn_input)
     raw_text: str
     normalized_text: str
@@ -29,6 +32,9 @@ class StudyState(TypedDict, total=False):
     action: dict[str, Any] | None
     answer_key: str | None
     answer_text: str | None
+    answer_args: dict[str, Any] | None  # template args for answer_key
+    citations: list[dict[str, float]]  # [{start_s}] from RAG answers → seekable chips
+    router_target: str | None  # where llm_router sends the turn next
     response_text: str | None
     timings: dict[str, float]
     error: str | None

@@ -3,15 +3,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
+import type { ChatMessage } from './QAChatTab';
 import VoiceModal from './VoiceModal';
 import Icon from '@/components/ui/AppIcon';
 import { useTildePTT } from '@/hooks/useTildePTT';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useStudySocket, type Lang } from '@/hooks/useStudySocket';
-import { extractYouTubeId } from '@/services/transcriptService';
+import { useVideoTranscript } from '@/hooks/useVideoTranscript';
+import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
 import { parseClock } from '@/lib/time';
-import { resetSeekHistory } from '@/lib/playerActions';
+import { executePlayerAction, resetSeekHistory } from '@/lib/playerActions';
 
 // MIT 6.006 (Fall 2011) Lecture 1 — Algorithmic Thinking, Peak Finding. Matches the demo chapters.
 const DEFAULT_VIDEO_ID = 'HtSuA80QTyo';
@@ -44,12 +46,75 @@ export default function VideoStudyLayout() {
     getPlayback: () => ({ playback_s: player.getCurrentTime(), max_watched_s: player.maxWatched() }),
   });
 
+  // transcript ingestion (Tier 1a): status streams over the socket, segments feed the Transcript tab
+  const transcript = useVideoTranscript(videoId, socket.videoStatus, socket.status === 'open');
+  const transcriptChip =
+    transcript.status === 'ready'
+      ? null
+      : IN_PROGRESS_STATUSES.includes(transcript.status)
+        ? {
+            dot: 'bg-amber-400 animate-pulse',
+            label: transcript.status === 'transcribing' ? 'Transcribing…' : transcript.status === 'embedding' ? 'Indexing…' : 'Preparing transcript…',
+            title: 'Getting the transcript ready for Q&A and smart seek. Voice playback works now.',
+          }
+        : {
+            dot: 'bg-slate-400',
+            label: 'Playback only',
+            title: 'No usable transcript — see the Transcript tab for the reason. Voice playback still works.',
+          };
+
+  // Q&A chat (Tier 1b): typed questions stream in over the same socket; voice answers land here too
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [chatBusy, setChatBusy] = useState(false);
+  useEffect(() => setChat([]), [videoId]);
+  const clockNow = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const patchChat = (id: string, patch: Partial<ChatMessage>) =>
+    setChat((c) => c.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+
+  const sendChat = useCallback(
+    async (text: string) => {
+      const id = `${Date.now()}`;
+      setChat((c) => [
+        ...c,
+        { id: `${id}-u`, role: 'user', text, time: clockNow(), via: 'typed' },
+        { id: `${id}-a`, role: 'ai', text: '', time: clockNow(), via: 'typed', streaming: true },
+      ]);
+      setChatBusy(true);
+      let streamed = '';
+      const { msg } = await socket.sendUtterance(text, {
+        onDelta: (d) => {
+          streamed += d;
+          patchChat(`${id}-a`, { text: streamed });
+        },
+      });
+      if (msg.type === 'action') {
+        executePlayerAction(player, msg.action); // typed commands ("pause", "go to 12:30") work too
+        patchChat(`${id}-a`, { text: msg.message, streaming: false });
+      } else if (msg.type === 'answer.done') {
+        patchChat(`${id}-a`, { text: msg.text, streaming: false });
+      } else {
+        patchChat(`${id}-a`, { text: msg.message, streaming: false, isError: true });
+      }
+      setChatBusy(false);
+    },
+    [socket.sendUtterance, player]
+  );
+
   const ptt = useTildePTT({
     language,
     asr,
     player,
     sendUtterance: socket.sendUtterance,
     cancelTurn: socket.cancelTurn,
+    onTurn: (userText, reply, meta) => {
+      if (meta.isAction) return; // player commands are confirmed in the voice modal, not logged as chat
+      const id = `${Date.now()}-v`;
+      setChat((c) => [
+        ...c,
+        { id: `${id}-u`, role: 'user', text: userText, time: clockNow(), via: 'voice' },
+        { id: `${id}-a`, role: 'ai', text: reply, time: clockNow(), via: 'voice' },
+      ]);
+    },
   });
 
   const seekToTimestamp = useCallback(
@@ -143,6 +208,16 @@ export default function VideoStudyLayout() {
               {socket.status === 'open' ? 'Voice ready' : 'Connecting…'}
             </span>
           )}
+          {transcriptChip && (
+            <span
+              className="lang-badge-en text-xs font-semibold px-2.5 py-1 rounded-full hidden md:flex items-center gap-1.5"
+              title={transcriptChip.title}
+              role="status"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${transcriptChip.dot}`} />
+              {transcriptChip.label}
+            </span>
+          )}
           <div className="flex rounded-full border border-border/80 overflow-hidden text-[11px] font-semibold" role="group" aria-label="Response language">
             {(['en', 'hi'] as Lang[]).map((l) => (
               <button
@@ -201,7 +276,12 @@ export default function VideoStudyLayout() {
         {/* Right: AI Agent Panel */}
         <div className="w-full lg:w-[380px] xl:w-[420px] 2xl:w-[460px] flex-shrink-0 flex flex-col min-h-[500px] lg:min-h-full bg-obsidian/40">
           <AIAgentPanel
-            activeTimestamp={activeTimestamp}
+            transcript={transcript}
+            chat={chat}
+            chatBusy={chatBusy}
+            onSendChat={(t) => void sendChat(t)}
+            currentTime={player.currentTime}
+            language={language}
             onTimestampClick={seekToTimestamp}
             onOpenVoiceModal={() => ptt.startListening()}
           />
