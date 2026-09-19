@@ -58,6 +58,8 @@ function newId(): string {
 export function useStudySocket(opts: {
   videoId: string;
   language: Lang;
+  /** anti-spoiler Q&A (roadmap D7); false = the learner allows answers from the whole lecture */
+  spoilerGuard?: boolean;
   getPlayback: () => { playback_s: number; max_watched_s: number };
   onNoteEvent?: (e: NoteEvent) => void;
 }) {
@@ -71,6 +73,8 @@ export function useStudySocket(opts: {
   );
   const openWaitersRef = useRef<Array<() => void>>([]);
   const languageRef = useRef(language);
+  const spoilerGuardRef = useRef(opts.spoilerGuard ?? true);
+  spoilerGuardRef.current = opts.spoilerGuard ?? true;
   const getPlaybackRef = useRef(getPlayback);
   const [status, setStatus] = useState<SocketStatus>('connecting');
   // transcript ingestion progress for this video, pushed as `video.status` (Tier 1a)
@@ -104,6 +108,7 @@ export function useStudySocket(opts: {
             video_id: videoId,
             session_id: sessionIdRef.current,
             language: languageRef.current,
+            spoiler_guard: spoilerGuardRef.current,
             ...(token ? { token } : {}),
           })
         );
@@ -215,7 +220,14 @@ export function useStudySocket(opts: {
           }, TURN_TIMEOUT_MS);
         pendingRef.current.set(turn_id, { resolve, t0: performance.now(), timer: arm(), onDelta: opts.onDelta, arm });
         wsRef.current!.send(
-          JSON.stringify({ type: 'utterance', turn_id, text, language: languageRef.current, ...getPlaybackRef.current() })
+          JSON.stringify({
+            type: 'utterance',
+            turn_id,
+            text,
+            language: languageRef.current,
+            spoiler_guard: spoilerGuardRef.current,
+            ...getPlaybackRef.current(),
+          })
         );
       });
     },

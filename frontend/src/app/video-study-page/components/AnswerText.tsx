@@ -4,7 +4,8 @@ const CITATION = /\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g;
 
 /**
  * An answer with its [mm:ss] citations rendered as chips that seek the video (Tier 1b).
- * Citations only point at transcript the learner has already watched (the server enforces it).
+ * With the spoiler guard on (default), citations only point at transcript the learner has already watched
+ * (the server enforces it); with it off they can point anywhere in the lecture.
  */
 export default function AnswerText({ text, onSeek }: { text: string; onSeek?: (ts: string) => void }) {
   const parts: React.ReactNode[] = [];

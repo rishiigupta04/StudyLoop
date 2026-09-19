@@ -378,3 +378,32 @@ def test_follow_up_retrieves_with_the_previous_question(graph):
     out, _, _ = turn(graph, "say that more simply", watched=700, llm=llm, thread=thread)
     assert "[9:00] recursion" in llm.messages[-1]["content"]
     assert out["citations"] == [{"start_s": 540.0}]
+
+
+# ---------------------------------------------------------------- spoiler guard toggle (UI switch)
+def test_spoiler_guard_off_answers_about_future_content(graph):
+    llm = FakeLLM(answer="Gradients flow backwards [15:00].")
+    out, deltas, _ = turn(graph, "how does backprop work", watched=720, llm=llm, spoiler_guard=False)
+    assert out["route"] == "rag" and out["answer_key"] is None and deltas  # answered, not "not covered yet"
+    assert "[15:00] backprop gradient" in llm.messages[-1]["content"]
+    assert out["citations"] == [{"start_s": 900.0}]
+    system = llm.messages[0]["content"]
+    assert "spoiler protection off" in system and "Never predict" not in system
+
+
+def test_spoiler_guard_on_is_the_default_and_explicit_true_matches(graph):
+    for extra in ({}, {"spoiler_guard": True}):
+        out, _, _ = turn(graph, "how does backprop work", watched=720, **extra)
+        assert out["answer_key"] == "NOT_COVERED_YET"
+
+
+def test_spoiler_guard_off_summarizes_the_whole_lecture(graph):
+    llm = FakeLLM(answer="It covers sorting [0:00] through backprop [15:00].")
+    out, _, _ = turn(graph, "summarize so far", watched=10, llm=llm, spoiler_guard=False)
+    prompt = llm.messages[-1]["content"]
+    assert out["answer_key"] is None and "[18:00]" in prompt and "whole lecture" in prompt
+
+
+def test_spoiler_guard_off_fallback_does_not_say_watched(graph):
+    out, _, _ = turn(graph, "how does backprop work", watched=0, llm=FakeLLM(fail=True), spoiler_guard=False)
+    assert out["answer_key"] == "LLM_UNAVAILABLE_AT_ANY" and "watched" not in out["response_text"]

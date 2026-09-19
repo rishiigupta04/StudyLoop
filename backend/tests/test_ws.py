@@ -213,3 +213,24 @@ def test_new_command_barges_in_on_a_streaming_answer():
         done = next(m for m in msgs if m["type"] == "answer.done")
         assert done["turn_id"] == "q1" and done["cancelled"] is True
         assert msgs[-1]["type"] == "action" and msgs[-1]["action"] == {"type": "PAUSE"}
+
+
+def test_spoiler_guard_reaches_the_graph_and_sticks(monkeypatch):
+    import app.ws as ws_mod
+
+    seen = []
+    real = ws_mod.new_turn_input
+
+    def spy(**fields):
+        seen.append(fields["spoiler_guard"])
+        return real(**fields)
+
+    monkeypatch.setattr(ws_mod, "new_turn_input", spy)
+    c = client()
+    with c.websocket_connect("/ws/session") as ws:
+        ws.send_json({"type": "hello", "video_id": "HtSuA80QTyo", "spoiler_guard": False})
+        recv(ws)
+        for i, extra in enumerate([{}, {"spoiler_guard": True}, {}, {"spoiler_guard": "no"}]):
+            ws.send_json({"type": "utterance", "turn_id": f"g{i}", "text": "pause", **extra})
+            recv(ws)
+    assert seen == [False, True, True, True]  # hello sets it; an utterance's bool wins and sticks

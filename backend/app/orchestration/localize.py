@@ -60,6 +60,15 @@ STRINGS: dict[str, dict[Lang, str]] = {
         "en": "Q&A isn't set up on this server yet, but the most relevant part you've watched is at {clock}.",
         "hi": "इस server पर अभी Q&A set नहीं है, पर आपके देखे हिस्से में सबसे relevant हिस्सा {clock} पर है।",
     },
+    # spoiler guard off: the pointer may be to a part not watched yet
+    "LLM_NOT_CONFIGURED_AT_ANY": {
+        "en": "Q&A isn't set up on this server yet, but the most relevant part of the lecture is at {clock}.",
+        "hi": "इस server पर अभी Q&A set नहीं है, पर lecture का सबसे relevant हिस्सा {clock} पर है।",
+    },
+    "LLM_UNAVAILABLE_AT_ANY": {
+        "en": "The answer service is busy right now, but the most relevant part of the lecture is at {clock}.",
+        "hi": "Answer service अभी busy है, पर lecture का सबसे relevant हिस्सा {clock} पर है।",
+    },
     "LLM_UNAVAILABLE": {
         "en": "The answer service is busy right now. Please ask again in a moment.",
         "hi": "Answer service अभी busy है। थोड़ी देर में फिर पूछिए।",

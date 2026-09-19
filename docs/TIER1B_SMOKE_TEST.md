@@ -49,3 +49,18 @@ off-topic 0.43–0.45. They'll need a second lecture to confirm (ideally a Hindi
 - Gemini fallback is wired but `GEMINI_API_KEY` is empty, so a Groq outage falls back to the "answer service is busy,
   the most relevant part you've watched is at mm:ss" template.
 - Render: set `DATABASE_URL` to the Supabase **session pooler** URL, or the checkpointer falls back to memory (it logs why).
+
+## Spoiler-guard toggle (added 19 Sep 2026)
+A top-bar switch (**No spoilers** / **Spoilers on**, next to EN/हिं; on by default, remembered per browser)
+sends `spoiler_guard` in `hello` and with every utterance. Off = Q&A ranks over the whole lecture (no
+"not covered yet"), "summarize" covers the whole lecture, and the prompt no longer forbids later content.
+Semantic seek is unchanged (it always searched the whole video).
+
+Verified by Claude over the WS on 6.006 L1 at 26:00: "how does greedy ascent work on a 2D matrix" → guard on:
+"The lecture hasn't covered that yet…"; guard off: a grounded answer citing [37:02] [38:01] (also in Hindi);
+"summarize" off covers up to ~50:00, on stops at ~23:00.
+
+- [ ] Toggle to **Spoilers on** → toast; ask by voice and typed about something later in the lecture → answered,
+      with citation chips past your position. Toggle back → "hasn't covered that yet" again.
+- [ ] Reload the page → the toggle keeps its state.
+- [ ] Hindi: same question with **हिं** + Spoilers on → Devanagari answer with chips.

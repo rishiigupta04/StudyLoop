@@ -317,27 +317,44 @@ def _even_sample(chunks: list[Any], budget: int) -> list[Any]:
     return [chunks[int(i * step)] for i in range(keep)]
 
 
-def _system_prompt(lang: str, at_s: float, summarize: bool) -> str:
+def _system_prompt(lang: str, at_s: float, summarize: bool, spoiler_guard: bool = True) -> str:
     language = (
         "Hindi, written in Devanagari script (keep technical terms like 'algorithm' in English)"
         if lang == "hi"
         else "English"
     )
-    task = (
-        "Summarize what the lecture has covered so far in 3-5 short sentences."
-        if summarize
-        else "Answer the learner's question in 2-4 short sentences."
-    )
+    if spoiler_guard:
+        scope = f"The learner has watched the lecture up to {L.fmt_clock(at_s)}."
+        task = (
+            "Summarize what the lecture has covered so far in 3-5 short sentences."
+            if summarize
+            else "Answer the learner's question in 2-4 short sentences."
+        )
+        missing = (
+            "If the excerpts don't cover the question, say it hasn't come up in what they've watched so far; you "
+            "may then add a brief general explanation of the concept, clearly marked as not from this lecture. "
+            "Never predict, hint at or guess what this lecture or course covers later. "
+        )
+    else:  # the learner turned the spoiler guard off: the whole lecture is fair game
+        scope = (
+            f"The learner is at {L.fmt_clock(at_s)} and has turned spoiler protection off, so excerpts may come "
+            "from any part of the lecture, including parts they haven't watched yet."
+        )
+        task = (
+            "Summarize the whole lecture in 4-6 short sentences, in order."
+            if summarize
+            else "Answer the learner's question in 2-4 short sentences."
+        )
+        missing = (
+            "If the excerpts don't cover the question, say this lecture doesn't seem to cover it; you may then add "
+            "a brief general explanation of the concept, clearly marked as not from this lecture. "
+        )
     return (
         "You are StudyLoop, a voice study copilot inside a YouTube lecture player. "
-        f"The learner has watched the lecture up to {L.fmt_clock(at_s)}. {task} "
-        f"Reply in {language}. "
+        f"{scope} {task} Reply in {language}. "
         "Use only the transcript excerpts provided; each starts with its timestamp in square brackets. "
         "Cite the excerpts you rely on with that exact timestamp in plain ASCII square brackets, e.g. [12:30]. "
-        "If the excerpts don't cover the question, say it hasn't come up in what they've watched so far; you may "
-        "then add a brief general explanation of the concept, clearly marked as not from this lecture. Never "
-        "predict, hint at or guess what this lecture or course covers later. Your reply is read aloud: plain "
-        "sentences, no markdown, no lists."
+        f"{missing}Your reply is read aloud: plain sentences, no markdown, no lists."
     )
 
 
@@ -354,21 +371,23 @@ def _history_messages(state: StudyState, limit: int = 4) -> list[dict[str, str]]
 
 @timed("rag_agent")
 def rag_agent(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
-    """Q&A / summary grounded in the transcript the learner has ALREADY watched (D7), streamed (D8)."""
+    """Q&A / summary grounded in the transcript the learner has ALREADY watched (D7), streamed (D8).
+    With the spoiler guard off (a UI toggle, `spoiler_guard=False`), the whole lecture is used instead."""
     if key := transcript_gate(state):
         return {"route": "rag", "answer_key": key}
     deps = _deps(config)
     lang = state.get("language", "en")
     max_w = float(state.get("max_watched_s") or 0.0)
+    guard = state.get("spoiler_guard", True) is not False
     summarize = state.get("intent") == Intent.SUMMARIZE.value
     question = state.get("raw_text", "")
 
     if summarize:
-        chunks = _run(deps, deps.retriever.watched(state["video_id"], max_w))
+        chunks = _run(deps, deps.retriever.watched(state["video_id"], max_w if guard else float("inf")))
         if not chunks:
             return {"route": "rag", "answer_key": "NOTHING_WATCHED"}
         context = _even_sample(chunks, SUMMARY_BUDGET_CHARS)
-        user = "Summarize the lecture so far."
+        user = "Summarize the lecture so far." if guard else "Summarize the whole lecture."
     else:
         queries = [question, state.get("normalized_text", "")]
         if (
@@ -379,6 +398,9 @@ def rag_agent(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
             )
             queries.append(prev)
         hits = _run(deps, deps.retriever.rank(state["video_id"], queries))
+        if not guard:  # spoiler guard off: rank over the whole lecture, no "not covered yet"
+            context = sorted(hits[:ASK_TOP_K], key=lambda h: h.start_s)
+            return _answer(state, deps, context, question, lang, max_w, summarize, guard)
         watched = [h for h in hits if h.end_s <= max_w + 0.5]
         future = [h for h in hits if h.end_s > max_w + 0.5]
         log.info(
@@ -395,19 +417,32 @@ def rag_agent(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
             return {"route": "rag", "answer_key": "NOT_COVERED_YET"}
         context = sorted(watched[:ASK_TOP_K], key=lambda h: h.start_s)
         user = question
+    return _answer(state, deps, context, user, lang, max_w, summarize, guard)
 
+
+def _answer(
+    state: StudyState,
+    deps: TurnDeps,
+    context: list[Any],
+    user: str,
+    lang: str,
+    max_w: float,
+    summarize: bool,
+    guard: bool,
+) -> dict[str, Any]:
+    """Stream the grounded answer over `context` (already cut to what the spoiler guard allows)."""
     excerpts = "\n".join(f"[{L.fmt_clock(c.start_s)}] {c.text}" for c in context) or "(nothing relevant yet)"
     messages = [
-        {"role": "system", "content": _system_prompt(lang, max_w, summarize)},
+        {"role": "system", "content": _system_prompt(lang, max_w, summarize, guard)},
         *_history_messages(state),
         {"role": "user", "content": f"Transcript excerpts:\n{excerpts}\n\nLearner: {user}"},
     ]
-    # retrieval still helps when the LLM is down: point at the most relevant watched moment
+    # retrieval still helps when the LLM is down: point at the most relevant moment (watched, if guarded)
     top = None if summarize or not context else max(context, key=lambda c: c.score).start_s
     fallback: dict[str, Any] = {"route": "rag", "answer_key": "LLM_UNAVAILABLE"}
     if top is not None:
         fallback.update(
-            answer_key="LLM_UNAVAILABLE_AT",
+            answer_key="LLM_UNAVAILABLE_AT" if guard else "LLM_UNAVAILABLE_AT_ANY",
             answer_args={"clock": L.fmt_clock(top)},
             citations=[{"start_s": top}],
         )

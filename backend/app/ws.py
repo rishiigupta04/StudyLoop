@@ -1,8 +1,10 @@
 """WebSocket voice session — protocol from STUDYLOOP_ROADMAP_V2.md §2.
 
 client → server
-  {"type":"hello", "token"?, "video_id", "session_id"?, "language":"en"|"hi"}
-  {"type":"utterance", "turn_id", "text", "playback_s", "max_watched_s", "language"?}
+  {"type":"hello", "token"?, "video_id", "session_id"?, "language":"en"|"hi", "spoiler_guard"?: bool}
+  {"type":"utterance", "turn_id", "text", "playback_s", "max_watched_s", "language"?, "spoiler_guard"?}
+      spoiler_guard (UI toggle, default true): Q&A/summaries use only what's been watched (D7). false = the
+      learner opted out, the whole lecture is used. The utterance's value wins and sticks for the session.
   {"type":"playback", "playback_s", "max_watched_s"}        # heartbeat
   {"type":"turn.cancel", "turn_id"}                          # barge-in: stop streaming that turn
   {"type":"ping"}
@@ -66,6 +68,8 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
     session["max_watched_s"] = max(
         float(session.get("max_watched_s", 0)), float(msg.get("max_watched_s") or 0)
     )
+    if isinstance(msg.get("spoiler_guard"), bool):
+        session["spoiler_guard"] = msg["spoiler_guard"]
     cancelled: set[str] = session.setdefault("cancelled", set())
 
     async def emit(delta: str) -> None:
@@ -90,6 +94,7 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
             language=_lang(msg.get("language"), session["language"]),
             playback_s=float(msg.get("playback_s") or 0),
             max_watched_s=session["max_watched_s"],
+            spoiler_guard=session.get("spoiler_guard", True),
             transcript_status=session.get("transcript_status", "pending"),
             transcript_fail_reason=session.get("transcript_fail_reason"),
             turn_id=turn_id,
@@ -181,6 +186,7 @@ async def session_ws(ws: WebSocket) -> None:
             "user_id": user.id,
             "video_id": str(hello["video_id"])[:64],
             "language": _lang(hello.get("language")),
+            "spoiler_guard": hello.get("spoiler_guard") is not False,
             "max_watched_s": 0.0,
             "transcript_status": "pending",
             "transcript_fail_reason": None,

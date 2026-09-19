@@ -32,6 +32,22 @@ export default function VideoStudyLayout() {
   });
 
   // video: ?v=<id|url> → router state from the dashboard URL bar → demo lecture
+  // anti-spoiler Q&A (on by default): off lets answers and summaries use the whole lecture
+  const [spoilerGuard, setSpoilerGuard] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('studyloop.spoilerGuard') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('studyloop.spoilerGuard', spoilerGuard ? 'on' : 'off');
+    } catch {
+      /* private mode */
+    }
+  }, [spoilerGuard]);
+
   const queryVideo = new URLSearchParams(location.search).get('v');
   const videoId =
     extractYouTubeId(queryVideo || location.state?.videoUrl || location.state?.videoId || '') || DEFAULT_VIDEO_ID;
@@ -43,6 +59,7 @@ export default function VideoStudyLayout() {
   const socket = useStudySocket({
     videoId,
     language,
+    spoilerGuard,
     getPlayback: () => ({ playback_s: player.getCurrentTime(), max_watched_s: player.maxWatched() }),
     onNoteEvent: (e) => notesRef.current?.onNoteEvent(e), // voice notes (Tier 1e)
   });
@@ -223,6 +240,32 @@ export default function VideoStudyLayout() {
               {transcriptChip.label}
             </span>
           )}
+          <button
+            onClick={() => {
+              setSpoilerGuard((on) => !on);
+              toast.success(
+                spoilerGuard
+                  ? 'Spoilers allowed: answers can use the whole lecture'
+                  : "No spoilers: answers only use what you've watched"
+              );
+            }}
+            role="switch"
+            aria-checked={spoilerGuard}
+            aria-label="No-spoiler answers"
+            title={
+              spoilerGuard
+                ? "No spoilers: Q&A and summaries only use what you've watched. Click to allow the whole lecture."
+                : "Spoilers allowed: Q&A and summaries can use the whole lecture. Click to limit them to what you've watched."
+            }
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1.5 transition-colors ${
+              spoilerGuard
+                ? 'border-cyan-500/40 text-cyan-300 bg-cyan-500/10'
+                : 'border-amber-500/40 text-amber-300 bg-amber-500/10'
+            }`}
+          >
+            <Icon name={spoilerGuard ? 'EyeSlashIcon' : 'EyeIcon'} size={13} />
+            <span className="hidden sm:inline">{spoilerGuard ? 'No spoilers' : 'Spoilers on'}</span>
+          </button>
           <div className="flex rounded-full border border-border/80 overflow-hidden text-[11px] font-semibold" role="group" aria-label="Response language">
             {(['en', 'hi'] as Lang[]).map((l) => (
               <button

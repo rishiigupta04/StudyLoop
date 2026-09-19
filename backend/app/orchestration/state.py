@@ -22,6 +22,8 @@ class StudyState(TypedDict, total=False):
     # transcript ingestion state of this video (Tier 1a, from the `video.status` stream)
     transcript_status: str
     transcript_fail_reason: str | None
+    # anti-spoiler Q&A (D7) — on unless the learner switched it off in the UI
+    spoiler_guard: bool
     # per-turn pipeline fields (reset on every turn — see graph.new_turn_input)
     raw_text: str
     normalized_text: str
