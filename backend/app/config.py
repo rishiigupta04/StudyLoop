@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     groq_router_model: str = "openai/gpt-oss-20b"  # llm_router tool call; empty = groq_model
     groq_reasoning_effort: str = "low"  # gpt-oss reasons before answering; low keeps first-token latency down
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    # 2.5 models are closed to new keys (Sep 2026); 3.x reasons first, so it gets low effort + headroom
+    gemini_model: str = "gemini-3.6-flash"
+    gemini_reasoning_effort: str = "low"
     llm_timeout_s: float = 30.0
     # LangGraph checkpointer: "memory" (dev) or "postgres" (prod; needs DATABASE_URL — on Render use the
     # Supabase *session pooler* URL, the direct db.<ref>.supabase.co host is IPv6-only)

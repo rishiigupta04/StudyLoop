@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, TypedDict
 
-MAX_HISTORY = 20
+MAX_HISTORY = 60  # 30 turns: the prompt uses the last few, chat history (Tier 2) shows them all
 
 
 def keep_recent(existing: list[dict] | None, new: list[dict] | None) -> list[dict]:

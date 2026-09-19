@@ -5,7 +5,8 @@ client → server
   {"type":"utterance", "turn_id", "text", "playback_s", "max_watched_s", "language"?, "spoiler_guard"?}
       spoiler_guard (UI toggle, default true): Q&A/summaries use only what's been watched (D7). false = the
       learner opted out, the whole lecture is used. The utterance's value wins and sticks for the session.
-  {"type":"playback", "playback_s", "max_watched_s"}        # heartbeat
+  {"type":"playback", "playback_s", "max_watched_s", "duration_s"?}   # heartbeat every 5 s; also feeds the
+      resume point (`user_video_history`, Tier 2), written behind: memory now, the database within ~20 s
   {"type":"turn.cancel", "turn_id"}                          # barge-in: stop streaming that turn
   {"type":"ping"}
 server → client
@@ -44,6 +45,7 @@ from app.auth import ANONYMOUS, resolve_user
 from app.config import get_settings
 from app.orchestration.graph import TurnDeps, default_deps, get_graph, new_turn_input
 from app.services.ingest import get_ingest_service
+from app.services.library import get_library_service
 from app.services.notes import get_notes_service, new_note, public
 from app.services.sessions import get_session_store, valid_session_id
 
@@ -193,6 +195,10 @@ async def session_ws(ws: WebSocket) -> None:
             "transcript_fail_reason": None,
         }
         await send({"type": "ready", "session_id": session["session_id"], "classifier": settings.classifier})
+        library = get_library_service()
+        library.record_anonymous_session(
+            session["session_id"], user.id, session["video_id"], session["language"]
+        )
         # transcript ingestion starts (or is joined) here; progress streams as video.status
         watcher = asyncio.create_task(_watch_video(send, session))
         # a reconnect after a server restart: load this session's conversation memory before the first turn
@@ -218,6 +224,10 @@ async def session_ws(ws: WebSocket) -> None:
         await _serve(ws, send, session)
     finally:
         watcher.cancel()
+        library.flush_soon(user.id, session["video_id"])  # resume point, in the background
+        library.record_anonymous_session(
+            session["session_id"], user.id, session["video_id"], session["language"]
+        )
         if user is not ANONYMOUS:
             try:
                 await started  # the end update must not race the start insert
@@ -255,6 +265,21 @@ async def _watch_video(send: Any, session: dict[str, Any]) -> None:
         svc.unsubscribe(vid, q)
 
 
+def _note_position(session: dict[str, Any], msg: dict[str, Any]) -> None:
+    """Resume point + high-water mark into memory (written behind, never awaited here)."""
+    try:
+        duration = float(msg.get("duration_s") or 0) or None
+        get_library_service().note_position(
+            session["user_id"],
+            session["video_id"],
+            position_s=float(msg.get("playback_s") or 0),
+            max_watched_s=max(session["max_watched_s"], float(msg.get("max_watched_s") or 0)),
+            duration_s=duration,
+        )
+    except (TypeError, ValueError):
+        pass
+
+
 async def _serve(ws: WebSocket, send: Any, session: dict[str, Any]) -> None:
     turn_lock = asyncio.Lock()  # one graph run at a time per session (shared conversation memory)
     inflight: set[str] = set()
@@ -280,12 +305,14 @@ async def _serve(ws: WebSocket, send: Any, session: dict[str, Any]) -> None:
             kind = msg.get("type")
             if kind == "utterance":
                 msg["turn_id"] = str(msg.get("turn_id") or uuid.uuid4())
+                _note_position(session, msg)
                 cancelled.update(inflight)  # a new command barges in on an answer still streaming
                 task = asyncio.create_task(handle(msg))
                 tasks.add(task)
                 task.add_done_callback(tasks.discard)
             elif kind == "playback":
                 session["max_watched_s"] = max(session["max_watched_s"], float(msg.get("max_watched_s") or 0))
+                _note_position(session, msg)
             elif kind == "language":
                 session["language"] = _lang(msg.get("language"), session["language"])
             elif kind == "ping":

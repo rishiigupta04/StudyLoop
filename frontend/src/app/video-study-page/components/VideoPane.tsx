@@ -2,116 +2,49 @@ import React, { useState, useRef } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { useAppFullscreen } from '@/hooks/useAppFullscreen';
 import type { YouTubePlayerApi } from '@/hooks/useYouTubePlayer';
+import type { VideoOutlineState } from '@/hooks/useVideoOutline';
 import { PLAYBACK_RATES } from '@/lib/playerActions';
 import { formatClock } from '@/lib/time';
+import { activeChapterIndex, chapterReached, markerPercent, pickOutline, summaryView, type Lang } from '@/lib/outline';
+import { IN_PROGRESS_STATUSES, type VideoStatus } from '@/services/transcriptService';
 
-interface Chapter {
-  id: string;
-  time: string;
-  timeSeconds: number;
-  title: string;
-  summary?: string;
-}
-
-interface SummarySection {
-  title: string;
-  time: string;
-  bullets: string[];
-}
-
-interface SummaryPart {
-  partNumber: string;
-  partTitle: string;
-  timeRange: string;
-  sections: SummarySection[];
-}
-
-const chapters: Chapter[] = [
-  { id: 'ch-intro', time: '0:00', timeSeconds: 0, title: 'Introduction & Course Goals', summary: 'Course structure, grading, and algorithmic problem solving.' },
-  { id: 'ch-overview', time: '4:32', timeSeconds: 272, title: 'Course Overview & Prerequisites', summary: 'Pre-reqs: Python fluency and discrete math fundamentals.' },
-  { id: 'ch-thinking', time: '12:15', timeSeconds: 735, title: 'Algorithmic Thinking & Procedure', summary: 'Defining algorithms as formal computational procedures.' },
-  { id: 'ch-peak1d', time: '24:10', timeSeconds: 1450, title: 'Peak Finding (1D Array)', summary: 'Finding a[i] ≥ a[i-1] and a[i] ≥ a[i+1] via Divide & Conquer.' },
-  { id: 'ch-peak2d', time: '38:45', timeSeconds: 2325, title: 'Peak Finding (2D Matrix)', summary: 'Greedy ascent vs 2D Divide & Conquer O(n log n) algorithm.' },
-  { id: 'ch-complexity', time: '52:30', timeSeconds: 3150, title: 'Complexity Analysis (Asymptotic)', summary: 'Big-O, Big-Omega, Big-Theta bounds and operation counting.' },
-  { id: 'ch-summary', time: '1:08:20', timeSeconds: 4100, title: 'Summary & Key Takeaways', summary: 'Comparing O(n) naive scan to O(log n) logarithmic reduction.' },
-];
-
-const structuredSummaryParts: SummaryPart[] = [
-  {
-    partNumber: 'PART I',
-    partTitle: 'Conceptual Foundations & Course Framework',
-    timeRange: '0:00 – 12:15',
-    sections: [
-      {
-        title: 'Section A: Administrative Overview & Problem Solving Approach',
-        time: '0:00',
-        bullets: [
-          'Introduction to course structure: lectures, problem sets, and coding labs in Python.',
-          'Definition of computational efficiency as a core metric for software engineering.',
-        ],
-      },
-      {
-        title: 'Section B: Formalizing Algorithmic Procedures',
-        time: '4:32',
-        bullets: [
-          'An algorithm is a well-defined computational procedure taking inputs to specified outputs.',
-          'Core pillars of evaluation: Correctness (proof by induction) and Efficiency (asymptotic bounds).',
-        ],
-      },
-    ],
+/** Every string in the Lecture Intelligence panel, EN + HI. */
+const T = {
+  title: { en: 'Lecture Intelligence', hi: 'लेक्चर इंटेलिजेंस' },
+  summaryTab: { en: 'Structured Summary', hi: 'सारांश' },
+  chaptersTab: { en: 'Chapters', hi: 'अध्याय' },
+  active: { en: 'Now', hi: 'अभी' },
+  waitingTranscript: {
+    en: 'Chapters and the summary appear once the transcript is ready.',
+    hi: 'Transcript तैयार होते ही अध्याय और सारांश यहाँ दिखेंगे।',
   },
-  {
-    partNumber: 'PART II',
-    partTitle: 'Core Algorithms & Peak Finding Techniques',
-    timeRange: '12:15 – 52:30',
-    sections: [
-      {
-        title: 'Section A: One-Dimensional Peak Finding (1D Array)',
-        time: '24:10',
-        bullets: [
-          'Definition of a Peak: Element a[i] is a peak iff a[i] ≥ a[i-1] and a[i] ≥ a[i+1].',
-          'Naive Straightforward Search: O(n) worst-case linear traversal.',
-          'Divide & Conquer Optimization: Check middle element. Recurse on larger neighbor half. T(n) = T(n/2) + O(1) → O(log n).',
-        ],
-      },
-      {
-        title: 'Section B: Two-Dimensional Peak Finding (2D Matrix)',
-        time: '38:45',
-        bullets: [
-          'Definition of 2D Peak: Element a[i,j] ≥ top, bottom, left, and right neighbors.',
-          'Greedy Ascent Algorithm: Follow maximum neighbor path — worst-case O(n²) time.',
-          '2D Divide & Conquer Algorithm: Find 1D max in middle column j. Compare left/right neighbors. Recurse on remaining half-matrix → O(n log n) total time.',
-        ],
-      },
-    ],
+  noTranscript: {
+    en: "No transcript for this video, so there are no chapters or summary. Voice playback still works.",
+    hi: 'इस वीडियो का transcript नहीं है, इसलिए अध्याय और सारांश नहीं बन सकते। Voice playback चलता रहेगा।',
   },
-  {
-    partNumber: 'PART III',
-    partTitle: 'Asymptotic Analysis & Mathematical Rigor',
-    timeRange: '52:30 – 1:20:00',
-    sections: [
-      {
-        title: 'Section A: Asymptotic Notation (Big-O, Big-Omega, Big-Theta)',
-        time: '52:30',
-        bullets: [
-          'O(f(n)): Upper bound on growth rate for worst-case input.',
-          'Ω(f(n)): Lower bound on growth rate for best-case input.',
-          'Θ(f(n)): Tight asymptotic bound when upper and lower bounds coincide.',
-        ],
-      },
-      {
-        title: 'Section B: Summary of Algorithmic Trade-Offs',
-        time: '1:08:20',
-        bullets: [
-          '1D Peak Finding: O(n) naive vs O(log n) Divide & Conquer exponential speedup.',
-          '2D Peak Finding: O(n²) greedy vs O(n log n) sub-quadratic reduction.',
-        ],
-      },
-    ],
+  generating: {
+    en: 'Generating chapters and a summary from the transcript… (about a minute)',
+    hi: 'Transcript से अध्याय और सारांश बन रहे हैं… (लगभग एक मिनट)',
   },
-];
-
-const totalSeconds = 4800;
+  failed: { en: "Couldn't generate chapters this time.", hi: 'इस बार अध्याय नहीं बन पाए।' },
+  notGenerated: {
+    en: 'No chapters yet for this video.',
+    hi: 'इस वीडियो के अध्याय अभी नहीं बने हैं।',
+  },
+  retry: { en: 'Retry', hi: 'फिर से कोशिश करें' },
+  generate: { en: 'Generate', hi: 'बनाएँ' },
+  loading: { en: 'Loading…', hi: 'लोड हो रहा है…' },
+  fellBack: {
+    en: 'The English outline is missing for this video, showing Hindi.',
+    hi: 'इस वीडियो का हिंदी सारांश नहीं बन पाया, English दिखा रहे हैं।',
+  },
+  lockedSections: {
+    en: (n: number) => `${n} more section${n === 1 ? '' : 's'} unlock as you watch (no spoilers).`,
+    hi: (n: number) => `देखते-देखते ${n} और हिस्से खुलेंगे (no spoilers)।`,
+  },
+  lockedBlurb: { en: 'Summary unlocks when you reach this chapter.', hi: 'इस अध्याय तक पहुँचने पर सारांश दिखेगा।' },
+  jump: { en: 'Jump to', hi: 'यहाँ जाएँ:' },
+} as const;
 
 interface VideoPaneProps {
   activeTimestamp: string;
@@ -119,26 +52,62 @@ interface VideoPaneProps {
   onOpenVoiceModal: () => void;
   player: YouTubePlayerApi;
   playerHostRef: React.RefObject<HTMLDivElement | null>;
+  outline: VideoOutlineState;
+  transcriptStatus: VideoStatus;
+  language: Lang;
+  spoilerGuard: boolean;
+  /** the learner's high-water mark for this video (this session and earlier ones) */
+  watchedS: number;
 }
 
 export default function VideoPane({
-  activeTimestamp,
   onTimestampClick,
   onOpenVoiceModal,
   player,
   playerHostRef,
+  outline,
+  transcriptStatus,
+  language,
+  spoilerGuard,
+  watchedS,
 }: VideoPaneProps) {
-  const [currentChapter, setCurrentChapter] = useState('ch-peak1d');
-  const [activeTab, setActiveTab] = useState<'summary' | 'chapters'>('summary');
-  
+  const [activeTab, setActiveTab] = useState<'summary' | 'chapters'>('chapters');
+
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, toggleFullscreen } = useAppFullscreen(paneContainerRef);
 
-  const activeChapter = chapters.find((c) => c.id === currentChapter);
-  const duration = player.duration || totalSeconds;
+  const { doc, fellBack } = pickOutline(outline.outline, language);
+  const chapters = doc?.chapters ?? [];
+  const duration = player.duration || chapters[chapters.length - 1]?.end_s || 0;
   const progressPercent = duration > 0 ? Math.min(100, (player.currentTime / duration) * 100) : 0;
+  const currentIdx = activeChapterIndex(chapters, player.currentTime);
+  const parts = doc ? summaryView(doc, watchedS, spoilerGuard) : [];
+  const seek = (s: number) => onTimestampClick(formatClock(s));
 
   const speeds = PLAYBACK_RATES.filter((r) => r >= 0.75);
+
+  const renderState = () => {
+    if (IN_PROGRESS_STATUSES.includes(transcriptStatus)) return <StateNote icon="ClockIcon" text={T.waitingTranscript[language]} />;
+    if (transcriptStatus !== 'ready') return <StateNote icon="InformationCircleIcon" text={T.noTranscript[language]} />;
+    if (outline.loading) return <StateNote icon="ArrowPathIcon" spin text={T.loading[language]} />;
+    if (outline.status === 'generating')
+      return (
+        <div className="space-y-3">
+          <StateNote icon="SparklesIcon" pulse text={T.generating[language]} />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-14 rounded-2xl bg-surface-elevated/60 animate-pulse" />
+          ))}
+        </div>
+      );
+    const action = outline.status === 'failed' ? T.retry[language] : T.generate[language];
+    return (
+      <StateNote
+        icon="ExclamationTriangleIcon"
+        text={outline.status === 'failed' ? T.failed[language] : T.notGenerated[language]}
+        action={{ label: action, busy: outline.requesting, onClick: () => void outline.generate(true) }}
+      />
+    );
+  };
 
   return (
     <div
@@ -168,7 +137,7 @@ export default function VideoPane({
             className="h-1.5 bg-surface-elevated rounded-full overflow-hidden cursor-pointer"
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              player.seekTo(((e.clientX - r.left) / r.width) * duration);
+              if (duration > 0) player.seekTo(((e.clientX - r.left) / r.width) * duration);
             }}
           >
             <div
@@ -176,28 +145,25 @@ export default function VideoPane({
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          {/* Chapter markers on progress bar */}
-          {chapters.map((ch) => (
-            <button
-              key={`marker-${ch.id}`}
-              onClick={() => {
-                setCurrentChapter(ch.id);
-                onTimestampClick(ch.time);
-              }}
-              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 border-obsidian transition-all duration-150 hover:scale-125 z-10"
-              style={{
-                left: `${(ch.timeSeconds / duration) * 100}%`,
-                background: ch.id === currentChapter ? '#7C3AED' : '#64748B',
-              }}
-              title={`${ch.time} — ${ch.title}`}
-              aria-label={`Jump to ${ch.title} at ${ch.time}`}
-            />
-          ))}
+          {/* Chapter markers (always shown: navigation is exempt from the no-spoiler rule) */}
+          {duration > 0 &&
+            chapters.map((ch, i) => (
+              <button
+                key={`marker-${ch.start_s}`}
+                onClick={() => seek(ch.start_s)}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-obsidian transition-all duration-150 hover:scale-125 z-10"
+                style={{
+                  left: `${markerPercent(ch.start_s, duration)}%`,
+                  background: i === currentIdx ? '#7C3AED' : '#64748B',
+                }}
+                title={`${formatClock(ch.start_s)} — ${ch.title}`}
+                aria-label={`${T.jump[language]} ${ch.title} (${formatClock(ch.start_s)})`}
+              />
+            ))}
         </div>
 
         {/* Controls Row: Play/Pause, Voice Copilot, Speed, Fullscreen */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* Left: Playback buttons */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => player.seekTo(Math.max(0, player.getCurrentTime() - 10))}
@@ -214,7 +180,7 @@ export default function VideoPane({
               <Icon name={player.isPlaying ? 'PauseIcon' : 'PlayIcon'} size={16} />
             </button>
             <button
-              onClick={() => player.seekTo(Math.min(duration, player.getCurrentTime() + 10))}
+              onClick={() => player.seekTo(Math.min(duration || Infinity, player.getCurrentTime() + 10))}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               title="Forward 10s"
             >
@@ -229,7 +195,6 @@ export default function VideoPane({
             </button>
           </div>
 
-          {/* Center: Integrated Voice PTT Button */}
           <button
             onClick={onOpenVoiceModal}
             className="btn-primary px-4 py-1.5 rounded-xl text-xs font-bold text-white flex items-center gap-2 shadow-glow-indigo-sm ptt-pulse hover:scale-105 transition-transform"
@@ -242,7 +207,6 @@ export default function VideoPane({
             </kbd>
           </button>
 
-          {/* Right: Time, Speed & App Fullscreen Toggle */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-mono tabular-nums">
               {formatClock(player.currentTime)} / {formatClock(duration)}
@@ -262,7 +226,6 @@ export default function VideoPane({
                 </button>
               ))}
             </div>
-            {/* App Fullscreen Toggle Button (Preserves Keyboard Shortcuts & Voice Overlays) */}
             <button
               onClick={toggleFullscreen}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors ml-1"
@@ -274,156 +237,188 @@ export default function VideoPane({
         </div>
       </div>
 
-      {/* Lecture Intelligence Section — Clean Tabs */}
+      {/* Lecture Intelligence: chapters + structured summary generated from this video's transcript */}
       <div className="flex-1 p-4 bg-obsidian/30 min-h-[320px]">
-        {/* Navigation Tabs */}
         <div className="flex items-center justify-between gap-3 mb-4 border-b border-border/60 pb-3">
           <div className="flex items-center gap-2">
             <Icon name="SparklesIcon" size={18} className="text-indigo-400" />
-            <h3 className="text-sm font-extrabold text-foreground tracking-tight">
-              Lecture Intelligence
-            </h3>
+            <h3 className="text-sm font-extrabold text-foreground tracking-tight">{T.title[language]}</h3>
           </div>
 
-          <div className="flex items-center gap-1 bg-surface-card border border-border/80 rounded-xl p-1">
-            <button
-              onClick={() => setActiveTab('summary')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === 'summary'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon name="DocumentTextIcon" size={14} />
-              <span>Structured Summary</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('chapters')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === 'chapters'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon name="BookmarkIcon" size={14} />
-              <span>Chapters ({chapters.length})</span>
-            </button>
+          <div className="flex items-center gap-1 bg-surface-card border border-border/80 rounded-xl p-1" role="tablist">
+            {(['chapters', 'summary'] as const).map((tab) => (
+              <button
+                key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  activeTab === tab ? 'bg-indigo-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon name={tab === 'chapters' ? 'BookmarkIcon' : 'DocumentTextIcon'} size={14} />
+                <span>
+                  {tab === 'chapters' ? `${T.chaptersTab[language]}${chapters.length ? ` (${chapters.length})` : ''}` : T.summaryTab[language]}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* TAB 1: STRUCTURED SUMMARY */}
-        {activeTab === 'summary' && (
-          <div className="space-y-4 pb-8">
-            {structuredSummaryParts.map((part) => (
-              <div
-                key={`part-${part.partNumber}`}
-                className="glass-card rounded-2xl border border-indigo-500/20 p-4 relative overflow-hidden"
-              >
-                {/* Part Header */}
-                <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-glow-indigo-sm font-mono">
-                      {part.partNumber}
-                    </span>
-                    <h4 className="text-sm font-bold text-foreground">{part.partTitle}</h4>
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-muted-foreground bg-surface-elevated px-2 py-0.5 rounded">
-                    {part.timeRange}
-                  </span>
-                </div>
+        {!doc ? (
+          renderState()
+        ) : (
+          <>
+            {fellBack && <p className="text-[11px] text-amber-300/90 mb-3">{T.fellBack[language]}</p>}
 
-                {/* Part Sections */}
-                <div className="space-y-3 pl-1">
-                  {part.sections.map((sec, secIdx) => (
-                    <div key={`sec-${secIdx}`} className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                          {sec.title}
-                        </h5>
-                        <button
-                          onClick={() => onTimestampClick(sec.time)}
-                          className="text-[11px] font-mono font-bold text-indigo-400 hover:text-cyan-400 transition-colors flex items-center gap-0.5"
-                        >
-                          <Icon name="PlayIcon" size={10} />
-                          {sec.time}
-                        </button>
+            {activeTab === 'summary' && (
+              <div className="space-y-4 pb-8">
+                {doc.overview && <p className="text-xs text-foreground/85 leading-relaxed">{doc.overview}</p>}
+                {parts.map((part, pi) => (
+                  <div
+                    key={`part-${part.start_s}-${pi}`}
+                    className="glass-card rounded-2xl border border-indigo-500/20 p-4 relative overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-3 border-b border-border/50 pb-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-glow-indigo-sm font-mono flex-shrink-0">
+                          {pi + 1}
+                        </span>
+                        <h4 className="text-sm font-bold text-foreground truncate">{part.title}</h4>
                       </div>
-
-                      <ul className="space-y-1.5 pl-3">
-                        {sec.bullets.map((bullet, bIdx) => (
-                          <li
-                            key={`bullet-${bIdx}`}
-                            className="text-xs text-foreground/90 leading-relaxed flex items-start gap-2"
-                          >
-                            <span className="text-indigo-400 font-bold text-sm leading-none">•</span>
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* TAB 2: AUTO-GENERATED CHAPTERS */}
-        {activeTab === 'chapters' && (
-          <div className="space-y-2 pb-8">
-            {chapters.map((ch) => {
-              const isActive = ch.id === currentChapter;
-              return (
-                <div
-                  key={ch.id}
-                  onClick={() => {
-                    setCurrentChapter(ch.id);
-                    onTimestampClick(ch.time);
-                  }}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-indigo-500/10 border-indigo-500/40 shadow-glow-indigo-sm'
-                      : 'bg-surface-card/60 border-border/60 hover:border-indigo-500/30 hover:bg-surface-card'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`text-xs font-mono font-extrabold px-2.5 py-1 rounded-lg tabular-nums ${
-                          isActive
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'bg-surface-elevated text-indigo-300 border border-indigo-500/20'
-                        }`}
+                      <button
+                        onClick={() => seek(part.start_s)}
+                        className="text-xs font-mono font-semibold text-muted-foreground hover:text-cyan-400 bg-surface-elevated px-2 py-0.5 rounded flex-shrink-0"
                       >
-                        {ch.time}
-                      </span>
-                      <span
-                        className={`text-sm font-bold ${
-                          isActive ? 'text-foreground' : 'text-foreground/90'
-                        }`}
-                      >
-                        {ch.title}
-                      </span>
+                        {formatClock(part.start_s)} – {formatClock(part.end_s)}
+                      </button>
                     </div>
 
-                    {isActive && (
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                        Active
-                      </span>
-                    )}
+                    <div className="space-y-3 pl-1">
+                      {part.sections.map((sec) =>
+                        sec.revealed ? (
+                          <div key={`sec-${sec.start_s}`} className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <h5 className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 flex-shrink-0" />
+                                {sec.title}
+                              </h5>
+                              <button
+                                onClick={() => seek(sec.start_s)}
+                                className="text-[11px] font-mono font-bold text-indigo-400 hover:text-cyan-400 transition-colors flex items-center gap-0.5 flex-shrink-0"
+                                aria-label={`${T.jump[language]} ${sec.title}`}
+                              >
+                                <Icon name="PlayIcon" size={10} />
+                                {formatClock(sec.start_s)}
+                              </button>
+                            </div>
+                            <ul className="space-y-1.5 pl-3">
+                              {sec.bullets.map((b, bi) => (
+                                <li key={bi} className="text-xs text-foreground/90 leading-relaxed flex items-start gap-2">
+                                  <span className="text-indigo-400 font-bold text-sm leading-none">•</span>
+                                  <span>{b}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null
+                      )}
+                      {part.locked > 0 && (
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                          <Icon name="EyeSlashIcon" size={12} />
+                          {T.lockedSections[language](part.locked)}
+                        </p>
+                      )}
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  {ch.summary && (
-                    <p className="text-xs text-muted-foreground mt-1 pl-1 leading-relaxed">
-                      {ch.summary}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+            {activeTab === 'chapters' && (
+              <div className="space-y-2 pb-8">
+                {chapters.map((ch, i) => {
+                  const isActive = i === currentIdx;
+                  const reached = chapterReached(ch, watchedS, spoilerGuard);
+                  return (
+                    <button
+                      key={`ch-${ch.start_s}`}
+                      onClick={() => seek(ch.start_s)}
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all ${
+                        isActive
+                          ? 'bg-indigo-500/10 border-indigo-500/40 shadow-glow-indigo-sm'
+                          : 'bg-surface-card/60 border-border/60 hover:border-indigo-500/30 hover:bg-surface-card'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`text-xs font-mono font-extrabold px-2.5 py-1 rounded-lg tabular-nums flex-shrink-0 ${
+                              isActive ? 'bg-indigo-600 text-white shadow-sm' : 'bg-surface-elevated text-indigo-300 border border-indigo-500/20'
+                            }`}
+                          >
+                            {formatClock(ch.start_s)}
+                          </span>
+                          <span className={`text-sm font-bold ${isActive ? 'text-foreground' : 'text-foreground/90'}`}>{ch.title}</span>
+                        </div>
+                        {isActive && (
+                          <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 flex-shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                            {T.active[language]}
+                          </span>
+                        )}
+                      </div>
+                      {ch.summary &&
+                        (reached ? (
+                          <p className="text-xs text-muted-foreground mt-1 pl-1 leading-relaxed">{ch.summary}</p>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground/70 mt-1 pl-1 flex items-center gap-1.5">
+                            <Icon name="EyeSlashIcon" size={11} />
+                            {T.lockedBlurb[language]}
+                          </p>
+                        ))}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StateNote({
+  icon,
+  text,
+  spin,
+  pulse,
+  action,
+}: {
+  icon: string;
+  text: string;
+  spin?: boolean;
+  pulse?: boolean;
+  action?: { label: string; busy: boolean; onClick: () => void };
+}) {
+  return (
+    <div className="flex items-start gap-2.5 p-3.5 rounded-2xl border border-border/60 bg-surface-card/60" role="status">
+      <Icon
+        name={icon}
+        size={16}
+        className={`text-indigo-400 flex-shrink-0 mt-0.5 ${spin ? 'animate-spin' : ''} ${pulse ? 'animate-pulse' : ''}`}
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-foreground/85 leading-relaxed">{text}</p>
+        {action && (
+          <button
+            onClick={action.onClick}
+            disabled={action.busy}
+            className="mt-2 text-xs font-semibold px-3 py-1 rounded-lg bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/40 disabled:opacity-50"
+          >
+            {action.busy ? '…' : action.label}
+          </button>
         )}
       </div>
     </div>

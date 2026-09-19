@@ -5,6 +5,7 @@ import AppLogo from '@/components/ui/AppLogo';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
 import { initials, useAuth } from '@/context/AuthContext';
+import { DEMO_PREVIEW } from '@/lib/features';
 
 interface NavItem {
   label: string;
@@ -14,11 +15,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard-home', icon: 'HomeIcon', badge: undefined },
-  { label: 'Study', href: '/video-study-page', icon: 'PlayCircleIcon', badge: 1 },
-  { label: 'Library', href: '/library', icon: 'BookOpenIcon', badge: 14 },
-  { label: 'Notes', href: '/notes', icon: 'DocumentTextIcon', badge: 67 },
-  { label: 'Chat History', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon', badge: 5 },
+  { label: 'Dashboard', href: '/dashboard-home', icon: 'HomeIcon' },
+  { label: 'Study', href: '/video-study-page', icon: 'PlayCircleIcon' },
+  { label: 'Library', href: '/library', icon: 'BookOpenIcon' },
+  { label: 'Notes', href: '/notes', icon: 'DocumentTextIcon' },
+  { label: 'Chat History', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon' },
 ];
 
 interface SidebarProps {
@@ -77,8 +78,8 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
         </button>
       </div>
 
-      {/* Real-Time XP & Level Gamification Banner */}
-      {!collapsed ? (
+      {/* XP & level banner: gamification has no backend until Tier 3, so it's a demo-preview-only view */}
+      {!DEMO_PREVIEW ? null : !collapsed ? (
         <div className="mx-2.5 mt-3 p-3 rounded-2xl bg-[#151926] border border-indigo-500/40 relative overflow-hidden shadow-md space-y-2 flex-shrink-0">
           {/* Header Row: Level Badge & Streak Counter */}
           <div className="flex items-center justify-between">

@@ -245,6 +245,11 @@ Four people means four parallel tracks. The **ML track starts now**: it depends 
 - Unified Notes Workspace: cross-video search (full-text plus embeddings over notes).
 - One-click export as a first-class action.
 - Replace the dummy data in the Dashboard, Library, Notes and ChatHistory pages; hide Quiz and gamification until Tier 3.
+- **Status (20 Sep 2026): code complete on `tier2-retention`, awaiting the signed-in + Hindi pass (`docs/TIER2_SMOKE_TEST.md`).**
+  Chapters/summary are generated once per video in EN and HI and stored in `videos.chapters` (jsonb, versioned; no
+  migration). The watched-only rule applies at display time: titles are navigation, blurbs and summary sections unlock
+  as they're watched. Resume points are written behind the heartbeat. Chat history reads the checkpointer memory
+  (last 30 turns per session). Notes search is client-side full text; embedding search over notes is not done.
 
 ### Tier 3 — Next candidates (only after 0–2 are solid; ranked by value ÷ cost)
 1. **Auto-quizzes per chapter:** cheap once chapters exist, and backed directly by the in-video questioning research (Wong et al., 2024) cited in the Business Need doc. Would reactivate the existing Quiz UI.

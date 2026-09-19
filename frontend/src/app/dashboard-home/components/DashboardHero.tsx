@@ -3,29 +3,43 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import Icon from '@/components/ui/AppIcon';
+import type { UiLang } from '@/lib/uiLang';
+import { studyUrl } from '@/services/libraryService';
+import { extractYouTubeId } from '@/services/transcriptService';
 
-const DEMO_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+// MIT 6.006 Lecture 1 (the demo lecture: transcript, chapters and summary already cached)
+const DEMO_URL = 'https://www.youtube.com/watch?v=HtSuA80QTyo';
 
-export default function DashboardHero() {
+const T = {
+  title: { en: 'Study a lecture', hi: 'लेक्चर पढ़ें' },
+  subtitle: {
+    en: 'Paste any YouTube lecture link. Then hold ~ and talk to it: play, seek, ask, take notes, in English, Hindi or Hinglish.',
+    hi: 'कोई भी YouTube लेक्चर लिंक पेस्ट करें। फिर ~ दबाकर उससे बात करें: चलाएँ, आगे-पीछे जाएँ, सवाल पूछें, नोट्स लें।',
+  },
+  placeholder: { en: 'Paste a YouTube video URL…', hi: 'YouTube वीडियो का URL पेस्ट करें…' },
+  empty: { en: 'Paste a YouTube link first', hi: 'पहले YouTube लिंक पेस्ट करें' },
+  invalid: { en: "That doesn't look like a YouTube link", hi: 'यह YouTube लिंक नहीं लग रहा' },
+  demo: { en: 'Try the demo lecture', hi: 'Demo लेक्चर' },
+  start: { en: 'Start studying', hi: 'पढ़ना शुरू करें' },
+} as const;
+
+export default function DashboardHero({ lang = 'en' }: { lang?: UiLang }) {
   const [url, setUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const isLoading = false;
   const navigate = useNavigate();
 
   const handleStartStudying = () => {
     if (!url?.trim()) {
-      toast?.error('Please paste a YouTube URL first');
+      toast?.error(T.empty[lang]);
       return;
     }
-    if (!url?.includes('youtube.com') && !url?.includes('youtu.be')) {
-      toast?.error('Please enter a valid YouTube URL');
+    const id = extractYouTubeId(url);
+    if (!id) {
+      toast?.error(T.invalid[lang]);
       return;
     }
-    setIsLoading(true);
-    // BACKEND INTEGRATION: POST /api/videos/process { url } → videoId, metadata, transcript
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/video-study-page', { state: { videoUrl: url } });
-    }, 900);
+    // the study page starts (or joins) ingestion itself; playback works right away
+    navigate(studyUrl(id));
   };
 
   const fillDemo = () => {
@@ -37,7 +51,6 @@ export default function DashboardHero() {
     { icon: 'ShieldCheckIcon', label: 'Anti-Spoiler RAG', color: 'text-cyan-400' },
     { icon: 'DocumentTextIcon', label: 'Auto Notes', color: 'text-emerald-400' },
     { icon: 'GlobeAltIcon', label: 'Hinglish ASR', color: 'text-amber-400' },
-    { icon: 'ArrowUpOnSquareIcon', label: 'Notion Export', color: 'text-purple-400' },
   ];
 
   return (
@@ -61,12 +74,12 @@ export default function DashboardHero() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-foreground tracking-tight leading-none">
-                  AI Command Station
+                  {T.title[lang]}
                 </h1>
               </div>
             </div>
             <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
-              Paste any YouTube lecture link to initiate voice copilot & anti-spoiler vector search.
+              {T.subtitle[lang]}
             </p>
           </div>
 
@@ -82,7 +95,7 @@ export default function DashboardHero() {
                   value={url}
                   onChange={(e) => setUrl(e?.target?.value)}
                   onKeyDown={(e) => e?.key === 'Enter' && handleStartStudying()}
-                  placeholder="Paste YouTube video URL to start studying…"
+                  placeholder={T.placeholder[lang]}
                   className="w-full bg-transparent border-0 pl-11 pr-4 py-3.5 text-sm text-foreground font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
                 />
               </div>
@@ -94,7 +107,7 @@ export default function DashboardHero() {
                 onClick={fillDemo}
                 className="px-4 py-3.5 rounded-2xl bg-surface-card border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-indigo-500/40 transition-colors whitespace-nowrap"
               >
-                Fill Demo
+                {T.demo[lang]}
               </button>
               <button
                 type="button"
@@ -110,7 +123,7 @@ export default function DashboardHero() {
                 ) : (
                   <>
                     <Icon name="PlayIcon" size={16} />
-                    Start Studying
+                    {T.start[lang]}
                   </>
                 )}
               </button>

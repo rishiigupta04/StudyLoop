@@ -39,6 +39,8 @@ export interface YouTubePlayerApi extends PlayerControls {
   title: string;
   /** furthest point actually reached while playing — the anti-spoiler high-water mark (roadmap D7) */
   maxWatched: () => number;
+  /** raise the high-water mark to what earlier sessions reached (library resume point, Tier 2) */
+  seedMaxWatched: (s: number) => void;
   /** lower the volume while push-to-talk is held so the mic doesn't hear the lecture (roadmap D8) */
   duck: () => void;
   unduck: () => void;
@@ -226,6 +228,9 @@ export function useYouTubePlayer(
     muted,
     title,
     maxWatched: () => maxWatchedRef.current,
+    seedMaxWatched: (s: number) => {
+      if (Number.isFinite(s) && s > maxWatchedRef.current) maxWatchedRef.current = s;
+    },
     duck,
     unduck,
   };

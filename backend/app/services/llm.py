@@ -44,9 +44,9 @@ class Provider:
     extra: tuple[tuple[str, Any], ...] = ()  # provider-specific request fields
 
     def params(self, model: str, max_tokens: int) -> dict[str, Any]:
-        """Reasoning models (gpt-oss) spend hidden tokens thinking before the answer: give them headroom
-        so a short answer budget can't end up as an empty reply."""
-        if "gpt-oss" in model:
+        """Reasoning models (gpt-oss, Gemini 3) spend hidden tokens thinking before the answer: give them
+        headroom so a short answer budget can't end up as an empty or cut-off reply."""
+        if "gpt-oss" in model or model.startswith("gemini-3"):
             return {**dict(self.extra), "max_tokens": max_tokens + 768}
         return {"max_tokens": max_tokens}
 
@@ -74,6 +74,9 @@ def providers_from(settings: Settings) -> list[Provider]:
                 settings.gemini_api_key,
                 settings.gemini_model,
                 settings.gemini_model,
+                (("reasoning_effort", settings.gemini_reasoning_effort),)
+                if settings.gemini_reasoning_effort
+                else (),
             )
         )
     return out
@@ -117,19 +120,22 @@ class LLMClient:
         is_cancelled: IsCancelled | None = None,
         max_tokens: int = 400,
         temperature: float = 0.3,
+        fast: bool = False,
     ) -> str:
+        """`fast` = the provider's small model (the router's), for bulk background work."""
         errors: list[str] = []
         for p in self.providers:
+            model = p.router_model if fast else p.model
             for attempt in range(2):
                 parts: list[str] = []
                 resp: httpx.Response | None = None
                 try:
                     body = {
-                        "model": p.model,
+                        "model": model,
                         "messages": messages,
                         "stream": True,
                         "temperature": temperature,
-                        **p.params(p.model, max_tokens),
+                        **p.params(model, max_tokens),
                     }
                     async with self._client().stream(
                         "POST",

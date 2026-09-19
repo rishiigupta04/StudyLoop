@@ -60,7 +60,42 @@ export interface VideoStatusInfo {
   source?: TranscriptSource | null;
   duration_s?: number | null;
   embed_model?: string | null;
+  /** chapters + structured summary (Tier 2); null = not generated (yet) */
+  outline_status?: OutlineStatus | null;
+  outline?: Outline | null;
 }
+
+export type OutlineStatus = 'generating' | 'ready' | 'failed';
+
+export interface OutlineChapter {
+  start_s: number;
+  end_s: number;
+  title: string;
+  summary: string;
+}
+
+export interface OutlineSection {
+  start_s: number;
+  title: string;
+  bullets: string[];
+}
+
+export interface OutlinePart {
+  title: string;
+  start_s: number;
+  end_s: number;
+  sections: OutlineSection[];
+}
+
+/** One language of the outline, generated directly in that language. */
+export interface OutlineDoc {
+  overview: string;
+  chapters: OutlineChapter[];
+  parts: OutlinePart[];
+}
+
+/** Keyed by UI language; a language whose generation failed is missing. */
+export type Outline = Partial<Record<'en' | 'hi', OutlineDoc>>;
 
 export type TranscriptSource = 'creator' | 'youtube_asr' | 'api_generated';
 
@@ -169,6 +204,26 @@ export async function fetchVideoTranscript(videoUrlOrId: string): Promise<Transc
   } catch (err) {
     console.warn('[transcriptService] backend unreachable:', err);
     return empty('backend_unreachable', true);
+  }
+}
+
+/** `GET /api/videos/{id}`: status + outline. Also starts ingestion / the outline backfill. Null if offline. */
+export async function fetchVideoStatus(videoId: string): Promise<VideoStatusInfo | null> {
+  try {
+    return await apiGet<VideoStatusInfo>(`/api/videos/${videoId}`);
+  } catch (err) {
+    console.warn('[transcriptService] status request failed:', err);
+    return null;
+  }
+}
+
+/** Start chapters + summary for a ready video; `retry` skips the failed-run cooldown. Null if offline. */
+export async function requestOutline(videoId: string, retry = false): Promise<VideoStatusInfo | null> {
+  try {
+    return await apiPost<VideoStatusInfo>(`/api/videos/${videoId}/outline`, { retry });
+  } catch (err) {
+    console.warn('[transcriptService] outline request failed:', err);
+    return null;
   }
 }
 

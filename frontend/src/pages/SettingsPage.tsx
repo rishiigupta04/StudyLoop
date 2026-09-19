@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import AppLayout from '@/components/AppLayout';
 import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
+import { DEMO_PREVIEW } from '@/lib/features';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'voice' | 'integrations' | 'billing' | 'notifications'>('profile');
@@ -29,8 +30,8 @@ export default function SettingsPage() {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    awardXP(20, 'Updated Profile & Settings!');
-    toast.success('Settings saved successfully! (+20 XP)');
+    if (DEMO_PREVIEW) awardXP(20, 'Updated Profile & Settings!');
+    toast.success('Settings saved');
   };
 
   return (
@@ -59,7 +60,7 @@ export default function SettingsPage() {
             className="btn-primary px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-white flex items-center gap-2 shadow-glow-indigo-sm self-start md:self-auto"
           >
             <Icon name="CheckIcon" size={16} />
-            Save Changes (+20 XP)
+            Save Changes
           </button>
         </header>
 

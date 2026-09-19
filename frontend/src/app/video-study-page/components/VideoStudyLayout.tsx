@@ -12,8 +12,10 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useStudySocket, type Lang } from '@/hooks/useStudySocket';
 import { useVideoTranscript } from '@/hooks/useVideoTranscript';
 import { useVideoNotes, type VideoNotesState } from '@/hooks/useVideoNotes';
+import { useVideoOutline } from '@/hooks/useVideoOutline';
 import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
-import { parseClock } from '@/lib/time';
+import { formatClock, parseClock } from '@/lib/time';
+import { fetchResume, resumeTarget, type ResumePoint } from '@/services/libraryService';
 import { executePlayerAction, resetSeekHistory } from '@/lib/playerActions';
 
 // MIT 6.006 (Fall 2011) Lecture 1 — Algorithmic Thinking, Peak Finding. Matches the demo chapters.
@@ -60,7 +62,12 @@ export default function VideoStudyLayout() {
     videoId,
     language,
     spoilerGuard,
-    getPlayback: () => ({ playback_s: player.getCurrentTime(), max_watched_s: player.maxWatched() }),
+    // heartbeat + utterances: also the resume point (Tier 2 library, written behind on the server)
+    getPlayback: () => ({
+      playback_s: player.getCurrentTime(),
+      max_watched_s: player.maxWatched(),
+      duration_s: player.duration || undefined,
+    }),
     onNoteEvent: (e) => notesRef.current?.onNoteEvent(e), // voice notes (Tier 1e)
   });
   const notes = useVideoNotes(videoId, socket.sessionId);
@@ -68,6 +75,8 @@ export default function VideoStudyLayout() {
 
   // transcript ingestion (Tier 1a): status streams over the socket, segments feed the Transcript tab
   const transcript = useVideoTranscript(videoId, socket.videoStatus, socket.status === 'open');
+  // chapters + structured summary (Tier 2): generated server-side after ingestion, pushed with video.status
+  const outline = useVideoOutline(videoId, socket.videoStatus, socket.status === 'open');
   const transcriptChip =
     transcript.status === 'ready'
       ? null
@@ -147,11 +156,50 @@ export default function VideoStudyLayout() {
     [player]
   );
 
-  // deep links like navigate('/video-study-page', { state: { timestamp: '24:10' } })
+  // resume point + how far this learner has watched before (Tier 2 library). The high-water mark from
+  // earlier sessions counts for the no-spoiler rule: they've seen it.
+  const [resume, setResume] = useState<ResumePoint | null>(null);
+  const [resumeLoaded, setResumeLoaded] = useState(false);
+  const placedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (location.state?.timestamp && player.status === 'ready') seekToTimestamp(location.state.timestamp);
+    let alive = true;
+    setResume(null);
+    setResumeLoaded(false);
+    void fetchResume(videoId).then((r) => {
+      if (!alive) return;
+      if (r && r.video_id === videoId) setResume(r);
+      setResumeLoaded(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [videoId]);
+  useEffect(() => {
+    if (resume && resume.video_id === videoId) player.seedMaxWatched(resume.max_watched_s);
+  }, [resume, videoId, player]);
+
+  // where the video starts, once per video: a deep link (?t=<s> or state.timestamp) wins, else the resume point
+  const queryT = new URLSearchParams(location.search).get('t');
+  useEffect(() => {
+    if (player.status !== 'ready' || placedRef.current === videoId) return;
+    const explicit = queryT ? formatClock(Number(queryT)) : location.state?.timestamp;
+    if (explicit) {
+      placedRef.current = videoId;
+      seekToTimestamp(explicit);
+      return;
+    }
+    if (!resumeLoaded) return;
+    placedRef.current = videoId;
+    const at = resumeTarget(resume, player.duration);
+    if (at == null) return;
+    const wasPlaying = player.isPlaying;
+    player.seekTo(at); // on a cued video this also starts playback: resuming shouldn't autoplay
+    if (!wasPlaying) window.setTimeout(() => player.pause(), 300);
+    toast(language === 'hi' ? `${formatClock(at)} से आगे शुरू किया` : `Resumed at ${formatClock(at)}`, {
+      action: { label: language === 'hi' ? 'शुरू से देखें' : 'Start over', onClick: () => player.seekTo(0) },
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, player.status]);
+  }, [player.status, resumeLoaded, videoId, queryT, location.state]);
 
   useEffect(() => {
     try {
@@ -318,6 +366,11 @@ export default function VideoStudyLayout() {
             onOpenVoiceModal={() => ptt.startListening()}
             player={player}
             playerHostRef={playerHostRef}
+            outline={outline}
+            transcriptStatus={transcript.status}
+            language={language}
+            spoilerGuard={spoilerGuard}
+            watchedS={player.maxWatched()}
           />
         </div>
 

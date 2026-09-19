@@ -6,19 +6,33 @@ written to `videos` and pushed to subscribers, which the WebSocket forwards as `
 
 Cache rule (no re-fetch = no credit): if `transcript_segments` already holds the video, TranscriptAPI
 is never called again — a retry after an embedding failure only re-chunks and re-embeds.
+
+Tier 2: once a video is `ready`, chapters + a structured summary are generated in the background from the
+stored chunks (`outline.py`) and pushed through the same `video.status` event (`outline_status`,
+`outline`). `ensure()` also starts that run for a video ingested before it existed (the backfill), so
+opening an old video fills in its outline without touching TranscriptAPI.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import time
+from collections.abc import Callable
 from typing import Any
 
 from app.config import Settings, get_settings
+from app.services import outline
 from app.services.chunker import chunk_segments
 from app.services.embedder import Embedder, EmbedError, build_embedders, embed_passages
 from app.services.transcripts import FailReason, Segment, TranscriptClient, TranscriptResult, extract_video_id
-from app.services.video_repo import InMemoryVideoRepo, SupabaseVideoRepo, VideoRepo
+from app.services.video_repo import (
+    InMemoryVideoRepo,
+    SupabaseVideoRepo,
+    VideoRepo,
+    now_utc,
+    outline_claimable,
+)
 
 log = logging.getLogger("studyloop.ingest")
 
@@ -45,6 +59,7 @@ def snapshot(row: dict[str, Any] | None, video_id: str) -> dict[str, Any]:
         "source": row.get("transcript_source"),
         "duration_s": row.get("duration_s"),
         "embed_model": row.get("embed_model"),
+        **outline.public(row.get("chapters")),
     }
 
 
@@ -63,6 +78,7 @@ class IngestService:
         *,
         transcribing_after_s: float = 8.0,
         retry_backoff_s: float = 2.0,
+        llm: Any = None,
     ):
         self.repo = repo
         self._transcripts = transcripts
@@ -70,6 +86,8 @@ class IngestService:
         self._transcribing_after_s = transcribing_after_s
         self._retry_backoff_s = retry_backoff_s
         self._tasks: dict[str, asyncio.Task[None]] = {}
+        self._llm: Any | Callable[[], Any] = llm  # chapters + summary; None = off
+        self._outline_tasks: dict[str, asyncio.Task[None]] = {}
         self._subs: dict[str, set[asyncio.Queue[dict[str, Any]]]] = {}
 
     # ---------------------------------------------------------------- public
@@ -87,7 +105,10 @@ class IngestService:
                 await self.repo.ensure_row(vid)
                 if await self.repo.claim(vid, force=force):
                     self._start(vid)
-            snap = snapshot(await self.repo.get(vid), vid)
+            row = await self.repo.get(vid)
+            if not self.running(vid) and await self._maybe_outline(vid, row):  # backfill
+                row = await self.repo.get(vid)
+            snap = snapshot(row, vid)
             if snap["status"] == "ready" and not self.running(vid):
                 log.info("video %s: served from the videos cache, no TranscriptAPI call", vid)
             return snap
@@ -110,6 +131,28 @@ class IngestService:
             "metadata": {"title": snap["title"]} if snap["title"] else None,
             "length_seconds": snap["duration_s"],
         }
+
+    async def ensure_outline(self, url_or_id: str, *, force: bool = False) -> dict[str, Any]:
+        """Start chapters + summary for a ready video (backfill / the client's Retry). Never raises."""
+        vid = extract_video_id(url_or_id)
+        if not vid:
+            return _error_snapshot(url_or_id, FailReason.INVALID_VIDEO)
+        try:
+            if await self._maybe_outline(vid, await self.repo.get(vid), force=force):
+                return snapshot(await self.repo.get(vid), vid)
+        except Exception:
+            log.exception("video %s: could not start the outline", vid)
+        return await self.ensure(vid)
+
+    def outline_running(self, video_id: str) -> bool:
+        task = self._outline_tasks.get(video_id)
+        return task is not None and not task.done()
+
+    async def wait_outline(self, video_id: str) -> None:
+        """Tests / scripts: block until the current outline run (if any) finishes."""
+        task = self._outline_tasks.get(video_id)
+        if task:
+            await asyncio.shield(task)
 
     def running(self, video_id: str) -> bool:
         task = self._tasks.get(video_id)
@@ -138,6 +181,68 @@ class IngestService:
         task = asyncio.create_task(self._run(vid), name=f"ingest:{vid}")
         self._tasks[vid] = task
         task.add_done_callback(lambda _t: self._tasks.pop(vid, None) if self._tasks.get(vid) is _t else None)
+
+    # ---------------------------------------------------------------- chapters + summary (Tier 2)
+    def _outline_llm(self) -> Any:
+        llm = self._llm() if callable(self._llm) else self._llm
+        return llm if llm is not None and getattr(llm, "configured", False) else None
+
+    async def _maybe_outline(self, vid: str, row: dict[str, Any] | None, *, force: bool = False) -> bool:
+        """Claim + start an outline run when the row allows one. Checked locally first, so a video whose
+        outline is ready costs no extra request."""
+        if row is None or self.outline_running(vid) or not outline_claimable(row, now=now_utc(), force=force):
+            return False
+        llm = self._outline_llm()
+        if llm is None:
+            return False
+        if not await self.repo.claim_outline(vid, force=force):
+            return False
+        task = asyncio.create_task(self._run_outline(vid, llm, row), name=f"outline:{vid}")
+        self._outline_tasks[vid] = task
+        task.add_done_callback(
+            lambda _t: self._outline_tasks.pop(vid, None) if self._outline_tasks.get(vid) is _t else None
+        )
+        return True
+
+    async def _run_outline(self, vid: str, llm: Any, row: dict[str, Any]) -> None:
+        await self._set(vid)  # announce `generating` (set by the claim)
+        t0 = time.perf_counter()
+        try:
+            chunks = await self.repo.get_chunk_texts(vid)
+            result = await outline.generate(
+                chunks, outline.llm_complete(llm), duration_s=row.get("duration_s"), title=row.get("title")
+            )
+            providers = getattr(llm, "providers", None)
+            doc = {
+                "v": outline.VERSION,
+                "status": "ready",
+                "at": outline.now_iso(),
+                "error": None,
+                "model": providers[0].model if providers else None,
+                "ms": round((time.perf_counter() - t0) * 1000),
+                "langs": result["langs"],
+            }
+            overview = (result["langs"].get("en") or {}).get("overview") or None
+            await self._set(vid, chapters=doc, summary=overview)
+            log.info(
+                "video %s: outline ready in %.1f s (%d topics, chapters %s)",
+                vid,
+                time.perf_counter() - t0,
+                result["topics"],
+                {k: len(v["chapters"]) for k, v in result["langs"].items()},
+            )
+        except Exception as exc:
+            log.warning("video %s: outline failed after %.1f s: %s", vid, time.perf_counter() - t0, exc)
+            try:
+                doc = {
+                    "v": outline.VERSION,
+                    "status": "failed",
+                    "at": outline.now_iso(),
+                    "error": str(exc)[:300],
+                }
+                await self._set(vid, chapters=doc)
+            except Exception:
+                log.exception("video %s: could not record the outline failure", vid)
 
     async def _set(self, vid: str, **fields: Any) -> None:
         await self.repo.update(vid, fields)
@@ -198,6 +303,10 @@ class IngestService:
             await self.repo.replace_chunks(vid, chunks, vectors)
             await self._set(vid, ingest_status="ready", fail_reason=None, embed_model=model, embed_dim=dim)
             log.info("video %s: ready (%d chunks, embed_model=%s)", vid, len(chunks), model)
+            try:
+                await self._maybe_outline(vid, await self.repo.get(vid))
+            except Exception:
+                log.exception("video %s: could not start the outline", vid)
         except Exception:
             log.exception("video %s: ingestion crashed", vid)
             try:
@@ -234,7 +343,9 @@ def get_ingest_service(settings: Settings | None = None) -> IngestService:
         s = settings or get_settings()
         db = bool(s.supabase_url and s.supabase_service_key)
         repo: VideoRepo = SupabaseVideoRepo(s) if db else InMemoryVideoRepo()
-        _service = IngestService(repo, TranscriptClient(s), build_embedders(s))
+        from app.services.llm import get_llm
+
+        _service = IngestService(repo, TranscriptClient(s), build_embedders(s), llm=get_llm)
         log.info(
             "ingest: repo=%s embedders=%s",
             type(repo).__name__,

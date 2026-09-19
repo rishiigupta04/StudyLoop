@@ -47,3 +47,20 @@ async def get_transcript(
     reported via `status` + `has_transcript` + `fail_reason` + `retryable`. Served from the `videos`
     cache; kicks off ingestion if the video is new."""
     return await svc.transcript(video)
+
+
+class OutlineRequest(BaseModel):
+    retry: bool = False  # skip the failed-outline cooldown (the client's Retry button)
+
+
+@router.post("/videos/{video}/outline", status_code=202)
+async def generate_outline(
+    video: str,
+    body: OutlineRequest | None = None,
+    _user: User = Depends(current_user),
+    svc: IngestService = Depends(ingest_service),
+) -> JSONResponse:
+    """Chapters + structured summary (Tier 2) for a ready video: starts the run if there's no outline yet
+    (the backfill for videos ingested before Tier 2) or it failed. Reads only the stored chunks, never
+    TranscriptAPI. Progress arrives as `video.status` (`outline_status`, `outline`)."""
+    return JSONResponse(await svc.ensure_outline(video, force=bool(body and body.retry)), status_code=202)

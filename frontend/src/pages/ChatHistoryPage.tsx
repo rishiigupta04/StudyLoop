@@ -1,723 +1,173 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
+import PageHeader, { PageState } from '@/components/PageHeader';
 import Icon from '@/components/ui/AppIcon';
-import { useGamification } from '@/context/GamificationContext';
+import AnswerText from '@/app/video-study-page/components/AnswerText';
+import { formatClock, parseClock } from '@/lib/time';
+import { timeAgo, useUiLang } from '@/lib/uiLang';
+import { ApiError } from '@/services/apiClient';
+import { fetchChats, isConversation, studyUrl, type ChatSession } from '@/services/libraryService';
 
-interface ChatTurn {
-  id: string;
-  userQuery: string;
-  aiResponse: string;
-  timestamp: string; // e.g. "18:45"
-  seconds: number;
-  engine: 'Local DistilBERT' | 'Cloud BGE-M3 RAG';
-  language: 'Hinglish' | 'English';
-  latency: string;
-  savedAsNote: boolean;
-  bookmarked: boolean;
-}
-
-interface ChatSession {
-  id: string;
-  videoTitle: string;
-  videoUrl: string;
-  channel: string;
-  date: string;
-  totalTurns: number;
-  turns: ChatTurn[];
-}
-
-const INITIAL_SESSIONS: ChatSession[] = [
-  {
-    id: 'session-1',
-    videoTitle: 'Stanford CS229: Gradient Descent & Cost Functions',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    channel: 'Stanford Online',
-    date: '2026-07-26',
-    totalTurns: 4,
-    turns: [
-      {
-        id: 'turn-1-1',
-        userQuery: 'Bhai, Gradient Descent me initial learning rate alpha kitna select karein?',
-        aiResponse: 'Typically α = 0.01 or 0.001 set karte hain to avoid divergence on the 3D loss surface. If alpha is too large, the update rule θ := θ - α ∇J(θ) will overshoot local minima.',
-        timestamp: '12:10',
-        seconds: 730,
-        engine: 'Cloud BGE-M3 RAG',
-        language: 'Hinglish',
-        latency: '340ms',
-        savedAsNote: true,
-        bookmarked: true,
-      },
-      {
-        id: 'turn-1-2',
-        userQuery: 'Go to where Backpropagation and Chain Rule were explained',
-        aiResponse: 'Jumping player to 34:20 where Backpropagation partial derivatives ∂L/∂w = ∂L/∂a · ∂a/∂z are derived!',
-        timestamp: '34:20',
-        seconds: 2060,
-        engine: 'Local DistilBERT',
-        language: 'English',
-        latency: '38ms',
-        savedAsNote: true,
-        bookmarked: false,
-      },
-      {
-        id: 'turn-1-3',
-        userQuery: 'Go back skip 10 seconds, missed that matrix multiply step',
-        aiResponse: 'Skipped back 10 seconds to 34:10 for weight matrix multiplication walkthrough.',
-        timestamp: '34:10',
-        seconds: 2050,
-        engine: 'Local DistilBERT',
-        language: 'English',
-        latency: '42ms',
-        savedAsNote: false,
-        bookmarked: false,
-      },
-      {
-        id: 'turn-1-4',
-        userQuery: 'Why does momentum prevent trapping in local minima saddle points?',
-        aiResponse: 'Momentum accumulates velocity vectors v_t = β v_{t-1} + (1-β) ∇J. When gradient ∇J drops to ~0 near flat saddle points, accumulated momentum carries updates past the plateau.',
-        timestamp: '42:15',
-        seconds: 2535,
-        engine: 'Cloud BGE-M3 RAG',
-        language: 'English',
-        latency: '410ms',
-        savedAsNote: true,
-        bookmarked: true,
-      },
-    ],
+const T = {
+  title: { en: 'Chat history', hi: 'Chat history' },
+  subtitle: {
+    en: 'What you asked each lecture, by voice or typed, with the answers and their timestamps.',
+    hi: 'हर लेक्चर से आपने जो पूछा (voice या typed), जवाब और timestamps के साथ।',
   },
-  {
-    id: 'session-2',
-    videoTitle: 'MIT 6.006: Introduction to Algorithms',
-    videoUrl: 'https://www.youtube.com/watch?v=HtSuA80QTyo',
-    channel: 'MIT OpenCourseWare',
-    date: '2026-07-25',
-    totalTurns: 3,
-    turns: [
-      {
-        id: 'turn-2-1',
-        userQuery: 'Ye 1D peak finding ka recursive logic kya hai?',
-        aiResponse: 'Midpoint element A[n/2] ko left aur right neighbors se compare karte hain. Agar A[n/2-1] bada hai, toh peak left half me exists karti hai. Isse time complexity O(log n) aati hai.',
-        timestamp: '15:20',
-        seconds: 920,
-        engine: 'Cloud BGE-M3 RAG',
-        language: 'Hinglish',
-        latency: '290ms',
-        savedAsNote: true,
-        bookmarked: true,
-      },
-      {
-        id: 'turn-2-2',
-        userQuery: 'Skip 30 seconds forward',
-        aiResponse: 'Advancing player +30 seconds to 15:50.',
-        timestamp: '15:50',
-        seconds: 950,
-        engine: 'Local DistilBERT',
-        language: 'English',
-        latency: '35ms',
-        savedAsNote: false,
-        bookmarked: false,
-      },
-      {
-        id: 'turn-2-3',
-        userQuery: 'Summarize 2D matrix peak finding algorithm in 2 points',
-        aiResponse: '1. Find 1D max in central column j = m/2.\n2. Compare with row neighbors to recurse into left/right matrix halves in O(n log m) time.',
-        timestamp: '28:40',
-        seconds: 1720,
-        engine: 'Cloud BGE-M3 RAG',
-        language: 'English',
-        latency: '380ms',
-        savedAsNote: true,
-        bookmarked: false,
-      },
-    ],
+  search: { en: 'Search questions and answers', hi: 'सवाल-जवाब खोजें' },
+  commands: { en: 'Show player commands', hi: 'Player commands भी दिखाएँ' },
+  loading: { en: 'Loading your conversations…', hi: 'आपकी बातचीत लोड हो रही है…' },
+  emptyTitle: { en: 'No conversations yet', hi: 'अभी कोई बातचीत नहीं' },
+  emptyBody: {
+    en: 'Open a lecture, hold ~ and ask something like "what is a peak?" or "ab tak kya hua?". Your questions and answers are kept here.',
+    hi: 'कोई लेक्चर खोलें, ~ दबाकर पूछें जैसे "peak kya hai?" या "ab tak kya hua?"। आपके सवाल-जवाब यहाँ रहेंगे।',
   },
-  {
-    id: 'session-3',
-    videoTitle: 'Harvard CS50: Neural Networks & Backprop',
-    videoUrl: 'https://www.youtube.com/watch?v=zjkBMFhNj_g',
-    channel: 'Harvard edX',
-    date: '2026-07-24',
-    totalTurns: 2,
-    turns: [
-      {
-        id: 'turn-3-1',
-        userQuery: 'Explain activation functions ReLU vs Sigmoid vanishing gradient',
-        aiResponse: 'Sigmoid squashes outputs into (0,1), causing derivative f\'(x) <= 0.25 to vanish during deep backprop. ReLU (max(0,x)) maintains derivative = 1 for positive inputs.',
-        timestamp: '22:15',
-        seconds: 1335,
-        engine: 'Cloud BGE-M3 RAG',
-        language: 'English',
-        latency: '320ms',
-        savedAsNote: true,
-        bookmarked: true,
-      },
-      {
-        id: 'turn-3-2',
-        userQuery: 'Bookmark this formula ∂L/∂w',
-        aiResponse: 'Saved timestamped equation ∂L/∂w = ∂L/∂a · ∂a/∂z to study notes!',
-        timestamp: '25:00',
-        seconds: 1500,
-        engine: 'Local DistilBERT',
-        language: 'English',
-        latency: '40ms',
-        savedAsNote: true,
-        bookmarked: false,
-      },
-    ],
+  noMatch: { en: 'Nothing matches.', hi: 'कुछ नहीं मिला।' },
+  errTitle: { en: "Couldn't load your chat history", hi: 'Chat history लोड नहीं हो पाई' },
+  errAuth: { en: 'Sign in again to see your history.', hi: 'History देखने के लिए फिर से sign in करें।' },
+  errOffline: { en: 'The server may be waking up — try again in a moment.', hi: 'Server शायद जाग रहा है — थोड़ी देर में फिर कोशिश करें।' },
+  retry: { en: 'Try again', hi: 'फिर से कोशिश करें' },
+  turns: { en: (n: number) => `${n} question${n === 1 ? '' : 's'}`, hi: (n: number) => `${n} सवाल` },
+  at: { en: 'at', hi: 'पर' },
+  open: { en: 'Open lecture', hi: 'लेक्चर खोलें' },
+  note: {
+    en: 'Kept per viewing session: the last 30 turns of each.',
+    hi: 'हर viewing session के आख़िरी 30 सवाल-जवाब रखे जाते हैं।',
   },
-];
+} as const;
 
 export default function ChatHistoryPage() {
-  const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_SESSIONS);
-  const [activeSessionId, setActiveSessionId] = useState<string>(INITIAL_SESSIONS[0].id);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [engineFilter, setEngineFilter] = useState<'all' | 'local' | 'cloud' | 'hinglish' | 'starred'>('all');
-  const [playingTurnAudioId, setPlayingTurnAudioId] = useState<string | null>(null);
-  const [followUpQuery, setFollowUpQuery] = useState('');
-  const [showMobileDetail, setShowMobileDetail] = useState(false);
-
+  const [lang, setLang] = useUiLang();
   const navigate = useNavigate();
-  const { awardXP } = useGamification();
+  const [sessions, setSessions] = useState<ChatSession[] | null>(null);
+  const [error, setError] = useState<'auth' | 'offline' | null>(null);
+  const [query, setQuery] = useState('');
+  const [showCommands, setShowCommands] = useState(false);
 
-  const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      setSessions(await fetchChats(50));
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 401 ? 'auth' : 'offline');
+    }
+  }, []);
 
-  // Filtered session list logic
-  const filteredSessions = sessions.filter((s) => {
-    const matchesSearch =
-      s.videoTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.turns.some((t) => t.userQuery.toLowerCase().includes(searchQuery.toLowerCase()) || t.aiResponse.toLowerCase().includes(searchQuery.toLowerCase()));
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-    const matchesEngine =
-      engineFilter === 'all' ||
-      (engineFilter === 'local' && s.turns.some((t) => t.engine === 'Local DistilBERT')) ||
-      (engineFilter === 'cloud' && s.turns.some((t) => t.engine === 'Cloud BGE-M3 RAG')) ||
-      (engineFilter === 'hinglish' && s.turns.some((t) => t.language === 'Hinglish')) ||
-      (engineFilter === 'starred' && s.turns.some((t) => t.bookmarked));
-
-    return matchesSearch && matchesEngine;
-  });
-
-  const toggleTurnBookmark = (sessionId: string, turnId: string) => {
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === sessionId
-          ? {
-            ...s,
-            turns: s.turns.map((t) => (t.id === turnId ? { ...t, bookmarked: !t.bookmarked } : t)),
-          }
-          : s
-      )
-    );
-    toast.success('Updated bookmark status!');
-  };
-
-  const saveTurnAsNote = (turn: ChatTurn) => {
-    setSessions((prev) =>
-      prev.map((s) => ({
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (sessions ?? [])
+      .map((s) => ({
         ...s,
-        turns: s.turns.map((t) => (t.id === turn.id ? { ...t, savedAsNote: true } : t)),
+        turns: s.turns.filter(
+          (t) => (showCommands || isConversation(t)) && (!q || `${t.question} ${t.answer} ${s.video_title ?? ''}`.toLowerCase().includes(q))
+        ),
       }))
-    );
-    awardXP(15, `Converted "${turn.userQuery.slice(0, 20)}..." to Note!`);
-    toast.success(`Turn converted to timestamped note in /notes! (+15 XP)`);
-  };
-
-  const playSynthesizedVoice = (turnId: string) => {
-    if (playingTurnAudioId === turnId) {
-      setPlayingTurnAudioId(null);
-      toast.info('Audio playback paused');
-      return;
-    }
-
-    setPlayingTurnAudioId(turnId);
-    toast.success('Synthesizing audio output via MeloTTS...');
-
-    setTimeout(() => {
-      setPlayingTurnAudioId(null);
-    }, 4500);
-  };
-
-  const deleteTurn = (sessionId: string, turnId: string) => {
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === sessionId
-          ? {
-            ...s,
-            totalTurns: s.totalTurns - 1,
-            turns: s.turns.filter((t) => t.id !== turnId),
-          }
-          : s
-      )
-    );
-    toast.success('Deleted chat turn!');
-  };
-
-  const deleteSession = (sessionId: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    if (activeSessionId === sessionId && sessions.length > 1) {
-      setActiveSessionId(sessions.find((s) => s.id !== sessionId)?.id || '');
-    }
-    toast.success('Session deleted from history!');
-  };
-
-  const handleNavigateToTimestamp = (videoUrl: string, videoTitle: string, timestamp: string, seconds: number) => {
-    navigate('/video-study-page', {
-      state: { videoUrl, videoTitle, timestamp, seconds },
-    });
-    toast.info(`Seeking ${videoTitle} to timestamp ${timestamp}`);
-  };
-
-  const handleSendFollowUp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!followUpQuery.trim() || !activeSession) return;
-
-    const isLocalCommand = followUpQuery.toLowerCase().includes('skip') || followUpQuery.toLowerCase().includes('jump') || followUpQuery.toLowerCase().includes('pause');
-
-    const newTurn: ChatTurn = {
-      id: `turn-${Date.now()}`,
-      userQuery: followUpQuery.trim(),
-      aiResponse: isLocalCommand
-        ? `[⚡ Local DistilBERT <45ms]: Executed command "${followUpQuery.trim()}" on video player!`
-        : `[🌐 Cloud RAG BGE-M3]: Analyzed concept query "${followUpQuery.trim()}" against video transcript embeddings!`,
-      timestamp: '45:00',
-      seconds: 2700,
-      engine: isLocalCommand ? 'Local DistilBERT' : 'Cloud BGE-M3 RAG',
-      language: followUpQuery.match(/(kaise|kya|bhai|batao|kar)/i) ? 'Hinglish' : 'English',
-      latency: isLocalCommand ? '36ms' : '350ms',
-      savedAsNote: false,
-      bookmarked: false,
-    };
-
-    setSessions((prev) =>
-      prev.map((s) =>
-        s.id === activeSession.id
-          ? { ...s, totalTurns: s.totalTurns + 1, turns: [...s.turns, newTurn] }
-          : s
-      )
-    );
-
-    setFollowUpQuery('');
-    awardXP(20, 'Asked follow-up voice query in chat history!');
-    toast.success('AI Copilot processed follow-up query! (+20 XP)');
-  };
-
-  const exportSessionMarkdown = (session: ChatSession) => {
-    const mdHeader = `# StudyLoop Copilot Session Log: ${session.videoTitle}\nDate: ${session.date}\n\n`;
-    const mdBody = session.turns
-      .map(
-        (t) =>
-          `### [${t.timestamp}] User (${t.language})\n*Query*: "${t.userQuery}"\n*Engine*: ${t.engine} (${t.latency})\n\n**AI Response**:\n${t.aiResponse}\n`
-      )
-      .join('\n---\n\n');
-
-    const blob = new Blob([mdHeader + mdBody], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat_log_${session.id}.md`;
-    a.click();
-
-    awardXP(20, 'Exported Chat Transcript Log!');
-    toast.success(`Exported Chat Session Markdown! (+20 XP)`);
-  };
-
-  // Analytics Metrics
-  const totalTurnsLogged = sessions.reduce((acc, s) => acc + s.turns.length, 0);
-  const localTurnsCount = sessions.reduce((acc, s) => acc + s.turns.filter((t) => t.engine === 'Local DistilBERT').length, 0);
-  const cloudTurnsCount = sessions.reduce((acc, s) => acc + s.turns.filter((t) => t.engine === 'Cloud BGE-M3 RAG').length, 0);
-  const hinglishRatio = Math.round(
-    (sessions.reduce((acc, s) => acc + s.turns.filter((t) => t.language === 'Hinglish').length, 0) / (totalTurnsLogged || 1)) * 100
-  );
+      .filter((s) => s.turns.length > 0);
+  }, [sessions, query, showCommands]);
 
   return (
     <AppLayout activeRoute="/chat-history">
       <div className="flex-1 flex flex-col min-h-screen bg-obsidian">
-        {/* Top Header */}
-        <header className="px-6 py-6 border-b border-border/80 bg-surface-card/60 flex flex-col md:flex-row md:items-center justify-between gap-5 flex-shrink-0">
-          <div>
-            <div className="flex items-center gap-3.5 mb-1.5">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center flex-shrink-0 shadow-sm">
-                <Icon name="ChatBubbleLeftRightIcon" size={22} />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight leading-none">
-                  Copilot Chat History & Analytics
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 text-xs font-bold font-mono">
-                  {totalTurnsLogged} Turns Logged
-                </span>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-foreground-muted pl-0 sm:pl-[58px] max-w-2xl leading-relaxed mt-1">
-              Bilingual voice Q&A logs, timestamp seeks, and AI reasoning traces across lecture sessions.
-            </p>
-          </div>
+        <PageHeader icon="ChatBubbleLeftRightIcon" title={T.title[lang]} subtitle={T.subtitle[lang]} lang={lang} setLang={setLang} />
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => exportSessionMarkdown(activeSession)}
-              className="px-4 py-2.5 rounded-2xl bg-surface-card border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-surface-elevated hover:border-indigo-500/60 transition-colors flex items-center gap-2"
-            >
-              <Icon name="ArrowUpOnSquareIcon" size={16} />
-              Export Session (.MD)
-            </button>
-          </div>
-        </header>
-
-        {/* AI Conversation Analytics Banner */}
-        <div className="px-8 py-3 bg-[#121624] border-b border-border/60 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Icon name="BoltIcon" size={16} className="text-indigo-400" />
-            <div>
-              <span className="text-muted-foreground block text-[10px]">Local DistilBERT</span>
-              <strong className="text-foreground font-mono">{localTurnsCount} Turns (&lt; 45ms)</strong>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Icon name="CloudIcon" size={16} className="text-cyan-400" />
-            <div>
-              <span className="text-muted-foreground block text-[10px]">Cloud BGE-M3 RAG</span>
-              <strong className="text-foreground font-mono">{cloudTurnsCount} Q&A Turns</strong>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Icon name="LanguageIcon" size={16} className="text-purple-400" />
-            <div>
-              <span className="text-muted-foreground block text-[10px]">Bilingual Ratio</span>
-              <strong className="text-purple-300 font-mono">{hinglishRatio}% Hinglish Speech</strong>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Icon name="SparklesIcon" size={16} className="text-emerald-400" />
-            <div>
-              <span className="text-muted-foreground block text-[10px]">Saved to Notes</span>
-              <strong className="text-emerald-300 font-mono">
-                {sessions.reduce((acc, s) => acc + s.turns.filter((t) => t.savedAsNote).length, 0)} Key Formulas
-              </strong>
-            </div>
-          </div>
-        </div>
-
-        {/* Master-Detail Split Screen */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Session Selector Sidebar */}
-          <div className={`w-full md:w-80 lg:w-96 border-r border-border/80 bg-[#121624] flex-col flex-shrink-0 overflow-hidden ${showMobileDetail ? 'hidden md:flex' : 'flex'}`}>
-            {/* Search & Engine Filter */}
-            <div className="p-4 border-b border-border/60 space-y-3">
-              <div className="relative">
-                <Icon name="MagnifyingGlassIcon" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <div className="px-4 sm:px-6 py-5 space-y-5 max-w-4xl w-full">
+          {sessions && sessions.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative flex-1">
+                <Icon name="MagnifyingGlassIcon" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search queries or answers..."
-                  className="w-full input-field rounded-xl pl-10 pr-4 py-2 text-xs font-medium bg-[#0B0E17]"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={T.search[lang]}
+                  aria-label={T.search[lang]}
+                  className="w-full input-field rounded-xl pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-indigo-500/60"
                 />
               </div>
-
-              {/* Filter Tabs */}
-              <div className="grid grid-cols-5 gap-1 p-1 bg-obsidian rounded-xl border border-border/80 text-[10px] font-bold">
-                <button
-                  onClick={() => setEngineFilter('all')}
-                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setEngineFilter('local')}
-                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'local' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  ⚡ Local
-                </button>
-                <button
-                  onClick={() => setEngineFilter('cloud')}
-                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'cloud' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  🌐 Cloud
-                </button>
-                <button
-                  onClick={() => setEngineFilter('hinglish')}
-                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'hinglish' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  🌐 Hinglish
-                </button>
-                <button
-                  onClick={() => setEngineFilter('starred')}
-                  className={`py-1.5 rounded-lg transition-colors ${engineFilter === 'starred' ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  ⭐ Starred
-                </button>
-              </div>
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                <input type="checkbox" checked={showCommands} onChange={(e) => setShowCommands(e.target.checked)} className="accent-indigo-500" />
+                {T.commands[lang]}
+              </label>
             </div>
+          )}
 
-            {/* Sessions List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 scrollbar-thin">
-              {filteredSessions.map((session) => {
-                const isActive = session.id === activeSessionId;
-                return (
-                  <div
-                    key={session.id}
-                    onClick={() => {
-                      setActiveSessionId(session.id);
-                      setShowMobileDetail(true);
-                    }}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative group ${isActive
-                        ? 'bg-indigo-950/40 border-indigo-500/60 shadow-md'
-                        : 'bg-surface-card border-border/70 hover:border-indigo-500/30'
-                      }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-indigo-400 truncate max-w-[180px]">
-                        {session.channel}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground font-mono">{session.date}</span>
-                    </div>
-
-                    <h4 className="text-xs font-bold text-foreground line-clamp-2 leading-snug mb-2 group-hover:text-indigo-300 transition-colors">
-                      {session.videoTitle}
-                    </h4>
-
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground font-mono">{session.totalTurns} Q&A turns</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteSession(session.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-400 transition-opacity"
-                        title="Delete session"
-                      >
-                        <Icon name="TrashIcon" size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+          {error ? (
+            <PageState
+              icon="ExclamationTriangleIcon"
+              title={T.errTitle[lang]}
+              body={error === 'auth' ? T.errAuth[lang] : T.errOffline[lang]}
+              action={
+                <button onClick={() => void load()} className="btn-primary px-4 py-2 rounded-xl text-sm font-bold text-white">
+                  {T.retry[lang]}
+                </button>
+              }
+            />
+          ) : sessions === null ? (
+            <div className="space-y-3" aria-busy="true" aria-label={T.loading[lang]}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-32 rounded-2xl bg-surface-card/70 animate-pulse" />
+              ))}
             </div>
-          </div>
-
-          {/* Right Session Inspector & Dialogue Detail Panel */}
-          <div className={`flex-1 flex-col h-full bg-obsidian overflow-hidden ${showMobileDetail ? 'flex' : 'hidden md:flex'}`}>
-            {activeSession ? (
-              <>
-                {/* Active Session Header Banner */}
-                <div className="p-4 border-b border-border/80 bg-surface-card/40 flex items-center justify-between gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <button
-                      onClick={() => setShowMobileDetail(false)}
-                      className="md:hidden p-2 rounded-xl bg-surface-elevated text-xs font-bold text-indigo-300 border border-border flex items-center gap-1 flex-shrink-0"
-                    >
-                      <Icon name="ChevronLeftIcon" size={16} />
-                      <span>Back</span>
-                    </button>
-                    <div className="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                      <Icon name="PlayIcon" size={18} />
+          ) : sessions.length === 0 || (shown.length === 0 && !query && !showCommands) ? (
+            <PageState icon="ChatBubbleLeftRightIcon" title={T.emptyTitle[lang]} body={T.emptyBody[lang]} />
+          ) : shown.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">{T.noMatch[lang]}</p>
+          ) : (
+            <>
+              {shown.map((s) => (
+                <section key={s.session_id} className="glass-card rounded-2xl border border-border/70 overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border/60 bg-surface-card/40">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img src={`https://i.ytimg.com/vi/${s.video_id}/mqdefault.jpg`} alt="" className="w-16 aspect-video rounded-md object-cover flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-foreground truncate">{s.video_title || s.video_id}</h2>
+                        <p className="text-[11px] text-muted-foreground">
+                          {timeAgo(s.started_at, lang)} · {T.turns[lang](s.turns.length)}
+                          {s.language ? ` · ${s.language === 'hi' ? 'हिं' : 'EN'}` : ''}
+                        </p>
+                      </div>
                     </div>
-                    <div className="overflow-hidden text-left">
-                      <h3 className="text-sm font-extrabold text-foreground truncate">{activeSession?.videoTitle}</h3>
-                      <p className="text-xs text-muted-foreground font-mono truncate">{activeSession?.channel} • {activeSession?.date}</p>
-                    </div>
+                    <Link to={studyUrl(s.video_id)} className="text-xs font-bold text-indigo-300 hover:text-cyan-300 flex-shrink-0 flex items-center gap-1">
+                      <Icon name="PlayIcon" size={12} />
+                      {T.open[lang]}
+                    </Link>
                   </div>
-                  <button
-                    onClick={() =>
-                      handleNavigateToTimestamp(
-                        activeSession.videoUrl,
-                        activeSession.videoTitle,
-                        activeSession.turns[0]?.timestamp || '00:00',
-                        activeSession.turns[0]?.seconds || 0
-                      )
-                    }
-                    className="btn-primary px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2 whitespace-nowrap"
-                  >
-                    <Icon name="PlayIcon" size={14} />
-                    Open in Video Workspace
-                  </button>
-                </div>
-
-                {/* Turns Timeline Log */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 space-y-6 scrollbar-thin">
-                  {activeSession.turns.map((turn, idx) => {
-                    const isAudioPlaying = playingTurnAudioId === turn.id;
-                    return (
-                      <motion.div
-                        key={turn.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="space-y-3"
-                      >
-                        {/* 1. User Speech Query Bubble */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/40 shadow-sm">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0">
-                              🎙️
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-extrabold text-indigo-300 uppercase tracking-wider">
-                                  User Voice Query
-                                </span>
-                                <span className="px-2 py-0.5 rounded-md bg-indigo-900/60 text-indigo-300 border border-indigo-500/30 text-[10px] font-extrabold font-mono">
-                                  {turn.language}
-                                </span>
-                              </div>
-                              <p className="text-sm font-semibold text-foreground leading-snug">
-                                "{turn.userQuery}"
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Timestamp Seek Chip */}
-                          <button
-                            onClick={() =>
-                              handleNavigateToTimestamp(
-                                activeSession.videoUrl,
-                                activeSession.videoTitle,
-                                turn.timestamp,
-                                turn.seconds
-                              )
-                            }
-                            className="px-3 py-1.5 rounded-xl bg-indigo-900/80 border border-indigo-400/50 text-cyan-300 font-mono font-bold text-xs hover:bg-indigo-800 transition-colors flex items-center gap-1.5 shrink-0 self-end sm:self-auto"
-                            title="Jump video player to timestamp"
-                          >
-                            <Icon name="PlayCircleIcon" size={15} className="text-cyan-400" />
-                            <span>{turn.timestamp}</span>
-                            <span className="text-[10px] text-muted-foreground">▸ Seek</span>
-                          </button>
-                        </div>
-
-                        {/* 2. AI Copilot Answer Bubble */}
-                        <div className="p-5 rounded-3xl bg-[#141824] border border-border/80 relative space-y-3 shadow-md">
-                          {/* AI Header Line */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-border/60">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
-                                ✨
-                              </div>
-                              <span className="text-xs font-extrabold text-cyan-300">
-                                AI Voice Copilot Response
-                              </span>
-                            </div>
-
-                            <span
-                              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
-                                turn.engine === 'Local DistilBERT'
-                                  ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
-                                  : 'bg-purple-950 text-purple-300 border-purple-500/40'
-                              }`}
+                  <ol className="divide-y divide-border/50">
+                    {s.turns.map((t, i) => (
+                      <li key={`${s.session_id}-${i}`} className="px-4 py-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-sm font-semibold text-foreground">{t.question}</p>
+                          {t.at_s != null && (
+                            <Link
+                              to={studyUrl(s.video_id, t.at_s)}
+                              className="text-[11px] font-mono font-bold text-indigo-400 hover:text-cyan-300 flex-shrink-0 tabular-nums"
+                              title={`${T.at[lang]} ${formatClock(t.at_s)}`}
                             >
-                              {turn.engine} • {turn.latency}
-                            </span>
-                          </div>
-
-                          {/* Answer Body Text - High Contrast & Large Text */}
-                          <div className="text-sm text-foreground/95 leading-relaxed font-sans whitespace-pre-wrap p-4 rounded-2xl bg-[#0B0E17] border border-border/60">
-                            {turn.aiResponse}
-                          </div>
-
-                          {/* MeloTTS Audio Synthesis Indicator */}
-                          {isAudioPlaying && (
-                            <div className="p-3 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 flex items-center gap-3 animate-pulse">
-                              <Icon name="SpeakerWaveIcon" size={16} className="text-cyan-300 animate-spin" />
-                              <span className="text-xs font-mono text-cyan-300 font-bold">
-                                MeloTTS Voice Playback Active...
-                              </span>
-                              <div className="flex items-center gap-1 h-3 ml-auto">
-                                {[40, 80, 30, 95, 60, 85, 45].map((h, i) => (
-                                  <div
-                                    key={`wave-bar-${i}`}
-                                    className="w-1 bg-cyan-400 rounded-full animate-bounce"
-                                    style={{ height: `${h}%` }}
-                                  />
-                                ))}
-                              </div>
-                            </div>
+                              @{formatClock(t.at_s)}
+                            </Link>
                           )}
-
-                          {/* Action Toolbar */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs text-muted-foreground">
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              Turn #{idx + 1}
-                            </span>
-
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => playSynthesizedVoice(turn.id)}
-                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                  isAudioPlaying
-                                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-glow-indigo-sm'
-                                    : 'bg-surface-card text-muted-foreground border-border hover:text-cyan-300 hover:border-cyan-500/40'
-                                }`}
-                              >
-                                <Icon name="SpeakerWaveIcon" size={14} />
-                                <span>{isAudioPlaying ? 'Playing...' : 'Synthesize Voice'}</span>
-                              </button>
-
-                              <button
-                                onClick={() => saveTurnAsNote(turn)}
-                                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                  turn.savedAsNote
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                                    : 'bg-surface-card text-muted-foreground border-border hover:text-emerald-300 hover:border-emerald-500/40'
-                                }`}
-                              >
-                                <Icon name="BookmarkIcon" size={14} />
-                                <span>{turn.savedAsNote ? 'Saved in Notes' : 'Save as Note'}</span>
-                              </button>
-
-                              <button
-                                onClick={() => toggleTurnBookmark(activeSession.id, turn.id)}
-                                className={`p-1.5 rounded-xl border transition-colors ${
-                                  turn.bookmarked
-                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                    : 'bg-surface-card text-muted-foreground border-border hover:text-amber-300'
-                                }`}
-                                title="Star turn"
-                              >
-                                <Icon name="StarIcon" size={14} className={turn.bookmarked ? 'text-amber-400 fill-amber-400' : ''} />
-                              </button>
-                            </div>
-                          </div>
                         </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                {/* Follow-up Query Bar */}
-                <div className="p-4 bg-[#151926] border-t border-border/80 flex-shrink-0">
-                  <form onSubmit={handleSendFollowUp} className="flex gap-2 max-w-4xl mx-auto">
-                    <input
-                      type="text"
-                      value={followUpQuery}
-                      onChange={(e) => setFollowUpQuery(e.target.value)}
-                      placeholder="Ask a follow-up voice question or test a player command (e.g. 'Why does large alpha oscillate?')..."
-                      className="flex-1 input-field rounded-xl px-4 py-2.5 text-xs bg-[#0B0E17]"
-                    />
-                    <button
-                      type="submit"
-                      className="btn-primary px-5 py-2.5 rounded-xl text-xs font-bold text-white flex items-center gap-2 whitespace-nowrap"
-                    >
-                      <Icon name="PaperAirplaneIcon" size={14} />
-                      Send Follow-Up
-                    </button>
-                  </form>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
-                <p className="text-sm">Select a chat session on the left to inspect conversation turns.</p>
-              </div>
-            )}
-          </div>
+                        <p className="text-sm text-foreground/80 leading-relaxed">
+                          <AnswerText
+                            text={t.answer}
+                            onSeek={(ts) => {
+                              const secs = parseClock(ts);
+                              if (!Number.isNaN(secs)) navigate(studyUrl(s.video_id, secs));
+                            }}
+                          />
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ))}
+              <p className="text-[11px] text-muted-foreground text-center">{T.note[lang]}</p>
+            </>
+          )}
         </div>
       </div>
     </AppLayout>

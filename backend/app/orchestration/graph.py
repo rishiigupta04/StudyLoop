@@ -30,6 +30,7 @@ import time
 import uuid
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Any
 
@@ -671,9 +672,10 @@ def localize_node(state: StudyState) -> dict[str, Any]:
 
 
 def respond(state: StudyState) -> dict[str, Any]:
+    at = datetime.now(timezone.utc).isoformat()  # chat history (Tier 2) reads these back per session
     return {
         "history": [
-            {"role": "user", "text": state.get("raw_text", ""), "at_s": state.get("playback_s")},
+            {"role": "user", "text": state.get("raw_text", ""), "at_s": state.get("playback_s"), "at": at},
             {"role": "assistant", "text": state.get("response_text", ""), "route": state.get("route")},
         ]
     }

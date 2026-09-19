@@ -11,10 +11,10 @@ interface MobileNavItem {
 
 const mobileNavItems: MobileNavItem[] = [
   { label: 'Home', href: '/dashboard-home', icon: 'HomeIcon' },
-  { label: 'Study', href: '/video-study-page', icon: 'PlayCircleIcon', badge: 1 },
+  { label: 'Study', href: '/video-study-page', icon: 'PlayCircleIcon' },
   { label: 'Library', href: '/library', icon: 'BookOpenIcon' },
-  { label: 'Notes', href: '/notes', icon: 'DocumentTextIcon', badge: 67 },
-  { label: 'Chat', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon', badge: 5 },
+  { label: 'Notes', href: '/notes', icon: 'DocumentTextIcon' },
+  { label: 'Chat', href: '/chat-history', icon: 'ChatBubbleLeftRightIcon' },
   { label: 'Profile', href: '/settings', icon: 'UserIcon' },
 ];
 

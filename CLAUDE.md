@@ -50,6 +50,18 @@ npm run type-check && npm run build
 
 - Tier 1b (semantic seek + Q&A) — code done 19 Sep, verified live over the WS (see `docs/TIER1B_SMOKE_TEST.md`): `seek_resolver` (whole video, no LLM, "did you mean" alt), `rag_agent` (watched-only context, anti-spoiler "not covered yet" when a future chunk clearly wins and nothing watched is a good match, streamed `answer.delta`, `[mm:ss]` citations → `answer.done.citations`, summaries, follow-ups use the last question), `llm_router` = one tool call (player action / seek / ask / summarize / note / direct reply) — its edges now branch per roadmap §2. Groq models are `openai/gpt-oss-120b` (answers) / `gpt-oss-20b` (router): llama-3.3 is gone from our key. Thresholds calibrated on 6.006 L1. Checkpointer: `CHECKPOINTER=postgres` wraps PostgresSaver in a write-behind MemorySaver (a synchronous remote checkpoint cost 1.9 s per fast-path turn); LangGraph tables get RLS. WS: turns run as tasks, `turn.cancel` / a new utterance stops a stream. Frontend: streamed sentence-level TTS (`lib/tts.ts createSpeechStream`), ducking until the answer ends, citation chips (`AnswerText`), real Q&A chat tab (typed + voice). 1023 tests. **Awaiting:** the signed-in voice pass.
 
+- Tier 1e (voice notes), spoiler toggle, D14 hosted speech — on branch `tier1e-voice-notes` (see docs/TIER1E_, SPEECH_ smoke tests).
+
+- Tier 2 (retention layer) — code done 20 Sep on branch `tier2-retention` (off `tier1e-voice-notes`), see `docs/TIER2_SMOKE_TEST.md`:
+  `services/outline.py` chapters + structured summary (map → reduce over stored chunks, EN + HI, times snapped to chunk
+  starts, stored in `videos.chapters` jsonb with status/version — no migration; backfill on open; `POST /api/videos/{id}/outline`),
+  pushed with `video.status` (`outline_status`, `outline`); real VideoPane (markers, chapters, summary, no-spoiler reveal);
+  `services/library.py` + `api/library.py` (write-behind `user_video_history` from the WS heartbeat, `/api/library`,
+  `/api/dashboard`, `/api/chats` from checkpointer memory); real Library / Notes workspace / Dashboard / Chat history
+  pages; Quiz + gamification behind `VITE_DEMO_PREVIEW`. Gemini fallback → `gemini-3.6-flash`. 1106 tests. **Awaiting:**
+  the signed-in + Hindi pass. `bg-surface-card`/`-elevated` (+ `/NN`) are theme colors (`rgb(var(--surface-*) / <alpha-value>)`).
+- Tier 1c: data plan in `docs/TIER1C_DATA_PLAN.md` (record audio; per-STT-provider accuracy).
+
 ## Next up (in order)
 1. Tier 0 / 0b / 1a / 1b manual passes (above), then:
 2. **Tier 1c** classifier (ML track — data collection can start in parallel now; see roadmap §3 + Tier 1c).
