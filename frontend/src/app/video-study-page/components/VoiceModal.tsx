@@ -209,6 +209,12 @@ export default function VoiceModal({
                     <span className="px-1.5 py-0.5 rounded bg-surface-elevated">server {meta.serverMs.toFixed(1)} ms</span>
                   )}
                   <span className="px-1.5 py-0.5 rounded bg-surface-elevated">round-trip {meta.roundTripMs} ms</span>
+                  {meta.sttProvider && (
+                    <span className="px-1.5 py-0.5 rounded bg-surface-elevated" title="Who turned your speech into text">
+                      speech: {meta.sttProvider}
+                      {meta.sttMs !== undefined ? ` ${Math.round(meta.sttMs)} ms` : ''}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

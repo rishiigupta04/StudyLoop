@@ -24,7 +24,8 @@ server → client
       after the background insert + LLM summary; "kept" = the user edited the note meanwhile (theirs wins)
   {"type":"error", "turn_id"?, "code", "message"}
   {"type":"pong"}
-The browser already did ASR — only recognized TEXT crosses the socket, never audio.
+Only recognized TEXT crosses the socket, never audio. (Push-to-talk audio goes to `POST /api/stt` first when
+hosted speech is configured — roadmap D14 — and only its transcript comes here.)
 Turns run one at a time per session, but the socket keeps reading while an answer streams, so a
 `turn.cancel` — or a new utterance, which barges in on the one still streaming — takes effect at once.
 """

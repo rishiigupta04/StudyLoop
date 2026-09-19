@@ -42,6 +42,20 @@ class Settings(BaseSettings):
     embed_timeout_s: float = 30.0
     e5_model_dir: str = ""  # optional CPU fallback embedder (Tier 1a); empty = off
 
+    # hosted speech (roadmap D14): Sarvam Saaras (STT, code-mixed Hindi/English) → Groq Whisper fallback;
+    # Sarvam Bulbul (TTS). Without keys the browser's own SpeechRecognition / speechSynthesis are used.
+    sarvam_api_key: str = ""
+    sarvam_base: str = "https://api.sarvam.ai"
+    stt_providers: str = "sarvam,groq"  # tried in order; only configured ones count
+    sarvam_stt_model: str = "saaras:v3"
+    sarvam_stt_mode: str = "codemix"  # English words in Latin, Hindi in Devanagari, numbers as digits
+    groq_stt_model: str = "whisper-large-v3"
+    stt_timeout_s: float = 8.0
+    sarvam_tts_model: str = "bulbul:v3"
+    sarvam_tts_speaker: str = "shubh"
+    sarvam_tts_pace: float = 1.05
+    tts_timeout_s: float = 15.0
+
     classifier: Literal["regex", "onnx"] = "regex"
     confidence_threshold: float = 0.85
 

@@ -199,6 +199,27 @@ _NUMBER_WORDS: dict[str, float] = {
     "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
     "hundred": 100,
 }
+
+
+
+def _spelling_key(word: str) -> str:
+    """Romanized Hindi has no fixed spelling ("chalis" / "chaalis" / "chaalees", "pandrah" / "pandra"):
+    fold long vowels, doubled letters and a final "h" so ASR spellings still hit the number table."""
+    w = word.replace("ee", "i").replace("oo", "u")
+    w = re.sub(r"(.)\1+", r"\1", w)
+    return w[:-1] if w.endswith("h") and len(w) > 3 else w
+
+
+def _unambiguous_spellings(table: dict[str, float]) -> dict[str, float]:
+    keys: dict[str, set[float]] = {}
+    for word, value in table.items():
+        if len(word) >= 3:
+            keys.setdefault(_spelling_key(word), set()).add(value)
+    # a folded spelling that could mean two numbers (or is itself another table word) is never guessed
+    return {k: next(iter(v)) for k, v in keys.items() if len(v) == 1 and table.get(k, next(iter(v))) in v}
+
+
+_NUMBER_BY_SPELLING = _unambiguous_spellings(_NUMBER_WORDS)
 _TENS = {"twenty": 20, "thirty": 30, "forty": 40, "fourty": 40, "fifty": 50, "sixty": 60, "seventy": 70,
          "eighty": 80, "ninety": 90}
 _FRACTIONS = {"half": 0.5, "aadha": 0.5, "aadhe": 0.5, "aadhi": 0.5, "dedh": 1.5, "dhai": 2.5,
@@ -324,6 +345,8 @@ def _parse_number(toks: list[str], i: int) -> tuple[float, int] | None:
             j += 1
     elif t in _NUMBER_WORDS:
         v = _NUMBER_WORDS[t]
+    elif len(t) >= 3 and _spelling_key(t) in _NUMBER_BY_SPELLING:  # "chaalis", "pandra", "tis"
+        v = _NUMBER_BY_SPELLING[_spelling_key(t)]
     else:
         return None
     if j < n and toks[j] == "hundred" and t != "hundred":  # "one hundred twenty", "a hundred"

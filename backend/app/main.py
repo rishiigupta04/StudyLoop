@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import ws
-from app.api import health, notes, videos
+from app.api import health, notes, speech, videos
 from app.auth import warm_jwks
 from app.config import get_settings
 
@@ -56,6 +56,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(videos.router, prefix="/api")
     app.include_router(notes.router, prefix="/api")
+    app.include_router(speech.router, prefix="/api")
     app.include_router(ws.router)
     return app
 

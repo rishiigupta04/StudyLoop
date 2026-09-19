@@ -82,6 +82,13 @@ Supabase free projects pause after about a week of inactivity, so ping them or o
 **D12 — One protocol, one schema, from day one.**
 Build the LangGraph skeleton in **Tier 0** with `classify_intent` = the regex stub, not in Tier 1b. The WS message protocol is then final from the start, and every later tier fills in a node without touching the client contract. This follows the project rule "never break a working feature".
 
+**D14 — Hosted bilingual speech: Sarvam Saaras STT + Bulbul TTS. [NEW, 19 Sep 2026]**
+The browser's SpeechRecognition mishears Hinglish commands ("tees second aage jao", "pandrah minute aage jao"): it has to guess one language up front and has no model of code-mixed speech. The text layer already handles these phrases once they are transcribed well.
+- **STT:** while ~ is held, the client records Opus/WebM (`lib/audioCapture.ts`) and sends it to `POST /api/stt`. There, **Sarvam Saaras v3** (`mode=codemix`, language auto-detected) returns English words in Latin script, Hindi in Devanagari, and numbers as digits, which is exactly what `normalize()` expects. **Groq Whisper large-v3** is the fallback, with a Hinglish style prompt and an Urdu-script retry pinned to Hindi. If neither answers (or neither is configured), the browser's own transcript is used. The browser recognizer still runs for live captions.
+- **TTS:** answers are spoken sentence by sentence through `POST /api/tts` → **Sarvam Bulbul v3** HTTP stream (MP3; Indian voices that read Hindi, English and Hinglish), with the browser voice as the fallback.
+- **Why not Whisper-Hindi2Hinglish or IndicConformer:** they need a GPU / torch (D11 forbids it on Render) and have no reliable free hosted endpoint. BGE-M3 stays the retrieval embedder (it is already cross-lingual).
+- _Tradeoffs:_ audio now leaves the browser, going to Sarvam (India) or Groq. The hosted transcript adds ~250–600 ms after the key is released (the fast path's server budget is unchanged). Costs: STT is ₹30/hour of audio (≈₹0.03 per command); TTS is ₹30 per 10K characters (≈₹1 per answer).
+
 **D13 — CO4 says "build, evaluate, deploy, **monitor**". [NEW tier]**
 Nothing in the current plan covers monitoring. It's added as Tier 1f (§5): prediction logging, a model-health page, and a retraining loop.
 

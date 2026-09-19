@@ -1,3 +1,5 @@
+import pytest
+
 from studyloop_nlp import normalize, parse_slots
 from studyloop_nlp.slots import missing_slots
 
@@ -46,3 +48,28 @@ def test_semantic_topic():
     assert s("skip to the part where he explains backpropagation", "SEMANTIC_SEEK").topic == "backpropagation"
     assert s("gradient descent wala part dikhao", "SEMANTIC_SEEK").topic == "gradient descent"
     assert missing_slots("SEMANTIC_SEEK", s("skip to the part", "SEMANTIC_SEEK")) == ["topic"]
+
+
+# ASR spellings of Hindi numbers vary ("chaalis" / "chalis" / "chaalees"); word order of volume levels too
+@pytest.mark.parametrize(
+    "text,intent,expected",
+    [
+        ("tees second aage jaao", "SEEK_FORWARD", {"duration_s": 30.0}),
+        ("pandrah minute aage jao", "SEEK_FORWARD", {"duration_s": 900.0}),
+        ("pandra minute aage jao", "SEEK_FORWARD", {"duration_s": 900.0}),
+        ("chaalis second aage", "SEEK_FORWARD", {"duration_s": 40.0}),
+        ("tis second peeche", "SEEK_BACK", {"duration_s": 30.0}),
+        ("saath second peeche", "SEEK_BACK", {"duration_s": 60.0}),
+        ("saat second peeche", "SEEK_BACK", {"duration_s": 7.0}),
+        ("10 percent pe volume set karo", "VOLUME", {"volume": "set", "volume_level": 10}),
+        ("10 प्रतिशत पे वॉल्यूम सेट करो", "VOLUME", {"volume": "set", "volume_level": 10}),
+        ("set the volume at 40 percent", "VOLUME", {"volume": "set", "volume_level": 40}),
+    ],
+)
+def test_asr_spellings_and_volume_word_order(text, intent, expected):
+    slots = parse_slots(normalize(text), intent).to_dict()
+    assert {k: slots[k] for k in expected} == expected
+
+
+def test_folded_spellings_never_guess_ambiguous_numbers():
+    assert normalize("kar do") == "kar do"  # "do" stays a word without a unit

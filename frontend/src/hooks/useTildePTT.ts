@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executePlayerAction, type PlayerControls } from '@/lib/playerActions';
 import { createSpeechStream, stopSpeaking, type SpeechStream } from '@/lib/tts';
+import { abortCapture, captureSupported, startCapture, stopCapture } from '@/lib/audioCapture';
+import { hostedSttAvailable, transcribeAudio } from '@/services/speechService';
 import type { AsrLang, SpeechRecognitionApi } from './useSpeechRecognition';
 import type { Citation, Lang, SendOptions, TurnResult } from './useStudySocket';
 
@@ -15,6 +17,14 @@ export interface TurnMeta {
   roundTripMs: number;
   isAction: boolean;
   citations?: Citation[];
+  /** who turned the speech into text: 'sarvam' | 'groq' (hosted, D14) or 'browser' */
+  sttProvider?: string;
+  sttMs?: number;
+}
+
+export interface SttInfo {
+  provider: string;
+  ms?: number;
 }
 
 interface UseTildePTTOptions {
@@ -65,11 +75,14 @@ export function useTildePTT(options: UseTildePTTOptions) {
     setError(null);
     setActiveStep(0);
     const lang: AsrLang = language === 'hi' ? 'hi-IN' : 'en-IN';
-    asr.start(lang);
+    // hosted STT (D14) records the audio; the browser recognizer still gives live captions while ~ is held
+    const hosted = hostedSttAvailable() && captureSupported();
+    if (hosted) void startCapture();
+    if (asr.supported || !hosted) asr.start(lang); // without either, asr.start reports "needs Chrome or Edge"
   }, []);
 
   /** Everything after ASR: send the recognized text, execute the action or speak the answer. */
-  const processText = useCallback(async (text: string) => {
+  const processText = useCallback(async (text: string, stt?: SttInfo) => {
     const { player, sendUtterance, onTurn, language } = optsRef.current;
     window.clearTimeout(closeTimer.current);
     setIsOpen(true);
@@ -125,6 +138,8 @@ export function useTildePTT(options: UseTildePTTOptions) {
       roundTripMs,
       isAction: msg.type === 'action',
       citations: msg.type === 'answer.done' ? msg.citations || [] : [],
+      sttProvider: stt?.provider,
+      sttMs: stt?.ms,
     };
     setMeta(m);
 
@@ -156,7 +171,18 @@ export function useTildePTT(options: UseTildePTTOptions) {
   const stopListeningAndProcess = useCallback(async () => {
     if (stageRef.current !== 'listening') return;
     setStage('processing');
-    await processText(await optsRef.current.asr.stop());
+    const { asr, language } = optsRef.current;
+    const [browserText, capture] = await Promise.all([
+      asr.supported ? asr.stop() : Promise.resolve(''),
+      stopCapture(),
+    ]);
+    setRecognizedText(browserText); // shown while the hosted transcript is on its way
+    if (capture && capture.durationMs > 250) {
+      const hosted = await transcribeAudio(capture.blob, language);
+      const text = hosted?.text.trim();
+      if (hosted && text) return processText(text, { provider: hosted.provider, ms: hosted.ms });
+    }
+    await processText(browserText, { provider: 'browser' });
   }, [processText]);
 
   useEffect(() => {
@@ -220,6 +246,7 @@ export function useTildePTT(options: UseTildePTTOptions) {
     turnSeq.current += 1;
     speechRef.current?.cancel();
     optsRef.current.asr.abort();
+    abortCapture();
     optsRef.current.player.unduck();
     stopSpeaking();
     setIsOpen(false);

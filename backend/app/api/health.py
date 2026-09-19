@@ -20,5 +20,7 @@ def health(request: Request, settings: Settings = Depends(get_settings)) -> dict
             "embeddings": bool(settings.hf_token or settings.e5_model_dir),
             "database": bool(settings.database_url),
             "auth": settings.auth_enabled,
+            "stt": bool(settings.sarvam_api_key or settings.groq_api_key),
+            "tts": bool(settings.sarvam_api_key),
         },
     }

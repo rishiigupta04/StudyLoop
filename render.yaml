@@ -32,5 +32,7 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: SARVAM_API_KEY   # hosted STT (Saaras) + TTS (Bulbul), roadmap D14; empty = Groq Whisper / browser voice
+        sync: false
       - key: HF_TOKEN
         sync: false

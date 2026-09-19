@@ -151,6 +151,9 @@ def _volume(t: str) -> tuple[str | None, int | None]:
     m = re.search(r"\b(?:volume|awaaz)\s+(?:to\s+|ko\s+|at\s+)?(\d{1,3})\b", t) or re.search(
         r"\b(\d{1,3}) percent (?:volume|awaaz)\b", t
     )
+    if m is None and re.search(r"\b(volume|awaaz)\b", t):
+        # any word order: "10 percent pe volume set karo", "set the volume at 40 percent"
+        m = re.search(r"\b(\d{1,3}) percent\b", t)
     if m and 0 <= int(m.group(1)) <= 100:
         level = int(m.group(1))
         return ("mute", None) if level == 0 else ("set", level)
