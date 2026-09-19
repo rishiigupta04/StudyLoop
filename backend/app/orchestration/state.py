@@ -34,6 +34,7 @@ class StudyState(TypedDict, total=False):
     answer_text: str | None
     answer_args: dict[str, Any] | None  # template args for answer_key
     citations: list[dict[str, float]]  # [{start_s}] from RAG answers → seekable chips
+    note: dict[str, Any] | None  # Tier 1e: the note notes_agent drafted this turn (stored by the WebSocket)
     router_target: str | None  # where llm_router sends the turn next
     response_text: str | None
     timings: dict[str, float]

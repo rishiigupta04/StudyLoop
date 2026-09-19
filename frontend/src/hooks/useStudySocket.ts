@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_URL, getAccessToken } from '@/services/apiClient';
 import type { PlayerAction } from '@/lib/playerActions';
 import type { VideoStatusInfo } from '@/services/transcriptService';
+import type { Note, SummaryStatus } from '@/services/notesService';
 
 export type Lang = 'en' | 'hi';
 /** 'unauthorized': the server rejected our token (close 4401) — reconnecting won't help, sign in again */
@@ -30,6 +31,11 @@ export type ServerTurn =
   | (TurnMeta & { type: 'answer.done'; text: string; citations?: Citation[]; cancelled?: boolean })
   | { type: 'error'; turn_id?: string; code: string; message: string };
 
+/** Voice notes (Tier 1e): created at once, updated when the background summary lands. */
+export type NoteEvent =
+  | { type: 'note.created'; turn_id: string; note: Note; summary_status: SummaryStatus }
+  | { type: 'note.updated'; note: Note; summary_status: SummaryStatus; saved: boolean };
+
 export interface TurnResult {
   msg: ServerTurn;
   roundTripMs: number;
@@ -53,8 +59,11 @@ export function useStudySocket(opts: {
   videoId: string;
   language: Lang;
   getPlayback: () => { playback_s: number; max_watched_s: number };
+  onNoteEvent?: (e: NoteEvent) => void;
 }) {
   const { videoId, language, getPlayback } = opts;
+  const onNoteEventRef = useRef(opts.onNoteEvent);
+  onNoteEventRef.current = opts.onNoteEvent;
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(newId());
   const pendingRef = useRef(
@@ -117,6 +126,11 @@ export function useStudySocket(opts: {
         }
         if (msg.type === 'video.status') {
           if (msg.video_id === videoId) setVideoStatus(msg as unknown as VideoStatusInfo);
+          return;
+        }
+        if (msg.type === 'note.created' || msg.type === 'note.updated') {
+          // before the turn bookkeeping: note.created carries the turn_id but doesn't end the turn
+          onNoteEventRef.current?.(msg as unknown as NoteEvent);
           return;
         }
         const pending = msg.turn_id ? pendingRef.current.get(msg.turn_id) : undefined;

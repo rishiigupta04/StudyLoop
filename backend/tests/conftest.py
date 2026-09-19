@@ -17,16 +17,17 @@ import pytest  # noqa: E402
 
 from app.services.ingest import set_ingest_service  # noqa: E402
 from app.services.llm import set_llm  # noqa: E402
+from app.services.notes import set_notes_service  # noqa: E402
 from app.services.retrieval import set_retriever  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
 def _fresh_services():
     """Each test gets its own in-memory ingest service, retriever and LLM client (no cross-test state)."""
-    for reset in (set_ingest_service, set_retriever, set_llm):
+    for reset in (set_ingest_service, set_retriever, set_llm, set_notes_service):
         reset(None)
     yield
-    for reset in (set_ingest_service, set_retriever, set_llm):
+    for reset in (set_ingest_service, set_retriever, set_llm, set_notes_service):
         reset(None)
 
 

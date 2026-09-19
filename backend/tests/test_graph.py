@@ -68,7 +68,8 @@ def test_slow_paths_degrade_honestly_without_index_or_llm(graph):
     seek = run(graph, "skip to the part about backpropagation", transcript_status="ready")
     assert seek["route"] == "seek" and seek["action"] is None and seek["answer_key"] == "TOPIC_NOT_FOUND"
     note = run(graph, "note this down", lang="hi")
-    assert note["route"] == "notes" and "Notes" in note["response_text"]
+    assert note["route"] == "notes" and note["response_text"].endswith("पर note कर लिया।")
+    assert note["note"]["is_auto"] and note["note"]["raw_text"] == "note this down"
     oos = run(graph, "the weather is nice")
     assert oos["route"] == "llm" and oos["answer_key"] == "NOT_UNDERSTOOD"
 
@@ -122,3 +123,18 @@ def test_fast_path_latency_budget(graph):
     samples.sort()
     p95 = samples[int(0.95 * len(samples)) - 1]
     assert p95 < 150, f"fast path p95 {p95:.1f} ms"
+
+
+@pytest.mark.parametrize(
+    "text,bookmarked",
+    [
+        ("bookmark this", True),
+        ("बुकमार्क करो", True),
+        ("note this and star it", True),
+        ("note from the start", False),
+    ],
+)
+def test_note_bookmark_detection(graph, text, bookmarked):
+    out = run(graph, text)
+    assert out["route"] == "notes" and out["note"]["is_bookmarked"] is bookmarked
+    assert out["note"]["at_s"] == 100.0 and set(out["timings"]) >= {"notes_agent"}

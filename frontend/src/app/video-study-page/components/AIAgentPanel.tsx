@@ -5,6 +5,7 @@ import NotesTab from './NotesTab';
 import Icon from '@/components/ui/AppIcon';
 import type { Lang } from '@/hooks/useStudySocket';
 import type { VideoTranscriptState } from '@/hooks/useVideoTranscript';
+import type { VideoNotesState } from '@/hooks/useVideoNotes';
 
 type Tab = 'transcript' | 'qa' | 'notes';
 
@@ -17,12 +18,16 @@ interface AIAgentPanelProps {
   language: Lang;
   onTimestampClick: (ts: string) => void;
   onOpenVoiceModal?: () => void;
+  notes: VideoNotesState;
+  videoId: string;
+  videoTitle: string;
+  onSeek: (seconds: number) => void;
 }
 
 const baseTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
   { id: 'transcript', label: 'Transcript', icon: 'DocumentMagnifyingGlassIcon' },
   { id: 'qa', label: 'Q&A Chat', icon: 'ChatBubbleLeftRightIcon' },
-  { id: 'notes', label: 'Notes', icon: 'PencilSquareIcon', badge: 5 },
+  { id: 'notes', label: 'Notes', icon: 'PencilSquareIcon' },
 ];
 
 export default function AIAgentPanel({
@@ -34,10 +39,15 @@ export default function AIAgentPanel({
   language,
   onTimestampClick,
   onOpenVoiceModal,
+  notes,
+  videoId,
+  videoTitle,
+  onSeek,
 }: AIAgentPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('transcript');
   const answers = chat.filter((m) => m.role === 'ai' && !m.streaming).length;
-  const tabs = baseTabs.map((t) => (t.id === 'qa' ? { ...t, badge: answers || undefined } : t));
+  const badges: Partial<Record<Tab, number>> = { qa: answers || undefined, notes: notes.notes.length || undefined };
+  const tabs = baseTabs.map((t) => ({ ...t, badge: badges[t.id] }));
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-surface-card/40">
@@ -92,7 +102,7 @@ export default function AIAgentPanel({
           />
         )}
         {activeTab === 'notes' && (
-          <NotesTab />
+          <NotesTab notes={notes} currentTime={currentTime} videoId={videoId} videoTitle={videoTitle} onSeek={onSeek} />
         )}
       </div>
     </div>

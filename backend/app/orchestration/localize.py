@@ -68,10 +68,9 @@ STRINGS: dict[str, dict[Lang, str]] = {
         "en": "The answer service is busy right now, but the most relevant part you've watched is at {clock}.",
         "hi": "Answer service अभी busy है, पर आपके देखे हिस्से में सबसे relevant हिस्सा {clock} पर है।",
     },
-    "SOON_TAKE_NOTE": {
-        "en": "Voice notes arrive in Tier 1e. For now, use the Notes tab.",
-        "hi": "Voice notes जल्द आएँगे। अभी Notes tab इस्तेमाल करें।",
-    },
+    # voice notes (Tier 1e): the ack; the summary follows as note.updated
+    "NOTE_SAVED": {"en": "Noted at {clock}.", "hi": "{clock} पर note कर लिया।"},
+    "NOTE_BOOKMARKED": {"en": "Bookmarked {clock}.", "hi": "{clock} bookmark कर लिया।"},
     # transcript-dependent intents when the transcript isn't usable (Tier 1a) — player commands still work
     "TRANSCRIPT_PREPARING": {
         "en": "I'm still preparing this video's transcript. Playback commands work meanwhile.",

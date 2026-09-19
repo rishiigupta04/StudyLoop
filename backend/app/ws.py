@@ -15,6 +15,11 @@ server → client
   {"type":"answer.delta", "turn_id", "text"}                  # streamed answer tokens (Tier 1b, D8)
   {"type":"answer.done", "turn_id", "text", "citations":[{"start_s"}], "cancelled", "intent", "confidence",
    "route", "timings"}                                        # text = the full answer (or template)
+  {"type":"note.created", "turn_id", "note":{id, video_id, session_id, at_s, raw_text, summary, is_auto,
+   is_bookmarked, created_at, updated_at}, "summary_status":"pending"}   # voice note (Tier 1e), before
+                                                              # the turn's answer.done ack
+  {"type":"note.updated", "note":{...}, "summary_status":"done"|"skipped"|"failed"|"kept", "saved"}
+      after the background insert + LLM summary; "kept" = the user edited the note meanwhile (theirs wins)
   {"type":"error", "turn_id"?, "code", "message"}
   {"type":"pong"}
 The browser already did ASR — only recognized TEXT crosses the socket, never audio.
@@ -36,6 +41,7 @@ from app.auth import ANONYMOUS, resolve_user
 from app.config import get_settings
 from app.orchestration.graph import TurnDeps, default_deps, get_graph, new_turn_input
 from app.services.ingest import get_ingest_service
+from app.services.notes import get_notes_service, new_note, public
 from app.services.sessions import get_session_store, valid_session_id
 
 log = logging.getLogger("studyloop.ws")
@@ -91,6 +97,29 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
         ),
         {"configurable": {"thread_id": session["session_id"], "deps": deps}},
     )
+    if state.get("note"):  # Tier 1e: ack now, store + summarize in the background
+        draft = state["note"]
+        note = new_note(
+            user_id=session["user_id"],
+            video_id=draft["video_id"],
+            at_s=draft["at_s"],
+            raw_text=draft["raw_text"],
+            session_id=draft.get("session_id"),
+            is_auto=True,
+            is_bookmarked=draft["is_bookmarked"],
+        ) | {"id": draft["id"]}
+        if send is not None:
+            await send(
+                {
+                    "type": "note.created",
+                    "turn_id": turn_id,
+                    "note": public(note),
+                    "summary_status": "pending",
+                }
+            )
+        get_notes_service().start_voice_note(
+            note, spoken=text, language=state.get("language") or session["language"], send=send
+        )
     was_cancelled = turn_id in cancelled
     cancelled.discard(turn_id)
     timings = dict(state.get("timings") or {})

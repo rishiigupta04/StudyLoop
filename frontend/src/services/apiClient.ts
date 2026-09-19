@@ -42,6 +42,22 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** JSON request with any method; resolves to null on 204 No Content. */
+export async function apiSend<T>(method: 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<T | null> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) throw new ApiError(res.status, `${res.status} ${res.statusText}`);
+  return res.status === 204 ? null : ((await res.json()) as T);
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return apiGet<T>(path, {
     method: 'POST',

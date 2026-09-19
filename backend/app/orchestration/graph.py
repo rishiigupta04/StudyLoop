@@ -13,7 +13,8 @@ action_executor, seek_resolver, rag_agent or notes_agent — or answers directly
 
 Tier 1b: seek_resolver = hybrid retrieval over the whole video (no LLM); rag_agent = retrieval limited to
 what was already watched (`end_s <= max_watched_s`) + a streamed Groq answer in `language` with [mm:ss]
-citations; llm_router = one Groq tool call. notes_agent is still an honest stub (Tier 1e).
+citations; llm_router = one Groq tool call. Tier 1e: notes_agent drafts the note in-process (no I/O); the
+WebSocket sends `note.created` and summarizes it in the background (`app.services.notes`).
 
 Nodes are sync (the WS runs the graph in a worker thread); their network I/O runs on the server's event
 loop via `TurnDeps.loop`. Dependencies arrive in `config["configurable"]["deps"]` so tests inject fakes.
@@ -26,6 +27,7 @@ import json
 import logging
 import re
 import time
+import uuid
 from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass
 from functools import wraps
@@ -449,10 +451,31 @@ def _citations(text: str, context: list[Any]) -> list[dict[str, float]]:
     return out
 
 
+_BOOKMARK = re.compile(r"\b(bookmark|bukmark|star)\b|बुकमार्क")
+
+
 @timed("notes_agent")
 def notes_agent(state: StudyState) -> dict[str, Any]:
-    # Tier 1e: optimistic note at playback_s, async LLM summary
-    return {"route": "notes", "answer_key": "SOON_TAKE_NOTE"}
+    """Tier 1e: an optimistic note at playback_s, drafted with no I/O so the ack stays under 200 ms. The
+    WebSocket stores it and adds the LLM summary in the background (never inside the turn)."""
+    at = max(0.0, float(state.get("playback_s") or 0.0))
+    said = f"{state.get('normalized_text', '')} {state.get('raw_text', '')}".lower()
+    bookmark = bool(_BOOKMARK.search(said))
+    note = {
+        "id": str(uuid.uuid4()),
+        "video_id": state.get("video_id", ""),
+        "session_id": state.get("session_id"),
+        "at_s": round(at, 2),
+        "raw_text": state.get("raw_text", ""),
+        "is_auto": True,
+        "is_bookmarked": bookmark,
+    }
+    return {
+        "route": "notes",
+        "note": note,
+        "answer_key": "NOTE_BOOKMARKED" if bookmark else "NOTE_SAVED",
+        "answer_args": {"clock": L.fmt_clock(at)},
+    }
 
 
 def _fn_tool(
@@ -695,6 +718,7 @@ PER_TURN_RESET: dict[str, Any] = {
     "answer_text": None,
     "answer_args": None,
     "citations": [],
+    "note": None,
     "router_target": None,
     "response_text": None,
     "timings": {},

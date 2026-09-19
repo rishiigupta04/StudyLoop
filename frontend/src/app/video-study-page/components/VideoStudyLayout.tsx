@@ -11,18 +11,17 @@ import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useStudySocket, type Lang } from '@/hooks/useStudySocket';
 import { useVideoTranscript } from '@/hooks/useVideoTranscript';
+import { useVideoNotes, type VideoNotesState } from '@/hooks/useVideoNotes';
 import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
 import { parseClock } from '@/lib/time';
 import { executePlayerAction, resetSeekHistory } from '@/lib/playerActions';
 
 // MIT 6.006 (Fall 2011) Lecture 1 — Algorithmic Thinking, Peak Finding. Matches the demo chapters.
 const DEFAULT_VIDEO_ID = 'HtSuA80QTyo';
-import { useGamification } from '@/context/GamificationContext';
 
 export default function VideoStudyLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { awardXP } = useGamification();
   const [activeTimestamp, setActiveTimestamp] = useState('0:00');
   const [language, setLanguage] = useState<Lang>(() => {
     try {
@@ -40,11 +39,15 @@ export default function VideoStudyLayout() {
   const playerHostRef = useRef<HTMLDivElement | null>(null);
   const player = useYouTubePlayer(playerHostRef, videoId);
   const asr = useSpeechRecognition();
+  const notesRef = useRef<VideoNotesState | null>(null);
   const socket = useStudySocket({
     videoId,
     language,
     getPlayback: () => ({ playback_s: player.getCurrentTime(), max_watched_s: player.maxWatched() }),
+    onNoteEvent: (e) => notesRef.current?.onNoteEvent(e), // voice notes (Tier 1e)
   });
+  const notes = useVideoNotes(videoId, socket.sessionId);
+  notesRef.current = notes;
 
   // transcript ingestion (Tier 1a): status streams over the socket, segments feed the Transcript tab
   const transcript = useVideoTranscript(videoId, socket.videoStatus, socket.status === 'open');
@@ -107,7 +110,8 @@ export default function VideoStudyLayout() {
     sendUtterance: socket.sendUtterance,
     cancelTurn: socket.cancelTurn,
     onTurn: (userText, reply, meta) => {
-      if (meta.isAction) return; // player commands are confirmed in the voice modal, not logged as chat
+      // player commands are confirmed in the voice modal; voice notes land in the Notes tab
+      if (meta.isAction || meta.route === 'notes') return;
       const id = `${Date.now()}-v`;
       setChat((c) => [
         ...c,
@@ -161,9 +165,10 @@ export default function VideoStudyLayout() {
 
   const handleShareSession = () => {
     const shareUrl = window.location.href;
-    navigator.clipboard.writeText(shareUrl);
-    awardXP(10, 'Shared Study Session!');
-    toast.success('Study session link & active timestamp copied to clipboard! (+10 XP)');
+    navigator.clipboard.writeText(shareUrl).then(
+      () => toast.success('Link to this video copied'),
+      () => toast.error("Couldn't copy the link")
+    );
   };
 
   const handleOpenSettings = () => {
@@ -244,8 +249,8 @@ export default function VideoStudyLayout() {
           <button
             onClick={handleShareSession}
             className="p-2 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Share Study Session Link"
-            aria-label="Share Study Session Link"
+            title="Copy a link to this video"
+            aria-label="Copy a link to this video"
           >
             <Icon name="ShareIcon" size={16} />
           </button>
@@ -284,6 +289,10 @@ export default function VideoStudyLayout() {
             language={language}
             onTimestampClick={seekToTimestamp}
             onOpenVoiceModal={() => ptt.startListening()}
+            notes={notes}
+            videoId={videoId}
+            videoTitle={player.title || location.state?.videoTitle || videoId}
+            onSeek={(secs) => player.seekTo(secs)}
           />
         </div>
       </div>
