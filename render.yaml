@@ -10,7 +10,7 @@ services:
       - key: ENV
         value: prod
       - key: CORS_ORIGINS
-        value: https://study-loop-pink.vercel.app,https://studylooop.vercel.app
+        value: https://studyloopp.vercel.app,https://study-loop-pink.vercel.app,https://studylooop.vercel.app
       - key: CLASSIFIER
         value: regex
       - key: CHECKPOINTER
