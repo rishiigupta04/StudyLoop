@@ -60,7 +60,14 @@ npm run type-check && npm run build
   `/api/dashboard`, `/api/chats` from checkpointer memory); real Library / Notes workspace / Dashboard / Chat history
   pages; Quiz + gamification behind `VITE_DEMO_PREVIEW`. Gemini fallback → `gemini-3.6-flash`. 1106 tests. **Awaiting:**
   the signed-in + Hindi pass. `bg-surface-card`/`-elevated` (+ `/NN`) are theme colors (`rgb(var(--surface-*) / <alpha-value>)`).
-- Tier 1c: data plan in `docs/TIER1C_DATA_PLAN.md` (record audio; per-STT-provider accuracy).
+- Tier 1c: data plan in `docs/TIER1C_DATA_PLAN.md` (record audio; per-STT-provider accuracy). Labeling
+  rule decided 28 Sep: a topic named → SEMANTIC_SEEK, no topic → REPLAY (in `tests/voice_corpus.py`).
+  **Collect page done 28 Sep** (`/collect` behind `VITE_COLLECT=true`, never in a normal build or the
+  nav; runbook `docs/TIER1C_COLLECT.md`): scenario deck `frontend/src/lib/collectScenarios.json`
+  (91 situations × EN/Hinglish/HI, every intent, §4 pairs tagged, guarded by
+  `tests/test_collect_scenarios.py`), hold `~` through the app's own `lib/audioCapture.ts`, clip +
+  audio in IndexedDB, ZIP (audio + `labels.jsonl`) and JSONL export. **Awaiting:** the first
+  real-speaker session. Next: `ml/` pipeline.
 
 ## Next up (in order)
 1. Tier 0 / 0b / 1a / 1b manual passes (above), then:

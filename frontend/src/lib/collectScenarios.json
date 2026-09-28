@@ -1,0 +1,765 @@
+{
+  "version": 1,
+  "about": [
+    "Scenario deck for the dev-only Collect page (Tier 1c real-speech recording, roadmap CO4).",
+    "Each card describes a SITUATION, never the command itself: reading a written command back produces",
+    "the corpus again and inflates accuracy (docs/TIER1C_DATA_PLAN.md §3). The speaker reads the line in",
+    "their assigned lang_style and says whatever they would actually say.",
+    "`pairs` tags the confusable pairs of TIER1C_DATA_PLAN §4 so a session can be checked for coverage.",
+    "Labels follow backend/tests/voice_corpus.py: a topic named -> SEMANTIC_SEEK, no topic -> REPLAY.",
+    "Validated by backend/tests/test_collect_scenarios.py (intents must match orchestration/intents.py)."
+  ],
+  "pairs": {
+    "ask_vs_replay": "Questions about what was said vs asking to hear it again",
+    "stop_vs_pause": "\"stop\" / \"bas\" / \"ruko\" = stop talking or stop the video",
+    "semantic_vs_ask": "\"take me to the part about X\" vs \"what is X\"",
+    "summarize_vs_ask": "\"what's this about\" vs \"what's X\"",
+    "note_vs_ask": "a dictated note vs a question that mentions noting",
+    "seekback_vs_replay": "\"go back a bit\" vs \"say that again\"",
+    "volume_vs_speed": "too fast / too loud / dheere (slower or quieter)",
+    "absolute_vs_forward": "\"go to 12:30\" vs \"12 minute aage\""
+  },
+  "scenarios": [
+    {
+      "id": "play-01",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "You paused to fill your water bottle. You're back at the desk now.",
+      "hinglish": "Aap paani bharne ke liye ruke the. Ab wapas desk par baith gaye ho.",
+      "hi": "आप पानी भरने के लिए रुके थे। अब वापस मेज़ पर बैठ गए हैं।"
+    },
+    {
+      "id": "play-02",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "You've finished copying the last line into your notebook; the video is still sitting paused.",
+      "hinglish": "Notebook mein aakhri line utar li; video abhi bhi paused pada hai.",
+      "hi": "कॉपी में आखिरी लाइन उतार ली; वीडियो अब भी रुका पड़ा है।"
+    },
+    {
+      "id": "play-03",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "Someone knocked, you stopped the lecture, and they've gone now.",
+      "hinglish": "Koi darwaza khatkhatane aaya tha, aapne lecture rok diya tha, ab wo chala gaya.",
+      "hi": "कोई दरवाज़ा खटखटाने आया था, आपने लेक्चर रोक दिया था, अब वो चला गया।"
+    },
+    {
+      "id": "play-04",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "You asked a question, you've heard the answer, and you want the lecture moving again.",
+      "hinglish": "Sawaal poochha tha, jawab sun liya, ab lecture dobara chalna chahiye.",
+      "hi": "सवाल पूछा था, जवाब सुन लिया, अब लेक्चर दोबारा चलना चाहिए।"
+    },
+    {
+      "id": "play-05",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "You stopped to think about a formula on the board. It makes sense now.",
+      "hinglish": "Board par likhe ek formula par sochne ke liye ruke the. Ab samajh aa gaya.",
+      "hi": "बोर्ड पर लिखे एक सूत्र पर सोचने के लिए रुके थे। अब समझ आ गया।"
+    },
+    {
+      "id": "play-06",
+      "intent": "PLAY",
+      "pairs": [],
+      "en": "The lecture is paused and both your hands are busy redrawing a diagram.",
+      "hinglish": "Lecture paused hai aur aapke dono haath diagram banane mein lage hain.",
+      "hi": "लेक्चर रुका है और आपके दोनों हाथ डायग्राम बनाने में लगे हैं।"
+    },
+
+    {
+      "id": "pause-01",
+      "intent": "PAUSE",
+      "pairs": [],
+      "en": "Your phone is ringing and you have to take it.",
+      "hinglish": "Aapka phone baj raha hai aur uthana zaroori hai.",
+      "hi": "आपका फ़ोन बज रहा है और उठाना ज़रूरी है।"
+    },
+    {
+      "id": "pause-02",
+      "intent": "PAUSE",
+      "pairs": [],
+      "en": "The diagram on screen is about to be wiped and you still have half of it to copy.",
+      "hinglish": "Screen wala diagram mitne hi wala hai aur aapka aadha hi utra hai.",
+      "hi": "स्क्रीन वाला डायग्राम मिटने ही वाला है और आपका आधा ही उतरा है।"
+    },
+    {
+      "id": "pause-03",
+      "intent": "PAUSE",
+      "pairs": [],
+      "en": "Someone has just walked into the room and started talking to you.",
+      "hinglish": "Koi abhi room mein aaya hai aur aapse baat karne laga hai.",
+      "hi": "कोई अभी कमरे में आया है और आपसे बात करने लगा है।"
+    },
+    {
+      "id": "pause-04",
+      "intent": "PAUSE",
+      "pairs": ["stop_vs_pause"],
+      "en": "He just made a claim you want to sit with before he moves on.",
+      "hinglish": "Usne abhi ek baat kahi hai jis par aage badhne se pehle sochna hai.",
+      "hi": "उसने अभी एक बात कही है जिस पर आगे बढ़ने से पहले सोचना है।"
+    },
+    {
+      "id": "pause-05",
+      "intent": "PAUSE",
+      "pairs": [],
+      "en": "The tea is boiling over in the kitchen.",
+      "hinglish": "Kitchen mein chai ubal kar bah rahi hai.",
+      "hi": "रसोई में चाय उबल कर बह रही है।"
+    },
+    {
+      "id": "pause-06",
+      "intent": "PAUSE",
+      "pairs": ["stop_vs_pause"],
+      "en": "He has put a problem on the board and you want to try it yourself before he solves it.",
+      "hinglish": "Usne board par ek problem rakhi hai aur uske solve karne se pehle khud try karna hai.",
+      "hi": "उसने बोर्ड पर एक सवाल रखा है और उसके हल करने से पहले खुद कोशिश करनी है।"
+    },
+
+    {
+      "id": "seekback-01",
+      "intent": "SEEK_BACK",
+      "pairs": ["seekback_vs_replay"],
+      "en": "Your attention drifted and you've lost roughly the last half minute.",
+      "hinglish": "Dhyan hat gaya aur pichhle aadhe minute ka kuch pata nahi.",
+      "hi": "ध्यान हट गया और पिछले आधे मिनट का कुछ पता नहीं।"
+    },
+    {
+      "id": "seekback-02",
+      "intent": "SEEK_BACK",
+      "pairs": [],
+      "en": "You want to be about ten seconds earlier, where the equation was still on screen.",
+      "hinglish": "Das second pehle wali jagah chahiye, jahan equation abhi screen par tha.",
+      "hi": "दस सेकंड पहले वाली जगह चाहिए, जहाँ समीकरण अभी स्क्रीन पर था।"
+    },
+    {
+      "id": "seekback-03",
+      "intent": "SEEK_BACK",
+      "pairs": [],
+      "en": "About two minutes ago he set up the assumption you now need.",
+      "hinglish": "Kareeb do minute pehle usne wo assumption rakhi thi jo ab chahiye.",
+      "hi": "करीब दो मिनट पहले उसने वो धारणा रखी थी जो अब चाहिए।"
+    },
+    {
+      "id": "seekback-04",
+      "intent": "SEEK_BACK",
+      "pairs": ["seekback_vs_replay"],
+      "en": "You dozed off for a while — maybe a minute of the lecture went past you.",
+      "hinglish": "Thodi der jhapki lag gayi — shayad ek minute ka lecture nikal gaya.",
+      "hi": "थोड़ी देर झपकी लग गई — शायद एक मिनट का लेक्चर निकल गया।"
+    },
+    {
+      "id": "seekback-05",
+      "intent": "SEEK_BACK",
+      "pairs": ["seekback_vs_replay"],
+      "en": "You want to back up a little. Not far — just a bit.",
+      "hinglish": "Thoda sa peeche jaana hai. Zyada nahi, bas thoda sa.",
+      "hi": "थोड़ा सा पीछे जाना है। ज़्यादा नहीं, बस थोड़ा सा।"
+    },
+    {
+      "id": "seekback-06",
+      "intent": "SEEK_BACK",
+      "pairs": [],
+      "en": "Five seconds ago he said a number you want on paper.",
+      "hinglish": "Paanch second pehle usne ek number bola tha jo likhna hai.",
+      "hi": "पाँच सेकंड पहले उसने एक संख्या बोली थी जो लिखनी है।"
+    },
+
+    {
+      "id": "seekfwd-01",
+      "intent": "SEEK_FORWARD",
+      "pairs": ["absolute_vs_forward"],
+      "en": "He is re-explaining something you already understand; a minute of this is enough to skip.",
+      "hinglish": "Wo wahi cheez dobara samjha raha hai jo aapko aati hai; ek minute chhodna hai.",
+      "hi": "वो वही बात दोबारा समझा रहा है जो आपको आती है; एक मिनट छोड़ना है।"
+    },
+    {
+      "id": "seekfwd-02",
+      "intent": "SEEK_FORWARD",
+      "pairs": [],
+      "en": "There's a long silence while he writes on the board — about twenty seconds of nothing.",
+      "hinglish": "Board par likhte waqt lambi chuppi hai — kareeb bees second kuch nahi.",
+      "hi": "बोर्ड पर लिखते समय लंबी चुप्पी है — करीब बीस सेकंड कुछ नहीं।"
+    },
+    {
+      "id": "seekfwd-03",
+      "intent": "SEEK_FORWARD",
+      "pairs": ["absolute_vs_forward"],
+      "en": "The announcements at the start of class are no use to you — a couple of minutes of them.",
+      "hinglish": "Class ke shuru ki announcements aapke kaam ki nahi — do minute uska hissa hai.",
+      "hi": "क्लास की शुरुआत की घोषणाएँ आपके काम की नहीं — दो मिनट उसका हिस्सा है।"
+    },
+    {
+      "id": "seekfwd-04",
+      "intent": "SEEK_FORWARD",
+      "pairs": [],
+      "en": "Someone in the room is asking a question that isn't yours.",
+      "hinglish": "Room mein koi aur apna sawaal poochh raha hai, aapka nahi.",
+      "hi": "कमरे में कोई और अपना सवाल पूछ रहा है, आपका नहीं।"
+    },
+    {
+      "id": "seekfwd-05",
+      "intent": "SEEK_FORWARD",
+      "pairs": [],
+      "en": "This example is the same as the previous one; half a minute of it can go.",
+      "hinglish": "Ye example pichhle jaisa hi hai; iska aadha minute chhod sakte ho.",
+      "hi": "ये उदाहरण पिछले जैसा ही है; इसका आधा मिनट छोड़ सकते हैं।"
+    },
+    {
+      "id": "seekfwd-06",
+      "intent": "SEEK_FORWARD",
+      "pairs": [],
+      "en": "You've already read this slide in the notes — ten seconds of nudge is enough.",
+      "hinglish": "Ye slide notes mein padh chuke ho — das second ka nudge kaafi hai.",
+      "hi": "ये स्लाइड नोट्स में पढ़ चुके हैं — दस सेकंड आगे खिसकना काफ़ी है।"
+    },
+
+    {
+      "id": "seekabs-01",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": ["absolute_vs_forward"],
+      "en": "Your notes say the proof starts at the twelve thirty mark.",
+      "hinglish": "Aapke notes mein likha hai ki proof barah tees par shuru hota hai.",
+      "hi": "आपके नोट्स में लिखा है कि सबूत बारह तीस पर शुरू होता है।"
+    },
+    {
+      "id": "seekabs-02",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": ["absolute_vs_forward"],
+      "en": "A classmate told you the part worth watching is at forty five minutes.",
+      "hinglish": "Dost ne bataya ki dekhne layak hissa paintalis minute par hai.",
+      "hi": "दोस्त ने बताया कि देखने लायक हिस्सा पैंतालीस मिनट पर है।"
+    },
+    {
+      "id": "seekabs-03",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": [],
+      "en": "You want to watch this lecture over again from the very beginning.",
+      "hinglish": "Ye lecture bilkul shuruaat se dobara dekhna hai.",
+      "hi": "ये लेक्चर बिलकुल शुरुआत से दोबारा देखना है।"
+    },
+    {
+      "id": "seekabs-04",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": [],
+      "en": "You jumped somewhere by mistake and want to undo it — back to wherever you were.",
+      "hinglish": "Galti se kahin kood gaye ho aur usse undo karna hai — jahan the wahin wapas.",
+      "hi": "गलती से कहीं कूद गए हैं और उसे पलटना है — जहाँ थे वहीं वापस।"
+    },
+    {
+      "id": "seekabs-05",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": [],
+      "en": "Before committing an hour, you want to see how the lecture ends.",
+      "hinglish": "Ek ghanta lagane se pehle dekhna hai ki lecture khatam kaise hota hai.",
+      "hi": "एक घंटा लगाने से पहले देखना है कि लेक्चर खत्म कैसे होता है।"
+    },
+    {
+      "id": "seekabs-06",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": [],
+      "en": "You want to land exactly halfway through the lecture.",
+      "hinglish": "Lecture ke theek beech mein pahunchna hai.",
+      "hi": "लेक्चर के ठीक बीच में पहुँचना है।"
+    },
+    {
+      "id": "seekabs-07",
+      "intent": "SEEK_ABSOLUTE",
+      "pairs": ["absolute_vs_forward"],
+      "en": "The syllabus says your topic begins at eight minutes fifteen seconds.",
+      "hinglish": "Syllabus ke hisaab se aapka topic aath minute pandrah second par shuru hota hai.",
+      "hi": "सिलेबस के हिसाब से आपका विषय आठ मिनट पंद्रह सेकंड पर शुरू होता है।"
+    },
+
+    {
+      "id": "replay-01",
+      "intent": "REPLAY",
+      "pairs": ["ask_vs_replay"],
+      "en": "The last sentence was muffled — you genuinely don't know what words he said.",
+      "hinglish": "Aakhri line dabi dabi si thi — pata hi nahi chala usne kya shabd bole.",
+      "hi": "आखिरी वाक्य दबा-दबा सा था — पता ही नहीं चला उसने क्या शब्द कहे।"
+    },
+    {
+      "id": "replay-02",
+      "intent": "REPLAY",
+      "pairs": [],
+      "en": "A truck went past outside at exactly the moment he made his point.",
+      "hinglish": "Bahar truck nikla theek us waqt jab usne apni baat kahi.",
+      "hi": "बाहर ट्रक निकला ठीक उसी वक़्त जब उसने अपनी बात कही।"
+    },
+    {
+      "id": "replay-03",
+      "intent": "REPLAY",
+      "pairs": ["ask_vs_replay", "seekback_vs_replay"],
+      "en": "You heard it, but it went past too quickly. You want that same bit once more — not an explanation.",
+      "hinglish": "Suna to tha, par tezi se nikal gaya. Wahi hissa ek baar aur chahiye — samjhana nahi.",
+      "hi": "सुना तो था, पर तेज़ी से निकल गया। वही हिस्सा एक बार और चाहिए — समझाना नहीं।"
+    },
+    {
+      "id": "replay-04",
+      "intent": "REPLAY",
+      "pairs": ["ask_vs_replay", "seekback_vs_replay"],
+      "en": "Someone spoke to you and whatever just happened went past you. You can't name the topic.",
+      "hinglish": "Koi aapse baat karne laga aur abhi jo hua wo nikal gaya. Topic ka naam bhi nahi pata.",
+      "hi": "कोई आपसे बात करने लगा और अभी जो हुआ वो निकल गया। विषय का नाम भी नहीं पता।"
+    },
+    {
+      "id": "replay-05",
+      "intent": "REPLAY",
+      "pairs": [],
+      "en": "Your headphone slipped out of your ear in the middle of a sentence.",
+      "hinglish": "Beech line mein headphone kaan se nikal gaya.",
+      "hi": "बीच वाक्य में हेडफ़ोन कान से निकल गया।"
+    },
+    {
+      "id": "replay-06",
+      "intent": "REPLAY",
+      "pairs": ["ask_vs_replay"],
+      "en": "You weren't listening for a second and you don't even know what it was about.",
+      "hinglish": "Ek second dhyan nahi tha aur pata bhi nahi kis baare mein tha.",
+      "hi": "एक पल ध्यान नहीं था और पता भी नहीं किस बारे में था।"
+    },
+    {
+      "id": "replay-07",
+      "intent": "REPLAY",
+      "pairs": ["ask_vs_replay"],
+      "en": "You want the previous line played again. You're not asking what it means, just to hear it.",
+      "hinglish": "Pichhli line dobara sunni hai. Matlab nahi poochh rahe, bas sunni hai.",
+      "hi": "पिछली लाइन दोबारा सुननी है। मतलब नहीं पूछ रहे, बस सुननी है।"
+    },
+
+    {
+      "id": "speed-01",
+      "intent": "SPEED",
+      "pairs": ["volume_vs_speed"],
+      "en": "He is talking far faster than you can write.",
+      "hinglish": "Wo itni tezi se bol raha hai ki likha hi nahi ja raha.",
+      "hi": "वो इतनी तेज़ी से बोल रहा है कि लिखा ही नहीं जा रहा।"
+    },
+    {
+      "id": "speed-02",
+      "intent": "SPEED",
+      "pairs": [],
+      "en": "This section is easy and you'd rather get through it in less time.",
+      "hinglish": "Ye hissa aasan hai, isse kam time mein nikalna chahte ho.",
+      "hi": "ये हिस्सा आसान है, इसे कम समय में निकालना चाहते हैं।"
+    },
+    {
+      "id": "speed-03",
+      "intent": "SPEED",
+      "pairs": [],
+      "en": "You have twenty minutes before class and an hour of lecture left.",
+      "hinglish": "Class se pehle bees minute hain aur ek ghanta lecture baaki hai.",
+      "hi": "क्लास से पहले बीस मिनट हैं और एक घंटा लेक्चर बाकी है।"
+    },
+    {
+      "id": "speed-04",
+      "intent": "SPEED",
+      "pairs": ["volume_vs_speed"],
+      "en": "It's running at one and a half times and you can no longer follow him.",
+      "hinglish": "Ye dedh guna par chal raha hai aur ab uski baat samajh nahi aa rahi.",
+      "hi": "ये डेढ़ गुना पर चल रहा है और अब उसकी बात समझ नहीं आ रही।"
+    },
+    {
+      "id": "speed-05",
+      "intent": "SPEED",
+      "pairs": [],
+      "en": "You want it back to however it plays normally.",
+      "hinglish": "Jaise ye normally chalta hai waise hi chahiye.",
+      "hi": "जैसे ये सामान्य रूप से चलता है वैसा ही चाहिए।"
+    },
+    {
+      "id": "speed-06",
+      "intent": "SPEED",
+      "pairs": ["volume_vs_speed"],
+      "en": "His accent is hard for you — hearing him at a gentler pace would help.",
+      "hinglish": "Uska accent aapke liye mushkil hai — dheeme pace par sunna aasan hoga.",
+      "hi": "उसका उच्चारण आपके लिए मुश्किल है — धीमी गति पर सुनना आसान होगा।"
+    },
+
+    {
+      "id": "volume-01",
+      "intent": "VOLUME",
+      "pairs": ["volume_vs_speed"],
+      "en": "His voice is barely getting through over your ceiling fan.",
+      "hinglish": "Pankhe ke shor mein uski awaaz mushkil se pahunch rahi hai.",
+      "hi": "पंखे के शोर में उसकी आवाज़ मुश्किल से पहुँच रही है।"
+    },
+    {
+      "id": "volume-02",
+      "intent": "VOLUME",
+      "pairs": ["volume_vs_speed"],
+      "en": "It is blasting in your ears and it actually hurts.",
+      "hinglish": "Kaan mein bahut tez baj raha hai, sach mein chubh raha hai.",
+      "hi": "कान में बहुत तेज़ बज रहा है, सच में चुभ रहा है।"
+    },
+    {
+      "id": "volume-03",
+      "intent": "VOLUME",
+      "pairs": [],
+      "en": "Forty percent is the level that works in this room.",
+      "hinglish": "Is room ke liye chalis percent wala level theek baithta hai.",
+      "hi": "इस कमरे के लिए चालीस प्रतिशत वाला स्तर ठीक बैठता है।"
+    },
+    {
+      "id": "volume-04",
+      "intent": "VOLUME",
+      "pairs": [],
+      "en": "Someone is asleep in the room — for the next minute it has to make no sound at all.",
+      "hinglish": "Room mein koi so raha hai — agle ek minute bilkul koi awaaz nahi aani chahiye.",
+      "hi": "कमरे में कोई सो रहा है — अगले एक मिनट बिलकुल कोई आवाज़ नहीं आनी चाहिए।"
+    },
+    {
+      "id": "volume-05",
+      "intent": "VOLUME",
+      "pairs": [],
+      "en": "You silenced it earlier for a phone call. The call is over.",
+      "hinglish": "Call ke liye pehle isko chup kar diya tha. Call khatam ho gayi.",
+      "hi": "कॉल के लिए पहले इसे चुप कर दिया था। कॉल खत्म हो गई।"
+    },
+    {
+      "id": "volume-06",
+      "intent": "VOLUME",
+      "pairs": ["volume_vs_speed"],
+      "en": "You just put headphones on and it is much louder than it needs to be.",
+      "hinglish": "Abhi headphone lagaya hai aur zaroorat se kaafi zyada tez hai.",
+      "hi": "अभी हेडफ़ोन लगाया है और ज़रूरत से काफ़ी ज़्यादा तेज़ है।"
+    },
+
+    {
+      "id": "semseek-01",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "You want to be at the point where he first explains recursion.",
+      "hinglish": "Jahan usne recursion pehli baar samjhaya tha, wahan pahunchna hai.",
+      "hi": "जहाँ उसने रिकर्शन पहली बार समझाया था, वहाँ पहुँचना है।"
+    },
+    {
+      "id": "semseek-02",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["ask_vs_replay", "semantic_vs_ask"],
+      "en": "You missed the bit where he defined what a peak is, and you want to watch that part.",
+      "hinglish": "Jahan usne peak ki definition di thi wo hissa chhoot gaya, aur wahi dekhna hai.",
+      "hi": "जहाँ उसने पीक की परिभाषा दी थी वो हिस्सा छूट गया, और वही देखना है।"
+    },
+    {
+      "id": "semseek-03",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "The binary search example is somewhere in this lecture and you want to be there.",
+      "hinglish": "Binary search wala example kahin is lecture mein hai aur wahan hona hai.",
+      "hi": "बाइनरी सर्च वाला उदाहरण कहीं इस लेक्चर में है और वहीं होना है।"
+    },
+    {
+      "id": "semseek-04",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "You want the place where the complexity analysis starts — the spot, not an explanation of it.",
+      "hinglish": "Jahan se complexity analysis shuru hoti hai wo jagah chahiye — samjhana nahi.",
+      "hi": "जहाँ से जटिलता का विश्लेषण शुरू होता है वो जगह चाहिए — समझाना नहीं।"
+    },
+    {
+      "id": "semseek-05",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": [],
+      "en": "He mentioned a real world use of this somewhere and you want to see that moment again.",
+      "hinglish": "Usne kahin iska real world use bataya tha aur wo moment dobara dekhna hai.",
+      "hi": "उसने कहीं इसका असली इस्तेमाल बताया था और वो पल दोबारा देखना है।"
+    },
+    {
+      "id": "semseek-06",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": [],
+      "en": "Your friend said the proof of the two dimensional case is worth watching.",
+      "hinglish": "Dost ne bola ki two dimensional case ka proof dekhne layak hai.",
+      "hi": "दोस्त ने कहा कि दो आयाम वाले केस का सबूत देखने लायक है।"
+    },
+    {
+      "id": "semseek-07",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "You want to land wherever he talks about the divide and conquer trick.",
+      "hinglish": "Jahan wo divide and conquer wali trick par baat karta hai wahan jaana hai.",
+      "hi": "जहाँ वो डिवाइड एंड कॉन्कर वाली तरकीब पर बात करता है वहाँ जाना है।"
+    },
+    {
+      "id": "semseek-08",
+      "intent": "SEMANTIC_SEEK",
+      "pairs": ["ask_vs_replay"],
+      "en": "You lost the thread when he introduced the algorithm's running time; you want that moment on screen.",
+      "hinglish": "Jab usne algorithm ka running time introduce kiya tab samajh chhoot gayi; wahi moment screen par chahiye.",
+      "hi": "जब उसने एल्गोरिदम का रनिंग टाइम बताया तब समझ छूट गई; वही पल स्क्रीन पर चाहिए।"
+    },
+
+    {
+      "id": "ask-01",
+      "intent": "ASK",
+      "pairs": ["ask_vs_replay"],
+      "en": "You heard the whole explanation perfectly clearly. It just didn't make sense to you.",
+      "hinglish": "Poori baat bilkul saaf suni. Bas samajh nahi aayi.",
+      "hi": "पूरी बात बिलकुल साफ़ सुनी। बस समझ नहीं आई।"
+    },
+    {
+      "id": "ask-02",
+      "intent": "ASK",
+      "pairs": ["ask_vs_replay"],
+      "en": "You can't remember the professor's name and you want to know it.",
+      "hinglish": "Professor ka naam yaad nahi aa raha aur jaanna hai.",
+      "hi": "प्रोफ़ेसर का नाम याद नहीं आ रहा और जानना है।"
+    },
+    {
+      "id": "ask-03",
+      "intent": "ASK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "You want to know what a peak actually means here — the meaning, not the place it was said.",
+      "hinglish": "Jaanna hai ki yahan peak ka matlab kya hai — matlab chahiye, jagah nahi.",
+      "hi": "जानना है कि यहाँ पीक का मतलब क्या है — अर्थ चाहिए, जगह नहीं।"
+    },
+    {
+      "id": "ask-04",
+      "intent": "ASK",
+      "pairs": ["ask_vs_replay"],
+      "en": "You're curious why he went back to the earlier slide.",
+      "hinglish": "Aapko jiggyasa hai ki wo pichhli slide par wapas kyun gaya.",
+      "hi": "आपको जिज्ञासा है कि वो पिछली स्लाइड पर वापस क्यों गया।"
+    },
+    {
+      "id": "ask-05",
+      "intent": "ASK",
+      "pairs": ["semantic_vs_ask"],
+      "en": "You want the difference between the two methods he has shown so far.",
+      "hinglish": "Usne ab tak jo do tarike dikhaye hain unme fark jaanna hai.",
+      "hi": "उसने अब तक जो दो तरीके दिखाए हैं उनमें फ़र्क जानना है।"
+    },
+    {
+      "id": "ask-06",
+      "intent": "ASK",
+      "pairs": ["note_vs_ask"],
+      "en": "You want to know whether this result is important enough to be on the exam.",
+      "hinglish": "Jaanna hai ki ye result itna important hai ki exam mein aaye.",
+      "hi": "जानना है कि ये परिणाम इतना ज़रूरी है कि परीक्षा में आए।"
+    },
+    {
+      "id": "ask-07",
+      "intent": "ASK",
+      "pairs": [],
+      "en": "He used a word you have never heard and you want it explained.",
+      "hinglish": "Usne ek shabd bola jo aapne kabhi suna nahi, uska matlab chahiye.",
+      "hi": "उसने एक शब्द बोला जो आपने कभी सुना नहीं, उसका अर्थ चाहिए।"
+    },
+    {
+      "id": "ask-08",
+      "intent": "ASK",
+      "pairs": ["note_vs_ask", "summarize_vs_ask"],
+      "en": "You want to test your own understanding: does his argument still hold if the array is already sorted?",
+      "hinglish": "Apni samajh jaanchni hai: agar array pehle se sorted ho to bhi uski baat sahi rehti hai kya?",
+      "hi": "अपनी समझ जाँचनी है: अगर सरणी पहले से क्रमबद्ध हो तो भी उसकी बात सही रहती है क्या?"
+    },
+
+    {
+      "id": "summarize-01",
+      "intent": "SUMMARIZE",
+      "pairs": ["summarize_vs_ask"],
+      "en": "You came back after ten minutes away and want the gist of what went past.",
+      "hinglish": "Das minute baahar rehkar wapas aaye ho aur jo nikal gaya uska saar chahiye.",
+      "hi": "दस मिनट बाहर रहकर लौटे हैं और जो निकल गया उसका सार चाहिए।"
+    },
+    {
+      "id": "summarize-02",
+      "intent": "SUMMARIZE",
+      "pairs": ["summarize_vs_ask"],
+      "en": "Before the next section starts you want the main points so far.",
+      "hinglish": "Agla section shuru hone se pehle ab tak ke main points chahiye.",
+      "hi": "अगला भाग शुरू होने से पहले अब तक के मुख्य बिंदु चाहिए।"
+    },
+    {
+      "id": "summarize-03",
+      "intent": "SUMMARIZE",
+      "pairs": [],
+      "en": "You're about to shut the laptop and want a short recap to hold on to.",
+      "hinglish": "Laptop band karne wale ho aur yaad rakhne ke liye chhota sa recap chahiye.",
+      "hi": "लैपटॉप बंद करने वाले हैं और याद रखने के लिए छोटा सा रीकैप चाहिए।"
+    },
+    {
+      "id": "summarize-04",
+      "intent": "SUMMARIZE",
+      "pairs": ["summarize_vs_ask"],
+      "en": "You want the whole lecture's point boiled down to a couple of lines.",
+      "hinglish": "Poore lecture ka nichod do line mein chahiye.",
+      "hi": "पूरे लेक्चर का निचोड़ दो लाइन में चाहिए।"
+    },
+    {
+      "id": "summarize-05",
+      "intent": "SUMMARIZE",
+      "pairs": ["summarize_vs_ask"],
+      "en": "Before investing an hour you want to know what this lecture is even about.",
+      "hinglish": "Ek ghanta lagane se pehle jaanna hai ki ye lecture hai kis baare mein.",
+      "hi": "एक घंटा लगाने से पहले जानना है कि ये लेक्चर है किस बारे में।"
+    },
+    {
+      "id": "summarize-06",
+      "intent": "SUMMARIZE",
+      "pairs": [],
+      "en": "You want the key takeaways from the last section only, not the whole lecture.",
+      "hinglish": "Sirf pichhle section ke key takeaways chahiye, poore lecture ke nahi.",
+      "hi": "सिर्फ़ पिछले भाग के मुख्य निष्कर्ष चाहिए, पूरे लेक्चर के नहीं।"
+    },
+
+    {
+      "id": "note-01",
+      "intent": "TAKE_NOTE",
+      "pairs": ["note_vs_ask"],
+      "en": "He said a peak always exists. You want that written down against this timestamp.",
+      "hinglish": "Usne kaha ki peak hamesha hota hai. Ye is timestamp ke saath likha jaana chahiye.",
+      "hi": "उसने कहा कि पीक हमेशा होता है। ये इस टाइमस्टैंप के साथ लिखा जाना चाहिए।"
+    },
+    {
+      "id": "note-02",
+      "intent": "TAKE_NOTE",
+      "pairs": [],
+      "en": "You want it on record for yourself that the exam covers up to chapter four.",
+      "hinglish": "Khud ke liye darj hona chahiye ki exam chapter chaar tak hai.",
+      "hi": "खुद के लिए दर्ज होना चाहिए कि परीक्षा अध्याय चार तक है।"
+    },
+    {
+      "id": "note-03",
+      "intent": "TAKE_NOTE",
+      "pairs": ["note_vs_ask"],
+      "en": "You want to leave yourself a reminder to revise this proof tonight.",
+      "hinglish": "Khud ke liye ek reminder chhodna hai ki aaj raat ye proof dohrana hai.",
+      "hi": "खुद के लिए एक याददाश्त छोड़नी है कि आज रात ये सबूत दोहराना है।"
+    },
+    {
+      "id": "note-04",
+      "intent": "TAKE_NOTE",
+      "pairs": [],
+      "en": "The running time he gave is n log n and you want it in your notes.",
+      "hinglish": "Usne running time n log n bataya hai aur ye notes mein chahiye.",
+      "hi": "उसने रनिंग टाइम n log n बताया है और ये नोट्स में चाहिए।"
+    },
+    {
+      "id": "note-05",
+      "intent": "TAKE_NOTE",
+      "pairs": ["note_vs_ask"],
+      "en": "You want to capture the caveat that this trick only works on sorted arrays.",
+      "hinglish": "Ye caveat darj karna hai ki ye trick sirf sorted array par chalti hai.",
+      "hi": "ये चेतावनी दर्ज करनी है कि ये तरकीब सिर्फ़ क्रमबद्ध सरणी पर चलती है।"
+    },
+    {
+      "id": "note-06",
+      "intent": "TAKE_NOTE",
+      "pairs": [],
+      "en": "You want to jot down a doubt so you can ask your TA later.",
+      "hinglish": "Ek doubt likh lena hai taaki baad mein TA se poochh sako.",
+      "hi": "एक शंका लिख लेनी है ताकि बाद में TA से पूछ सकें।"
+    },
+
+    {
+      "id": "stopspk-01",
+      "intent": "STOP_SPEAKING",
+      "pairs": ["stop_vs_pause"],
+      "en": "The assistant is reading out a long answer and you already have what you needed.",
+      "hinglish": "Assistant lamba jawab bol raha hai aur aapko jo chahiye tha mil chuka hai.",
+      "hi": "सहायक लंबा जवाब बोल रहा है और आपको जो चाहिए था मिल चुका है।"
+    },
+    {
+      "id": "stopspk-02",
+      "intent": "STOP_SPEAKING",
+      "pairs": ["stop_vs_pause"],
+      "en": "You asked something by mistake and its answer is now being spoken at you.",
+      "hinglish": "Galti se kuch poochh liya tha aur ab uska jawab bola ja raha hai.",
+      "hi": "गलती से कुछ पूछ लिया था और अब उसका जवाब बोला जा रहा है।"
+    },
+    {
+      "id": "stopspk-03",
+      "intent": "STOP_SPEAKING",
+      "pairs": ["stop_vs_pause"],
+      "en": "The spoken answer has wandered off the point and you don't want to hear the rest.",
+      "hinglish": "Bola ja raha jawab point se bhatak gaya hai aur baaki nahi sunna.",
+      "hi": "बोला जा रहा जवाब मुद्दे से भटक गया है और बाकी नहीं सुनना।"
+    },
+    {
+      "id": "stopspk-04",
+      "intent": "STOP_SPEAKING",
+      "pairs": [],
+      "en": "The answer was useful. You want to acknowledge it and end the exchange there.",
+      "hinglish": "Jawab kaam ka tha. Use maan kar baat wahin khatam karni hai.",
+      "hi": "जवाब काम का था। उसे मानकर बात वहीं खत्म करनी है।"
+    },
+    {
+      "id": "stopspk-05",
+      "intent": "STOP_SPEAKING",
+      "pairs": [],
+      "en": "The assistant keeps explaining something you already know well.",
+      "hinglish": "Assistant wahi samjhaye ja raha hai jo aapko achhe se aata hai.",
+      "hi": "सहायक वही समझाए जा रहा है जो आपको अच्छे से आता है।"
+    },
+    {
+      "id": "stopspk-06",
+      "intent": "STOP_SPEAKING",
+      "pairs": ["stop_vs_pause"],
+      "en": "You want the voice to cut out so the lecture, which is quiet underneath it, comes back.",
+      "hinglish": "Chahte ho ki ye awaaz band ho jaye taaki neeche dheema chal raha lecture wapas aaye.",
+      "hi": "चाहते हैं कि ये आवाज़ बंद हो जाए ताकि नीचे धीमा चल रहा लेक्चर वापस आए।"
+    },
+
+    {
+      "id": "oos-01",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "You want to know what you're even allowed to say to this thing.",
+      "hinglish": "Jaanna hai ki is cheez se bol kya kya sakte ho.",
+      "hi": "जानना है कि इस चीज़ से बोल क्या-क्या सकते हैं।"
+    },
+    {
+      "id": "oos-02",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "You start saying something, change your mind halfway and trail off.",
+      "hinglish": "Kuch bolna shuru karte ho, beech mein irada badal jata hai aur baat adhoori chhod dete ho.",
+      "hi": "कुछ बोलना शुरू करते हैं, बीच में इरादा बदल जाता है और बात अधूरी छोड़ देते हैं।"
+    },
+    {
+      "id": "oos-03",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "Someone in your room asks you something and the mic catches your reply to them.",
+      "hinglish": "Room mein kisi ne aapse kuch poochha aur mic ne unko diya gaya aapka jawab pakad liya.",
+      "hi": "कमरे में किसी ने आपसे कुछ पूछा और माइक ने उन्हें दिया गया आपका जवाब पकड़ लिया।"
+    },
+    {
+      "id": "oos-04",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "You ask it something with nothing to do with the lecture — the weather, what's for dinner.",
+      "hinglish": "Lecture se bilkul alag kuch poochh lete ho — mausam, raat ka khana.",
+      "hi": "लेक्चर से बिलकुल अलग कुछ पूछ लेते हैं — मौसम, रात का खाना।"
+    },
+    {
+      "id": "oos-05",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "You mutter to yourself while writing, not to the app at all.",
+      "hinglish": "Likhte hue khud se bud-budate ho, app se baat nahi kar rahe.",
+      "hi": "लिखते हुए खुद से बुदबुदाते हैं, ऐप से बात नहीं कर रहे।"
+    },
+    {
+      "id": "oos-06",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "Out of habit you greet it the way you'd greet a person.",
+      "hinglish": "Aadat se ise waise hi greet kar dete ho jaise kisi insaan ko karte ho.",
+      "hi": "आदत से इसे वैसे ही नमस्ते कह देते हैं जैसे किसी इंसान को कहते हैं।"
+    },
+    {
+      "id": "oos-07",
+      "intent": "OOS",
+      "pairs": [],
+      "en": "You clear your throat and make a couple of filler sounds. Nothing more.",
+      "hinglish": "Gala saaf karte ho aur do chaar bharav wali awaazein nikalte ho. Bas itna hi.",
+      "hi": "गला साफ़ करते हैं और दो-चार भरावन वाली आवाज़ें निकालते हैं। बस इतना ही।"
+    }
+  ]
+}

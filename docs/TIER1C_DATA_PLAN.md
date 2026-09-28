@@ -59,21 +59,32 @@ re-recording is never needed if the STT changes.
 | VOLUME vs SPEED | "too fast" / "too loud" / "slow down" / "dheere" (dheere = slower **or** quieter) | complaints phrased as adjectives |
 | SEEK_ABSOLUTE vs SEEK_FORWARD | "go to 12:30" vs "12 minute aage" | Hindi numbers, "saade", "sawa", "paune" |
 
-**Decision needed before labeling (taxonomy is frozen, but the rule isn't written):** "I missed the bit where he defined
-X" names a topic, so it's a **SEMANTIC_SEEK** to the definition, or a REPLAY if no topic is named. My proposal:
-*topic named → SEMANTIC_SEEK, no topic → REPLAY*. Confirm it, and I'll add it to the labeling rules and the corpus.
+**Decided (Rishi, 28 Sep 2026):** *a topic named → SEMANTIC_SEEK, no topic → REPLAY.* So "I missed the bit where he
+defined the peak" is SEMANTIC_SEEK (jump to the definition) and "I missed that" is REPLAY. The rule is in the labeling
+rules at the top of `backend/tests/voice_corpus.py`; the regex classifier still gets these wrong, which is exactly what
+Tier 1c has to fix — keep them in the test set, don't tune the regex to them.
 
-## 5. What I can build next to make recording fast (say go)
+## 5. The Collect page (built)
 
-A dev-only **Collect** page in the app:
-- it shows a random scenario card (EN/HI) for a chosen speaker;
-- hold `~` to record, using the same `lib/audioCapture.ts` path as the app;
-- it saves the WebM clip + browser text + `/api/stt` text + the intended label;
-- it exports a ZIP (audio) + JSONL (labels) at the end of the session.
+`frontend/src/pages/CollectPage.tsx`, behind `VITE_COLLECT=true` (its own flag, not
+`VITE_DEMO_PREVIEW`) — the route and its chunk do not exist in a normal build. **Runbook:
+`docs/TIER1C_COLLECT.md`.**
 
-With that, a speaker can do their 70–110 clips in about 20 minutes. The same run also gives the D14 STT comparison
-(browser vs Groq vs Sarvam) for free.
+- one scenario card at a time from `frontend/src/lib/collectScenarios.json` (91 situations × 3
+  languages, every intent ≥ 5, the §4 pairs tagged), shown only in the card's language and never as
+  the command itself;
+- hold `~` to record through the same `lib/audioCapture.ts` the app uses, with the lecture ducking to
+  15% underneath; the card advances on key-up so nothing waits on the network;
+- per clip it stores the schema of §3 (audio blob included, in IndexedDB so a reload costs nothing)
+  and exports `real_speech_<speaker>_<date>.zip` (audio + `labels.jsonl`) plus the bare JSONL;
+- `backend/tests/test_collect_scenarios.py` keeps the deck in step with `orchestration/intents.py`
+  and with the §4 pair list.
 
-Then the Tier 1c pipeline itself (`ml/`): synthetic set from the corpus + paraphrases → the same `normalize()` → the
-regex baseline, TF-IDF+LogReg, DistilBERT (+ multilingual variant) → ONNX INT8 → calibration/τ sweep →
-`CLASSIFIER=onnx`, reported on the real-speech test set per STT provider.
+**Sarvam is configured but never runs on these clips:** its `/speech-to-text` rejects
+`audio/webm;codecs=opus`, so `/api/stt` falls through to Groq Whisper for every browser recording —
+in this page and in the live app. `sarvam_text` stays empty until `services/speech.py` sends WAV or
+MP3. Keeping the audio (§1) is what makes that recoverable: transcode and re-run, nobody re-records.
+
+Then the Tier 1c pipeline itself (`ml/`): synthetic set from the corpus + paraphrases → the same
+`normalize()` → the regex baseline, TF-IDF+LogReg, DistilBERT (+ multilingual variant) → ONNX INT8 →
+calibration/τ sweep → `CLASSIFIER=onnx`, reported on the real-speech test set per STT provider.

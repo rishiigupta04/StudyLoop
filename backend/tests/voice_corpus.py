@@ -15,6 +15,7 @@ Labeling rules worth knowing (they also apply to Tier 1c data):
 - "It's too fast" is SPEED down; "too loud" is VOLUME down (complaints invert the adjective).
 - Undo / "go back to where I was", restart, go to the end/middle/N% are SEEK_ABSOLUTE.
 - Questions that merely contain command words ("why did he go back?") are ASK, never a player action.
+- "I missed the bit where he defined X" names a topic → SEMANTIC_SEEK; "I missed that" (no topic) → REPLAY.
 - "help" / "what can I say" is OOS (llm_router answers with the command list).
 """
 
