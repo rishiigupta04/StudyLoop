@@ -1,7 +1,8 @@
 """Hosted speech (roadmap D14): speech-to-text for push-to-talk and text-to-speech for answers.
 
-STT: the browser records the push-to-talk audio (WebM/Opus) and posts it to `/api/stt`. Providers are
-tried in order (`STT_PROVIDERS`):
+STT: the browser records the push-to-talk audio (WebM/Opus), converts it to 16 kHz mono WAV
+(`frontend/src/lib/wav.ts` — Sarvam rejects WebM) and posts it to `/api/stt`; a browser that can't
+decode sends the WebM as-is and Groq takes it. Providers are tried in order (`STT_PROVIDERS`):
 - **Sarvam Saaras v3**, `mode=codemix`: trained on Indian code-mixed speech; English words come back in
   Latin script, Hindi in Devanagari, numbers as digits ("30 second आगे जाओ") — exactly what `normalize()`
   handles. Language is auto-detected per utterance, so the UI toggle never forces a script.
@@ -31,8 +32,18 @@ from app.services.http import shared_client
 log = logging.getLogger("studyloop.speech")
 
 GROQ_BASE = "https://api.groq.com/openai/v1"
-MAX_AUDIO_BYTES = 2_000_000  # ~2 min of Opus; REST STT caps at 30 s anyway
-MIN_AUDIO_BYTES = 800  # a tap of the key: nothing was said
+MAX_AUDIO_BYTES = 2_000_000  # ~2 min of Opus, ~60 s of 16 kHz WAV; REST STT caps at 30 s anyway
+# "a tap of the key: nothing was said" — in bytes, so it depends on the codec. Opus at 32 kbps packs a
+# fifth of a second into 800 bytes; uncompressed 16 kHz mono PCM spends that in 25 ms, so WAV needs its
+# own floor or a stray keypress would still buy an STT call.
+MIN_AUDIO_BYTES = 800
+MIN_WAV_BYTES = 44 + 16_000 * 2 // 5  # header + 200 ms of 16 kHz mono PCM16
+
+
+def _min_bytes(content_type: str) -> int:
+    return MIN_WAV_BYTES if "wav" in content_type or "wave" in content_type else MIN_AUDIO_BYTES
+
+
 MAX_TTS_CHARS = 1200
 
 # Whisper's context prompt: sets the style (Hinglish in Latin letters, digits, our command vocabulary)
@@ -70,6 +81,20 @@ class SttUnavailable(SttError):
     """No provider configured: the client keeps its browser transcript."""
 
 
+def _filename(content_type: str) -> str:
+    """Providers sniff the extension as well as the MIME type, so keep the two in step."""
+    base = (content_type or "").split(";")[0].strip().lower()
+    return "speech." + {
+        "audio/wav": "wav",
+        "audio/x-wav": "wav",
+        "audio/wave": "wav",
+        "audio/mpeg": "mp3",
+        "audio/mp3": "mp3",
+        "audio/mp4": "m4a",
+        "audio/ogg": "ogg",
+    }.get(base, "webm")
+
+
 def _clean(text: str) -> str:
     text = " ".join((text or "").split())
     return "" if text.lower() in _HALLUCINATIONS else text
@@ -85,7 +110,7 @@ class SarvamStt:
         r = await shared_client().post(
             f"{self._s.sarvam_base}/speech-to-text",
             headers={"api-subscription-key": self._s.sarvam_api_key},
-            files={"file": ("speech.webm", audio, content_type)},
+            files={"file": (_filename(content_type), audio, content_type)},
             data={
                 "model": self._s.sarvam_stt_model,
                 "mode": self._s.sarvam_stt_mode,
@@ -113,7 +138,7 @@ class GroqWhisperStt:
         r = await shared_client().post(
             f"{GROQ_BASE}/audio/transcriptions",
             headers={"Authorization": f"Bearer {self._s.groq_api_key}"},
-            files={"file": ("speech.webm", audio, content_type)},
+            files={"file": (_filename(content_type), audio, content_type)},
             data=data,
             timeout=self._s.stt_timeout_s,
         )
@@ -147,7 +172,7 @@ async def transcribe(
     providers = stt_providers(settings) if providers is None else providers
     if not providers:
         raise SttUnavailable("no STT provider configured")
-    if len(audio) < MIN_AUDIO_BYTES:
+    if len(audio) < _min_bytes(content_type):
         return SttResult(text="", language=None, provider="none", ms=0.0)
     errors: list[str] = []
     for p in providers:

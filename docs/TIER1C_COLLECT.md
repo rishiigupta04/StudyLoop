@@ -77,19 +77,23 @@ Adding a scenario is a JSON edit; the test tells you if it breaks the balance.
 
 ## Known limits
 
-- **Sarvam STT never sees these clips.** The key is configured and Sarvam works (an MP3 round-trips
-  in ~540 ms), but its `/speech-to-text` rejects `audio/webm;codecs=opus` — *"Only ['audio/mpeg',
-  'audio/mp3', …, 'audio/wav', …]"* — so `/api/stt` falls through to Groq Whisper for every browser
-  recording, in this page **and in the live app**. `sarvam_text` therefore stays empty for now. This
-  is exactly why the audio is kept: a `webm → wav` transcode re-runs Sarvam over the whole corpus
-  later without re-recording anyone. Fixing it properly means transcoding (or recording WAV) in
-  `services/speech.py` — a D14 change, not a Collect-page one.
 - **`browser_text` needs Chrome or Edge** with microphone permission; the Web Speech API uses the
   real device, not the recorded blob. Where it is unavailable the page says so and the field stays
   empty.
-- Groq romanizes Hindi and sometimes translates it outright ("रनिंग टाइम वाले हिस्से पर ले चलो" came
-  back as "take it to the part of running time"). That is a finding for the per-provider accuracy
-  table, not a bug.
+- Providers disagree about script, which is the whole point of collecting both. Groq romanizes Hindi
+  and sometimes translates it outright ("रनिंग टाइम वाले हिस्से पर ले चलो" came back as "take it to the
+  part of running time"); Sarvam's codemix mode usually keeps English terms in Latin
+  ("जहां उसने binary search समझाया") but sometimes writes them in Devanagari. Findings for the
+  per-provider accuracy table, not bugs — and `retrieval` repairs the Devanagari case either way
+  (`app/services/term_repair.py`).
+
+### Fixed 28 Sep: Sarvam now runs
+
+Sarvam's `/speech-to-text` rejects `audio/webm;codecs=opus`, so until this was fixed every clip
+silently fell through to Groq and `sarvam_text` was always empty — in this page and in the live app.
+`frontend/src/lib/wav.ts` now converts to 16 kHz mono WAV inside `transcribeAudio` before the POST.
+The **stored** clip is still the original Opus (`audio_type: audio/webm;codecs=opus`), so the corpus
+audio is unchanged and any provider can still be re-run over it later.
 
 ## Verified by Claude (28 Sep 2026, backend-1a + frontend-1a)
 
@@ -105,6 +109,9 @@ place of the microphone (the pane blocks device capture), so `audioCapture` → 
   audio blobs (3.8–6.2 kB) and transcripts intact.
 - Export JSONL: 4 rows, schema above, Devanagari intact. Export ZIP: 22,730 bytes, 5 entries
   (4 × `audio/<clip_id>.webm` + `labels.jsonl`), all stored.
+- After the WAV fix (28 Sep, re-run): both clips transcribed by **`sarvam`** in 257 ms and 378 ms with
+  no fallback in the server log, `sarvam_text` populated in the exported JSONL for the first time, and
+  `audio_type` still `audio/webm;codecs=opus`.
 - The ZIP writer separately round-tripped a 20 kB binary through Python's `zipfile`:
   `testzip()` → `None` (CRCs pass), bytes identical, UTF-8 filenames and content preserved.
 - Builds: with `VITE_COLLECT=true` a separate 62 kB `CollectPage` chunk; without it, no chunk and no

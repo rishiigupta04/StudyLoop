@@ -10,7 +10,7 @@ With D14, the text the classifier sees in production comes from **hosted STT** (
 Whisper → browser fallback), not the browser recognizer. They produce different text for the same speech: Saaras writes
 Hindi in Devanagari and numbers as digits; Whisper often romanizes; the browser guesses one language up front.
 
-So **keep the audio of every clip**. Transcribe it with each provider (Sarvam once the key exists, Groq now, browser
+So **keep the audio of every clip**. Transcribe it with each provider (Sarvam and Groq through `/api/stt`, browser
 text captured live) and report accuracy per provider. The headline number is for the provider we ship, and
 re-recording is never needed if the STT changes.
 
@@ -80,10 +80,11 @@ Tier 1c has to fix — keep them in the test set, don't tune the regex to them.
 - `backend/tests/test_collect_scenarios.py` keeps the deck in step with `orchestration/intents.py`
   and with the §4 pair list.
 
-**Sarvam is configured but never runs on these clips:** its `/speech-to-text` rejects
-`audio/webm;codecs=opus`, so `/api/stt` falls through to Groq Whisper for every browser recording —
-in this page and in the live app. `sarvam_text` stays empty until `services/speech.py` sends WAV or
-MP3. Keeping the audio (§1) is what makes that recoverable: transcode and re-run, nobody re-records.
+**Sarvam runs on these clips since 28 Sep.** Its `/speech-to-text` rejects `audio/webm;codecs=opus`,
+so until then `/api/stt` fell through to Groq Whisper for every browser recording — in this page and in
+the live app. `frontend/src/lib/wav.ts` now sends 16 kHz WAV, so `sarvam_text` populates live while the
+stored clip stays Opus (`docs/BILINGUAL_ROBUSTNESS.md`). Keeping the audio (§1) still means any
+provider can be re-run later without re-recording anyone.
 
 Then the Tier 1c pipeline itself (`ml/`): synthetic set from the corpus + paraphrases → the same
 `normalize()` → the regex baseline, TF-IDF+LogReg, DistilBERT (+ multilingual variant) → ONNX INT8 →

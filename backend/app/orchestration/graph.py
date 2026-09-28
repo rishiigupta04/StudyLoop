@@ -227,6 +227,10 @@ def transcript_gate(state: StudyState) -> str | None:
 # retrieval thresholds (BGE-M3 cosine), calibrated on MIT 6.006 L1 (HtSuA80QTyo): relevant chunks score
 # 0.58–0.65, an off-topic query ("quantum physics") tops out at 0.45 — see docs/TIER1B_SMOKE_TEST.md
 SEEK_MIN_SIM = 0.5  # below this the best chunk isn't really about the topic
+SEEK_STRONG_SIM = 0.58  # …and with no word overlap at all, only the "relevant" band counts. A query
+# whose terms the transcript never uses — a romanized Hindi term `term_repair` could not anchor — ranks
+# on the embedding alone and lands in the 0.50–0.58 grey zone, i.e. right only by luck. Say "I couldn't
+# find it" rather than seek on a coin flip.
 SEEK_ALT_MARGIN = 0.015  # a second match this close in similarity…
 SEEK_ALT_MIN_LEX = 0.5  # …that also shares the topic words (≥ half the best BM25)…
 SEEK_ALT_MIN_GAP_S = 120.0  # …somewhere else in the video → "did you mean"
@@ -277,9 +281,12 @@ def seek_resolver(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
         best.lex,
         ", ".join(f"{L.fmt_clock(h.start_s)}={h.sim:.3f}" for h in hits[1:4] if h.sim is not None),
     )
-    confident = best.sim >= SEEK_MIN_SIM if best.sim is not None else best.lex > 0
+    if best.sim is None:
+        confident = best.lex > 0
+    else:
+        confident = best.sim >= (SEEK_MIN_SIM if best.lex > 0 else SEEK_STRONG_SIM)
     if not confident:
-        log.info("seek: best sim %.3f below threshold for %r", best.sim or 0.0, topic)
+        log.info("seek: best sim %.3f lex %.2f below threshold for %r", best.sim or 0.0, best.lex, topic)
         return {"route": "seek", "answer_key": "TOPIC_NOT_FOUND"}
 
     def close(h: Any) -> bool:

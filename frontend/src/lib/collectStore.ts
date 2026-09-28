@@ -36,7 +36,7 @@ export interface ClipRecord {
   audio_type: string;
   /** what the browser recognizer heard (the Tier 0 path) */
   browser_text: string;
-  /** what POST /api/stt returned — Groq Whisper today, Sarvam Saaras once the key exists */
+  /** what POST /api/stt returned — Sarvam Saaras, or Groq Whisper when Sarvam fails (see stt_provider) */
   stt_text: string;
   stt_provider: string;
   stt_ms: number | null;

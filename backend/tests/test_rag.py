@@ -11,6 +11,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from app.orchestration.graph import TurnDeps, build_graph, new_turn_input
 from app.services.llm import LLMError
 from app.services.retrieval import Retriever
+from app.services.term_repair import skeleton
 from app.services.video_repo import InMemoryVideoRepo
 
 VID = "lecture0001"
@@ -171,6 +172,35 @@ def test_semantic_seek_lexical_only_when_embedder_down(graph):
 def test_semantic_seek_without_vectors(graph):
     out, _, _ = turn(graph, "go to the part about memoization", embedded=False)
     assert out["action"]["seconds"] == 720.0
+
+
+# ------------------------------------------------- romanized Hindi topics (term repair, bilingual fix)
+# Chrome and Sarvam both write a spoken English term in Devanagari, which normalize() romanizes
+# phonetically: "रिकर्शन" → "rikarshan", a word no English transcript contains. Retrieval repairs it
+# against the video's own vocabulary; without that, BM25 scores zero and seek lands on a wrong chunk.
+def test_devanagari_topic_reaches_the_same_chunk_as_english(graph):
+    english, _, _ = turn(graph, "skip to the part about recursion")
+    hindi, _, _ = turn(graph, "रिकर्शन वाला हिस्सा दिखाओ", lang="hi")
+    assert english["action"]["seconds"] == 540.0
+    assert hindi["action"] == english["action"], "a Hindi speaker must land where an English one does"
+
+
+def test_romanized_topic_still_works_when_the_embedder_is_down(graph):
+    """The repair is what feeds BM25, so it has to carry the lexical-only path on its own."""
+    out, _, _ = turn(graph, "rikarshan wala part dikhao", lang="hi", embedder=KeywordEmbedder(fail=True))
+    assert out["action"]["seconds"] == 540.0
+
+
+def test_repair_never_invents_a_topic_the_lecture_lacks(graph):
+    """Nothing in this lecture sounds like it, so say so rather than repairing to the nearest word."""
+    out, _, _ = turn(graph, "क्वांटम फिजिक्स वाला हिस्सा दिखाओ", lang="hi")
+    assert out["action"] is None and out["answer_key"] == "TOPIC_NOT_FOUND"
+
+
+def test_the_repair_map_is_built_from_the_lecture_itself(graph):
+    _, _, deps = turn(graph, "skip to the part about recursion")
+    index = asyncio.run(deps.retriever.index(VID))
+    assert index.repairs[skeleton("rikarshan")] == ["recursion"]  # its own transcript, nothing else
 
 
 # ---------------------------------------------------------------- Q&A + anti-spoiler (roadmap done-when)

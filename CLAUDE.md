@@ -69,6 +69,14 @@ npm run type-check && npm run build
   audio in IndexedDB, ZIP (audio + `labels.jsonl`) and JSONL export. **Awaiting:** the first
   real-speaker session. Next: `ml/` pipeline.
 
+- Bilingual robustness pass (28 Sep, `docs/BILINGUAL_ROBUSTNESS.md`): `services/term_repair.py` maps a
+  phonetically romanized term back to the transcript's own spelling ("baainri sarch" → "binary search")
+  using the video's vocabulary, so BM25 stops scoring zero on Hindi-spoken topics; added as an extra
+  query in `retrieval.rank`, so English queries are byte-for-byte unchanged. `seek_resolver` now needs
+  word overlap *or* `sim ≥ SEEK_STRONG_SIM` (0.58) before it jumps, instead of seeking on a grey-zone
+  0.5x match. `lib/wav.ts` converts PTT audio to 16 kHz mono WAV for `/api/stt` — Sarvam Saaras rejects
+  WebM/Opus and had **never once run** before this; clips are still stored as Opus.
+
 ## Next up (in order)
 1. Tier 0 / 0b / 1a / 1b manual passes (above), then:
 2. **Tier 1c** classifier (ML track — data collection can start in parallel now; see roadmap §3 + Tier 1c).

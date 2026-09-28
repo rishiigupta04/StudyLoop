@@ -4,6 +4,7 @@
  * SpeechRecognition / speechSynthesis. A 503 is remembered for the page's life (no retry per sentence).
  */
 
+import { toWav16k } from '@/lib/wav';
 import { API_URL, getAccessToken } from './apiClient';
 
 export interface SttResult {
@@ -28,9 +29,12 @@ export function hostedSttAvailable(): boolean {
 
 export async function transcribeAudio(blob: Blob, language: 'en' | 'hi'): Promise<SttResult | null> {
   if (sttUnavailable) return null;
+  // Sarvam Saaras (the code-mix model) refuses WebM/Opus, so send WAV and keep Opus for storage.
+  // If this browser can't decode it, post the original: the Groq fallback takes WebM.
+  const upload = (await toWav16k(blob)) ?? blob;
   const form = new FormData();
-  const ext = blob.type.includes('ogg') ? 'ogg' : blob.type.includes('mp4') ? 'm4a' : 'webm';
-  form.append('file', blob, `speech.${ext}`);
+  const ext = upload.type.includes('wav') ? 'wav' : upload.type.includes('ogg') ? 'ogg' : upload.type.includes('mp4') ? 'm4a' : 'webm';
+  form.append('file', upload, `speech.${ext}`);
   form.append('language', language);
   const ctl = new AbortController();
   const timer = window.setTimeout(() => ctl.abort(), STT_TIMEOUT_MS);

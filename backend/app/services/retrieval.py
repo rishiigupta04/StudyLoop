@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.services.embedder import Embedder, pad_to_store
+from app.services.term_repair import build_repair_map, repair
 from app.services.video_repo import VideoRepo
 
 log = logging.getLogger("studyloop.retrieval")
@@ -70,10 +71,18 @@ class VideoIndex:
     df: Counter = field(default_factory=Counter)
     avgdl: float = 1.0
     loaded_at: float = field(default_factory=time.monotonic)
+    _repairs: dict[str, list[str]] | None = field(default=None, repr=False)
 
     @property
     def has_vectors(self) -> bool:
         return bool(self.embed_model) and any(c.vec is not None for c in self.chunks)
+
+    @property
+    def repairs(self) -> dict[str, list[str]]:
+        """Skeleton → transcript words, for repairing romanized queries. Built on first use."""
+        if self._repairs is None:
+            self._repairs = build_repair_map(self.df)
+        return self._repairs
 
     def bm25(self, q: list[str], c: IndexedChunk, k1: float = 1.2, b: float = 0.75) -> float:
         n = len(self.chunks)
@@ -165,6 +174,21 @@ class Retriever:
             log.warning("query embedding failed (%s); lexical ranking only", exc)
             return None
 
+    @staticmethod
+    def _with_repairs(index: VideoIndex, queries: list[str]) -> list[str]:
+        """Add a transcript-spelled variant of each query ("baainri sarch" → "binary search").
+
+        Added, never substituted: the original still reaches the cross-lingual embedder, so a wrong
+        repair can only contribute an extra ranking, never remove the signal we already had."""
+        out = list(queries)
+        for q in queries:
+            fixed = repair(q, index.repairs, index.df, skip=STOPWORDS)
+            if fixed and fixed not in out:
+                out.append(fixed)
+        if len(out) > len(queries):
+            log.info("query repair: %s", [q for q in out[len(queries) :]])
+        return out
+
     async def rank(self, video_id: str, queries: list[str]) -> list[Hit]:
         """Every chunk of the video, best first. Callers apply their own time filter (so one ranking
         serves both the watched-only answer and the "is this coming later?" check)."""
@@ -172,6 +196,7 @@ class Retriever:
         queries = [q for q in dict.fromkeys(q.strip() for q in queries) if q]
         if index is None or not queries:
             return []
+        queries = self._with_repairs(index, queries)
         qvecs = await self._embed(index.embed_model, queries) if index.has_vectors else None
 
         fused: dict[int, float] = {}
