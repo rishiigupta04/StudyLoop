@@ -75,7 +75,9 @@ npm run type-check && npm run build
   query in `retrieval.rank`, so English queries are byte-for-byte unchanged. `seek_resolver` now needs
   word overlap *or* `sim ≥ SEEK_STRONG_SIM` (0.58) before it jumps, instead of seeking on a grey-zone
   0.5x match. `lib/wav.ts` converts PTT audio to 16 kHz mono WAV for `/api/stt` — Sarvam Saaras rejects
-  WebM/Opus and had **never once run** before this; clips are still stored as Opus.
+  WebM/Opus and had **never once run** before this; clips are still stored as Opus. A top-bar **Sarvam | Groq**
+  switch sends `prefer` with every `/api/stt` call (chosen provider first, the other as fallback; `STT_PROVIDERS`
+  stays the server-side kill switch; TTS is Sarvam either way).
 
 ## Next up (in order)
 1. Tier 0 / 0b / 1a / 1b manual passes (above), then:

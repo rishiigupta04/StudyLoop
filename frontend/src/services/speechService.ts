@@ -27,6 +27,37 @@ export function hostedSttAvailable(): boolean {
   return !sttUnavailable;
 }
 
+/**
+ * Which hosted STT serves push-to-talk — the Sarvam | Groq switch in the study page's top bar.
+ * Sarvam Saaras is the Indian code-mix model and spends Sarvam credit on every turn; Groq Whisper is
+ * the free fallback. The server tries the chosen one first and keeps the other behind it, and
+ * `STT_PROVIDERS` still decides what is allowed at all. Read on every call, so a flip applies to the
+ * very next turn (the Collect page follows it too).
+ */
+export type SttProvider = 'sarvam' | 'groq';
+const STT_KEY = 'studyloop.stt';
+
+let sttProvider: SttProvider = (() => {
+  try {
+    return localStorage.getItem(STT_KEY) === 'groq' ? 'groq' : 'sarvam';
+  } catch {
+    return 'sarvam';
+  }
+})();
+
+export function getSttProvider(): SttProvider {
+  return sttProvider;
+}
+
+export function setSttProvider(provider: SttProvider): void {
+  sttProvider = provider;
+  try {
+    localStorage.setItem(STT_KEY, provider);
+  } catch {
+    /* private mode: the choice holds for this tab */
+  }
+}
+
 export async function transcribeAudio(blob: Blob, language: 'en' | 'hi'): Promise<SttResult | null> {
   if (sttUnavailable) return null;
   // Sarvam Saaras (the code-mix model) refuses WebM/Opus, so send WAV and keep Opus for storage.
@@ -36,6 +67,7 @@ export async function transcribeAudio(blob: Blob, language: 'en' | 'hi'): Promis
   const ext = upload.type.includes('wav') ? 'wav' : upload.type.includes('ogg') ? 'ogg' : upload.type.includes('mp4') ? 'm4a' : 'webm';
   form.append('file', upload, `speech.${ext}`);
   form.append('language', language);
+  form.append('prefer', sttProvider);
   const ctl = new AbortController();
   const timer = window.setTimeout(() => ctl.abort(), STT_TIMEOUT_MS);
   try {

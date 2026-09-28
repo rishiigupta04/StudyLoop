@@ -65,6 +65,16 @@ Two follow-ons in `app/services/speech.py`: the upload filename now tracks the c
 sniff both), and the "nothing was said" floor is codec-aware — 800 bytes is ~200 ms of Opus but only
 ~25 ms of PCM, so WAV needed its own threshold or a stray keypress would still buy an STT call.
 
+### Switching provider: the Sarvam | Groq switch
+
+Once Sarvam runs, every push-to-talk turn spends Sarvam credit, so the study page's top bar has a
+**Sarvam | Groq** switch (`md` screens and up). `speechService` sends it as `prefer` on every
+`/api/stt` call, so a flip applies to the very next turn with no redeploy. The chosen provider goes
+first and the other stays behind it as the fallback, so an outage still gets a transcript.
+`STT_PROVIDERS` on the server stays the kill switch: a provider missing from it (or without a key)
+can't be reached from the switch. It is stored per browser (`studyloop.stt`, default Sarvam), and the
+Collect page follows it. Spoken answers (TTS) still use Sarvam Bulbul either way.
+
 ## Verified
 
 - 1149 backend tests (30 new in `test_term_repair.py`, 4 in `test_rag.py`), ruff, ruff format, tsc,
@@ -76,6 +86,9 @@ sniff both), and the "nothing was said" floor is codec-aware — 800 bytes is ~2
   255–728 ms, zero fallbacks in the server log.
 - Collect page end to end: `sarvam_text` populated in the exported JSONL for the first time, with
   `audio_type` still `audio/webm;codecs=opus`.
+- The switch, with real clicks in the top bar: a recorded WebM clip through the shipped
+  `transcribeAudio` was served by `groq` (378 ms) in Groq mode and by `sarvam` (264 ms) in Sarvam
+  mode, and the server log showed only the chosen provider's STT endpoint each time.
 
 **Not verified:** a real microphone and real human speech (the browser pane blocks device capture) —
 that needs Rishi's spoken pass. Whether Sarvam or Groq should lead `STT_PROVIDERS` is now a question the

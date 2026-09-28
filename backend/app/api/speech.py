@@ -19,6 +19,7 @@ router = APIRouter(tags=["speech"])
 async def speech_to_text(
     file: UploadFile = File(...),
     language: str = Form("en"),
+    prefer: str = Form(""),  # "sarvam" | "groq": the top-bar switch; empty = STT_PROVIDERS order
     _user: User = Depends(current_user),
     settings: Settings = Depends(get_settings),
 ) -> dict:
@@ -27,7 +28,11 @@ async def speech_to_text(
         raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Audio too long")
     try:
         r = await speech.transcribe(
-            settings, audio, file.content_type or "audio/webm", "hi" if language == "hi" else "en"
+            settings,
+            audio,
+            file.content_type or "audio/webm",
+            "hi" if language == "hi" else "en",
+            prefer=prefer or None,
         )
     except speech.SttUnavailable as exc:
         raise HTTPException(

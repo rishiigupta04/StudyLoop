@@ -167,11 +167,21 @@ def stt_providers(settings: Settings) -> list[SarvamStt | GroqWhisperStt]:
 
 
 async def transcribe(
-    settings: Settings, audio: bytes, content_type: str, lang_hint: str = "en", providers=None
+    settings: Settings,
+    audio: bytes,
+    content_type: str,
+    lang_hint: str = "en",
+    providers=None,
+    prefer: str | None = None,
 ) -> SttResult:
     providers = stt_providers(settings) if providers is None else providers
     if not providers:
         raise SttUnavailable("no STT provider configured")
+    if prefer:
+        # the top-bar switch: that provider goes first, the rest stay behind it as fallbacks in config
+        # order. It only reorders what STT_PROVIDERS allows, so the server keeps the kill switch; an
+        # unknown or unconfigured name changes nothing.
+        providers = sorted(providers, key=lambda p: p.name != prefer)
     if len(audio) < _min_bytes(content_type):
         return SttResult(text="", language=None, provider="none", ms=0.0)
     errors: list[str] = []

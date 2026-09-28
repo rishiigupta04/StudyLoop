@@ -89,6 +89,76 @@ def test_provider_order_follows_config():
     assert [p.name for p in speech.stt_providers(settings(groq_api_key="g"))] == ["groq"]
 
 
+# ------------------------------------------------------------------ the top-bar Sarvam | Groq switch
+def recording_client(monkeypatch, fail: str = ""):
+    """Answers as whichever provider is asked, and records the order they were asked in."""
+    hosts: list[str] = []
+
+    def handler(req):
+        name = "sarvam" if "sarvam" in req.url.host else "groq"
+        hosts.append(name)
+        if name == fail:
+            return httpx.Response(500, text="down")
+        return httpx.Response(200, json={"transcript": f"via {name}", "text": f"via {name}"})
+
+    mock_client(monkeypatch, handler)
+    return hosts
+
+
+async def test_the_preferred_provider_serves_first(monkeypatch):
+    both = settings(sarvam_api_key="s", groq_api_key="g")  # config order: sarvam, groq
+    hosts = recording_client(monkeypatch)
+    assert (await speech.transcribe(both, AUDIO, "audio/webm", prefer="groq")).provider == "groq"
+    assert hosts == ["groq"]  # Sarvam is never called, so no credit is spent
+
+    flipped = settings(sarvam_api_key="s", groq_api_key="g", stt_providers="groq,sarvam")
+    assert (await speech.transcribe(flipped, AUDIO, "audio/webm", prefer="sarvam")).provider == "sarvam"
+
+
+async def test_the_other_provider_stays_as_the_fallback(monkeypatch):
+    hosts = recording_client(monkeypatch, fail="groq")
+    r = await speech.transcribe(
+        settings(sarvam_api_key="s", groq_api_key="g"), AUDIO, "audio/webm", prefer="groq"
+    )
+    assert r.provider == "sarvam" and hosts == ["groq", "sarvam"]  # a failed turn is worse than a credit
+
+
+async def test_a_preference_cannot_enable_what_the_server_disallows(monkeypatch):
+    """STT_PROVIDERS stays the kill switch: no key or not listed means the switch can't reach it."""
+    recording_client(monkeypatch)
+    only_groq = settings(sarvam_api_key="s", groq_api_key="g", stt_providers="groq")
+    assert (await speech.transcribe(only_groq, AUDIO, "audio/webm", prefer="sarvam")).provider == "groq"
+    no_key = settings(groq_api_key="g")
+    assert (await speech.transcribe(no_key, AUDIO, "audio/webm", prefer="sarvam")).provider == "groq"
+    both = settings(sarvam_api_key="s", groq_api_key="g")
+    assert (await speech.transcribe(both, AUDIO, "audio/webm", prefer="whisper")).provider == "sarvam"
+
+
+# ------------------------------------------------------------------ WAV uploads (Sarvam rejects WebM)
+@pytest.mark.parametrize(
+    "ctype,name",
+    [
+        ("audio/wav", "speech.wav"),
+        ("audio/x-wav", "speech.wav"),
+        ("audio/webm;codecs=opus", "speech.webm"),
+        ("audio/mpeg", "speech.mp3"),
+        ("", "speech.webm"),
+    ],
+)
+def test_upload_filename_follows_the_content_type(ctype, name):
+    assert speech._filename(ctype) == name
+
+
+async def test_wav_has_its_own_silence_floor(monkeypatch):
+    """800 bytes is a fifth of a second of Opus but only 25 ms of PCM: a stray tap must stay free."""
+    hosts = recording_client(monkeypatch)
+    tap = b"RIFF" + b"\x00" * (speech.MIN_WAV_BYTES - 10)
+    r = await speech.transcribe(settings(groq_api_key="g"), tap, "audio/wav")
+    assert r.provider == "none" and hosts == []
+    same_size_opus = await speech.transcribe(settings(groq_api_key="g"), tap, "audio/webm")
+    assert same_size_opus.provider == "groq"  # the Opus floor is lower, so this one is real speech
+
+
 # ------------------------------------------------------------------ endpoints
 def client(s: Settings) -> TestClient:
     app = create_app()
@@ -97,8 +167,11 @@ def client(s: Settings) -> TestClient:
 
 
 def test_stt_endpoint(monkeypatch):
-    async def fake(settings_, audio, ctype, lang):
+    preferred: list[str | None] = []
+
+    async def fake(settings_, audio, ctype, lang, prefer=None):
         assert audio == AUDIO and lang == "hi" and ctype.startswith("audio/webm")
+        preferred.append(prefer)
         return speech.SttResult(text="volume 10 percent karo", language="hi-IN", provider="sarvam", ms=412.0)
 
     monkeypatch.setattr(speech, "transcribe", fake)
@@ -111,6 +184,9 @@ def test_stt_endpoint(monkeypatch):
         "provider": "sarvam",
         "ms": 412.0,
     }
+    files = {"file": ("a.webm", AUDIO, "audio/webm")}
+    c.post("/api/stt", files=files, data={"language": "hi", "prefer": "groq"})
+    assert preferred == [None, "groq"]  # no field = STT_PROVIDERS order; the switch's choice passes through
 
 
 def test_stt_endpoint_errors(monkeypatch):

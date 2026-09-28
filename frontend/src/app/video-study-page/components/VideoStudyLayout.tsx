@@ -16,7 +16,13 @@ import { useVideoOutline } from '@/hooks/useVideoOutline';
 import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
 import { formatClock, parseClock } from '@/lib/time';
 import { fetchResume, resumeTarget, type ResumePoint } from '@/services/libraryService';
+import { getSttProvider, setSttProvider, type SttProvider } from '@/services/speechService';
 import { executePlayerAction, resetSeekHistory } from '@/lib/playerActions';
+
+const STT_OPTIONS: { id: SttProvider; label: string; toast: string }[] = [
+  { id: 'sarvam', label: 'Sarvam', toast: 'Speech-to-text: Sarvam (Hindi/Hinglish model, uses Sarvam credit)' },
+  { id: 'groq', label: 'Groq', toast: 'Speech-to-text: Groq Whisper (free; Sarvam only if Groq fails)' },
+];
 
 // MIT 6.006 (Fall 2011) Lecture 1 — Algorithmic Thinking, Peak Finding. Matches the demo chapters.
 const DEFAULT_VIDEO_ID = 'HtSuA80QTyo';
@@ -49,6 +55,15 @@ export default function VideoStudyLayout() {
       /* private mode */
     }
   }, [spoilerGuard]);
+
+  // which hosted STT serves push-to-talk; speechService reads it on every turn, so a flip is immediate
+  const [stt, setStt] = useState<SttProvider>(getSttProvider);
+  const chooseStt = (option: (typeof STT_OPTIONS)[number]) => {
+    if (option.id === stt) return;
+    setSttProvider(option.id);
+    setStt(option.id);
+    toast.success(option.toast);
+  };
 
   const queryVideo = new URLSearchParams(location.search).get('v');
   const videoId =
@@ -314,6 +329,25 @@ export default function VideoStudyLayout() {
             <Icon name={spoilerGuard ? 'EyeSlashIcon' : 'EyeIcon'} size={13} />
             <span className="hidden sm:inline">{spoilerGuard ? 'No spoilers' : 'Spoilers on'}</span>
           </button>
+          <div
+            className="hidden md:flex rounded-full border border-border/80 overflow-hidden text-[11px] font-semibold"
+            role="group"
+            aria-label="Speech-to-text provider"
+            title="Who turns your push-to-talk speech into text. Sarvam: Indian code-mix model, uses Sarvam credit per turn. Groq: Whisper, free. The other one takes over if the chosen one fails."
+          >
+            {STT_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => chooseStt(option)}
+                className={`px-2 py-1 transition-colors ${
+                  stt === option.id ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-pressed={stt === option.id}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="flex rounded-full border border-border/80 overflow-hidden text-[11px] font-semibold" role="group" aria-label="Response language">
             {(['en', 'hi'] as Lang[]).map((l) => (
               <button
