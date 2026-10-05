@@ -14,6 +14,9 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check . && ruff format --check .
       - run: pytest -q
+      # Tier 1c data pipeline: no base leakage across splits, normalize() parity, the real-speech evaluator.
+      # Runs on the backend's own deps; the parts needing downloaded negatives or a trained bundle skip here.
+      - run: ruff check ../ml && ruff format --check ../ml && pytest -q ../ml/tests
 
   frontend:
     runs-on: ubuntu-latest

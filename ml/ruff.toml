@@ -1,0 +1,26 @@
+# Same rules as the backend; ml/ scripts import each other as top-level modules.
+extend = "../backend/pyproject.toml"
+
+[lint.isort]
+known-first-party = [
+    "app",
+    "bases",
+    "calibrate",
+    "common",
+    "dataset",
+    "download_oos",
+    "eval_real_speech",
+    "evaluate",
+    "export_onnx",
+    "intent_guide",
+    "llm",
+    "metrics",
+    "paraphrase",
+    "serve",
+    "sources",
+    "studyloop_nlp",
+    "tests",
+    "train_classic",
+    "train_transformer",
+    "verify_paraphrases",
+]
