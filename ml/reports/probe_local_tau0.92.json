@@ -1,0 +1,637 @@
+{
+  "health": {
+    "status": "ok",
+    "env": "dev",
+    "classifier": "onnx",
+    "classifier_model": "intent-20261005-distilbert-s2",
+    "checkpointer": "postgres (write-behind)",
+    "configured": {
+      "transcript_api": true,
+      "groq": true,
+      "gemini": true,
+      "embeddings": true,
+      "database": true,
+      "auth": true,
+      "stt": true,
+      "tts": true
+    }
+  },
+  "results": [
+    {
+      "style": "en",
+      "sent": "go back 10 seconds",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9856614470481873,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 4.496,
+      "fast_ms": 4.655,
+      "rtt_ms": 13.115299982018769
+    },
+    {
+      "style": "en",
+      "sent": "pause the video",
+      "intent": "PAUSE",
+      "confidence": 0.9837387800216675,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "Paused",
+      "classify_ms": 4.985,
+      "fast_ms": 5.1000000000000005,
+      "rtt_ms": 12.625400006072596
+    },
+    {
+      "style": "en",
+      "sent": "take me to where he explains binary search",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9825752973556519,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2575.0,
+        "alt_s": 338.0
+      },
+      "reply": "Jumped to 42:55. It also comes up at 5:38.",
+      "classify_ms": 7.335,
+      "fast_ms": null,
+      "rtt_ms": 2394.3343999853823
+    },
+    {
+      "style": "en",
+      "sent": "what did he just say about the peak",
+      "intent": "ASK",
+      "confidence": 0.9690759181976318,
+      "route": "rag",
+      "action": null,
+      "reply": "He explained that you can treat the one‑dimensional peak‑finding problem like a binary search: look at the middle element, see which side has a higher neighbor, and then discard the half that can’t contain a peak, recursively repeating this “divide‑and‑conquer” step until you locate a peak [24:38]. He also clarified that the algorithm works even when there are multiple peaks—it just needs to find any one that satisfies the peak definition [25:26].",
+      "classify_ms": 6.861,
+      "fast_ms": null,
+      "rtt_ms": 2055.827100004535
+    },
+    {
+      "style": "en",
+      "sent": "set the speed to 1.5",
+      "intent": "SPEED",
+      "confidence": 0.9886233806610107,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.5
+      },
+      "reply": "Speed 1.5x",
+      "classify_ms": 12.279,
+      "fast_ms": 12.475999999999999,
+      "rtt_ms": 22.32200000435114
+    },
+    {
+      "style": "hinglish",
+      "sent": "thoda peeche le jao",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9864864349365234,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 12.14,
+      "fast_ms": 12.326,
+      "rtt_ms": 20.92009998159483
+    },
+    {
+      "style": "hinglish",
+      "sent": "das second aage karo",
+      "intent": "SEEK_FORWARD",
+      "confidence": 0.9855740666389465,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": 10.0
+      },
+      "reply": "Forward 10s",
+      "classify_ms": 10.992,
+      "fast_ms": 11.206000000000001,
+      "rtt_ms": 20.18079999834299
+    },
+    {
+      "style": "hinglish",
+      "sent": "awaaz thodi badha do",
+      "intent": "VOLUME",
+      "confidence": 0.9871007204055786,
+      "route": "fast",
+      "action": {
+        "type": "VOLUME_STEP",
+        "delta": 20
+      },
+      "reply": "Louder",
+      "classify_ms": 13.915,
+      "fast_ms": 14.236999999999998,
+      "rtt_ms": 22.23450000747107
+    },
+    {
+      "style": "hinglish",
+      "sent": "phir se bolo zara",
+      "intent": "REPLAY",
+      "confidence": 0.9843046069145203,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -15.0,
+        "then": "PLAY"
+      },
+      "reply": "Replaying the last 15s",
+      "classify_ms": 10.255,
+      "fast_ms": 10.394,
+      "rtt_ms": 17.14939999510534
+    },
+    {
+      "style": "hi",
+      "sent": "वीडियो को pause कर दो",
+      "intent": "PAUSE",
+      "confidence": 0.9844357967376709,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "रोक दिया",
+      "classify_ms": 5.996,
+      "fast_ms": 6.16,
+      "rtt_ms": 13.237000006483868
+    },
+    {
+      "style": "hi",
+      "sent": "30 सेकंड पीछे जाओ",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9869446158409119,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -30.0
+      },
+      "reply": "30 सेकंड पीछे",
+      "classify_ms": 10.034,
+      "fast_ms": 10.214,
+      "rtt_ms": 18.442400003550574
+    },
+    {
+      "style": "hi",
+      "sent": "speed 1.25 कर दीजिए",
+      "intent": "SPEED",
+      "confidence": 0.9881325364112854,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.25
+      },
+      "reply": "स्पीड 1.25x",
+      "classify_ms": 8.583,
+      "fast_ms": 8.8,
+      "rtt_ms": 14.985800022259355
+    },
+    {
+      "style": "hi",
+      "sent": "जहाँ उसने 2D peak समझाया वहाँ ले चलो",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9830375909805298,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2175.0,
+        "alt_s": 1853.0
+      },
+      "reply": "36:15 पर पहुँच गए। यह 30:53 पर भी आता है।",
+      "classify_ms": 7.766,
+      "fast_ms": null,
+      "rtt_ms": 367.31570001575164
+    },
+    {
+      "style": "hi",
+      "sent": "अब तक का सारांश बताइए",
+      "intent": "SUMMARIZE",
+      "confidence": 0.9785465598106384,
+      "route": "rag",
+      "action": null,
+      "reply": "यह लेक्चर MIT के 6.006 – Introduction to Algorithms का परिचय देता है, जहाँ प्रोफ़ेसर Srini Devadas और Erik Domane कोर्स की रूपरेखा और बड़े इनपुट्स पर कुशल एल्गोरिद्म की आवश्यकता बताते हैं [0:00]। फिर वे 1‑डायमेंशनल पीक फ़ाइंडिंग समस्या को परिभाषित करते हैं: यदि किसी तत्व के दोनों ओर के मान उससे छोटे या बराबर हों तो वह एक पीक है, किनारे पर केवल एक दिशा देखनी होती है [17:27]। सरल O(n) एल्गोरिद्म के बाद, बाइनरी सर्च/डिवाइड‑एंड‑कनकर रणनीति से लॉगरिदमिक समय O(log n) में पीक खोजने का तरीका बताया गया [24:38] और उसकी पुनरावृत्ति संबंध तथा जटिलता पर चर्चा हुई [31:38]। अंत में वे 2‑डायमेंशनल पीक फ़ाइंडिंग की ओर बढ़ते हुए मैट्रिक्स में ग्रेडी एसेन्ट या कॉलम‑वाइस 1‑डि पीक खोजने के विचार प्रस्तुत करते हैं, जिससे 2‑D पीक की जटिलता अधिक रोचक हो जाती है [35:27][38:47]।",
+      "classify_ms": 7.145,
+      "fast_ms": null,
+      "rtt_ms": 1176.0834000015166
+    },
+    {
+      "style": "en",
+      "sent": "go back 10 seconds",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9856614470481873,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 4.971,
+      "fast_ms": 5.125,
+      "rtt_ms": 11.649099993519485
+    },
+    {
+      "style": "en",
+      "sent": "pause the video",
+      "intent": "PAUSE",
+      "confidence": 0.9837387800216675,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "Paused",
+      "classify_ms": 3.87,
+      "fast_ms": 4.001,
+      "rtt_ms": 11.58169997506775
+    },
+    {
+      "style": "en",
+      "sent": "take me to where he explains binary search",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9825752973556519,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2575.0,
+        "alt_s": 338.0
+      },
+      "reply": "Jumped to 42:55. It also comes up at 5:38.",
+      "classify_ms": 5.943,
+      "fast_ms": null,
+      "rtt_ms": 358.4436000091955
+    },
+    {
+      "style": "en",
+      "sent": "what did he just say about the peak",
+      "intent": "ASK",
+      "confidence": 0.9690759181976318,
+      "route": "rag",
+      "action": null,
+      "reply": "He explained that you can treat the one‑dimensional peak‑finding problem like a binary search: look at the middle element, see which side has a larger neighbor, and then restrict your search to that half because a peak must exist there. By repeatedly cutting the interval in half you reduce the asymptotic complexity compared to scanning the whole array. [24:38]",
+      "classify_ms": 6.224,
+      "fast_ms": null,
+      "rtt_ms": 2480.760400008876
+    },
+    {
+      "style": "en",
+      "sent": "set the speed to 1.5",
+      "intent": "SPEED",
+      "confidence": 0.9886233806610107,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.5
+      },
+      "reply": "Speed 1.5x",
+      "classify_ms": 5.432,
+      "fast_ms": 5.546,
+      "rtt_ms": 11.781900015193969
+    },
+    {
+      "style": "hinglish",
+      "sent": "thoda peeche le jao",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9864864349365234,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 5.49,
+      "fast_ms": 5.614,
+      "rtt_ms": 11.762800015276298
+    },
+    {
+      "style": "hinglish",
+      "sent": "das second aage karo",
+      "intent": "SEEK_FORWARD",
+      "confidence": 0.9855740666389465,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": 10.0
+      },
+      "reply": "Forward 10s",
+      "classify_ms": 5.053,
+      "fast_ms": 5.191,
+      "rtt_ms": 12.119199993321672
+    },
+    {
+      "style": "hinglish",
+      "sent": "awaaz thodi badha do",
+      "intent": "VOLUME",
+      "confidence": 0.9871007204055786,
+      "route": "fast",
+      "action": {
+        "type": "VOLUME_STEP",
+        "delta": 20
+      },
+      "reply": "Louder",
+      "classify_ms": 6.287,
+      "fast_ms": 6.413,
+      "rtt_ms": 12.5848000170663
+    },
+    {
+      "style": "hinglish",
+      "sent": "phir se bolo zara",
+      "intent": "REPLAY",
+      "confidence": 0.9843046069145203,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -15.0,
+        "then": "PLAY"
+      },
+      "reply": "Replaying the last 15s",
+      "classify_ms": 6.436,
+      "fast_ms": 6.571,
+      "rtt_ms": 13.587599998572841
+    },
+    {
+      "style": "hi",
+      "sent": "वीडियो को pause कर दो",
+      "intent": "PAUSE",
+      "confidence": 0.9844357967376709,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "रोक दिया",
+      "classify_ms": 4.992,
+      "fast_ms": 5.116,
+      "rtt_ms": 11.830900009954348
+    },
+    {
+      "style": "hi",
+      "sent": "30 सेकंड पीछे जाओ",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9869446158409119,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -30.0
+      },
+      "reply": "30 सेकंड पीछे",
+      "classify_ms": 5.716,
+      "fast_ms": 5.854,
+      "rtt_ms": 11.549399991054088
+    },
+    {
+      "style": "hi",
+      "sent": "speed 1.25 कर दीजिए",
+      "intent": "SPEED",
+      "confidence": 0.9881325364112854,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.25
+      },
+      "reply": "स्पीड 1.25x",
+      "classify_ms": 5.744,
+      "fast_ms": 5.906,
+      "rtt_ms": 12.946800008649006
+    },
+    {
+      "style": "hi",
+      "sent": "जहाँ उसने 2D peak समझाया वहाँ ले चलो",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9830375909805298,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2175.0,
+        "alt_s": 1853.0
+      },
+      "reply": "36:15 पर पहुँच गए। यह 30:53 पर भी आता है।",
+      "classify_ms": 9.621,
+      "fast_ms": null,
+      "rtt_ms": 378.89680001535453
+    },
+    {
+      "style": "hi",
+      "sent": "अब तक का सारांश बताइए",
+      "intent": "SUMMARIZE",
+      "confidence": 0.9785465598106384,
+      "route": "rag",
+      "action": null,
+      "reply": "लेक्चर की शुरुआत में प्रोफेसर ने 6.006 – Introduction to Algorithms को परिचित कराया और बड़े डेटा सेट्स पर कुशल एल्गोरिदम की आवश्यकता पर ज़ोर दिया [3:10]। फिर उन्होंने एक‑आयामी पीक फाइंडिंग समस्या को परिभाषित किया: यदि किसी तत्व के दोनों ओर के मान उससे छोटे या बराबर हों तो वह पीक है, किनारे पर केवल एक दिशा देखनी होती है [17:27]। इस समस्या के लिए साधारण O(n) एल्गोरिदम के बाद बाइनरी सर्च‑आधारित विभाजन‑और‑विजय (divide‑and‑conquer) तरीका पेश किया गया, जिससे जटिलता को घटाया जा सकता है [24:38]। इसके बाद उन्होंने बताया कि 1‑D समस्या से बेहतर जटिलता नहीं मिल सकती, लेकिन 2‑D संस्करण में एल्गोरिदम अधिक जटिल हो जाता है, जहाँ एक मैट्रिक्स में पंक्तियों और स्तम्भों दोनों की तुलना करनी पड़ती है [35:27]। 2‑D पीक फाइंडिंग की शुरुआती विचारधारा को एक ग्रिड में एक बिंदु से शुरू करके उसके पड़ोसियों की ओर बढ़ते हुए पीक खोजने के रूप में समझाया गया [38:47]।",
+      "classify_ms": 14.885,
+      "fast_ms": null,
+      "rtt_ms": 1258.0868000222836
+    },
+    {
+      "style": "en",
+      "sent": "go back 10 seconds",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9856614470481873,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 8.786,
+      "fast_ms": 8.927,
+      "rtt_ms": 17.46830000774935
+    },
+    {
+      "style": "en",
+      "sent": "pause the video",
+      "intent": "PAUSE",
+      "confidence": 0.9837387800216675,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "Paused",
+      "classify_ms": 7.661,
+      "fast_ms": 7.824999999999999,
+      "rtt_ms": 17.011299991281703
+    },
+    {
+      "style": "en",
+      "sent": "take me to where he explains binary search",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9825752973556519,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2575.0,
+        "alt_s": 338.0
+      },
+      "reply": "Jumped to 42:55. It also comes up at 5:38.",
+      "classify_ms": 13.281,
+      "fast_ms": null,
+      "rtt_ms": 348.1847000075504
+    },
+    {
+      "style": "en",
+      "sent": "what did he just say about the peak",
+      "intent": "ASK",
+      "confidence": 0.9690759181976318,
+      "route": "rag",
+      "action": null,
+      "reply": "He says he’ll pick a column (the middle one), run a 1‑D peak‑finding algorithm—specifically the binary‑search version—to locate a peak in that column, and then use the found position \\((i, j)\\) as a starting point to look for a peak in the corresponding row. [42:55]",
+      "classify_ms": 5.735,
+      "fast_ms": null,
+      "rtt_ms": 5180.636000004597
+    },
+    {
+      "style": "en",
+      "sent": "set the speed to 1.5",
+      "intent": "SPEED",
+      "confidence": 0.9886233806610107,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.5
+      },
+      "reply": "Speed 1.5x",
+      "classify_ms": 5.596,
+      "fast_ms": 5.716,
+      "rtt_ms": 12.505899998359382
+    },
+    {
+      "style": "hinglish",
+      "sent": "thoda peeche le jao",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9864864349365234,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -10.0
+      },
+      "reply": "Back 10s",
+      "classify_ms": 5.3,
+      "fast_ms": 5.421,
+      "rtt_ms": 12.795299990102649
+    },
+    {
+      "style": "hinglish",
+      "sent": "das second aage karo",
+      "intent": "SEEK_FORWARD",
+      "confidence": 0.9855740666389465,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": 10.0
+      },
+      "reply": "Forward 10s",
+      "classify_ms": 5.121,
+      "fast_ms": 5.257000000000001,
+      "rtt_ms": 11.504499998409301
+    },
+    {
+      "style": "hinglish",
+      "sent": "awaaz thodi badha do",
+      "intent": "VOLUME",
+      "confidence": 0.9871007204055786,
+      "route": "fast",
+      "action": {
+        "type": "VOLUME_STEP",
+        "delta": 20
+      },
+      "reply": "Louder",
+      "classify_ms": 5.538,
+      "fast_ms": 5.656000000000001,
+      "rtt_ms": 12.129100010497496
+    },
+    {
+      "style": "hinglish",
+      "sent": "phir se bolo zara",
+      "intent": "REPLAY",
+      "confidence": 0.9843046069145203,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -15.0,
+        "then": "PLAY"
+      },
+      "reply": "Replaying the last 15s",
+      "classify_ms": 5.227,
+      "fast_ms": 5.341,
+      "rtt_ms": 11.375899979611859
+    },
+    {
+      "style": "hi",
+      "sent": "वीडियो को pause कर दो",
+      "intent": "PAUSE",
+      "confidence": 0.9844357967376709,
+      "route": "fast",
+      "action": {
+        "type": "PAUSE"
+      },
+      "reply": "रोक दिया",
+      "classify_ms": 5.198,
+      "fast_ms": 5.3340000000000005,
+      "rtt_ms": 13.001199986319989
+    },
+    {
+      "style": "hi",
+      "sent": "30 सेकंड पीछे जाओ",
+      "intent": "SEEK_BACK",
+      "confidence": 0.9869446158409119,
+      "route": "fast",
+      "action": {
+        "type": "SEEK_RELATIVE",
+        "delta_s": -30.0
+      },
+      "reply": "30 सेकंड पीछे",
+      "classify_ms": 5.153,
+      "fast_ms": 5.2829999999999995,
+      "rtt_ms": 12.047199998050928
+    },
+    {
+      "style": "hi",
+      "sent": "speed 1.25 कर दीजिए",
+      "intent": "SPEED",
+      "confidence": 0.9881325364112854,
+      "route": "fast",
+      "action": {
+        "type": "SET_RATE",
+        "rate": 1.25
+      },
+      "reply": "स्पीड 1.25x",
+      "classify_ms": 6.46,
+      "fast_ms": 6.606,
+      "rtt_ms": 13.476000021910295
+    },
+    {
+      "style": "hi",
+      "sent": "जहाँ उसने 2D peak समझाया वहाँ ले चलो",
+      "intent": "SEMANTIC_SEEK",
+      "confidence": 0.9830375909805298,
+      "route": "seek",
+      "action": {
+        "type": "SEEK_TO",
+        "seconds": 2175.0,
+        "alt_s": 1853.0
+      },
+      "reply": "36:15 पर पहुँच गए। यह 30:53 पर भी आता है।",
+      "classify_ms": 7.308,
+      "fast_ms": null,
+      "rtt_ms": 461.96700001019053
+    },
+    {
+      "style": "hi",
+      "sent": "अब तक का सारांश बताइए",
+      "intent": "SUMMARIZE",
+      "confidence": 0.9785465598106384,
+      "route": "rag",
+      "action": null,
+      "reply": "इस लेक्चर की शुरुआत में कोर्स का परिचय दिया गया है और बताया गया है कि छात्र Python में algorithm कोड करेंगे [0:00], [7:12]। इसके बाद 1D peak finding समस्या को समझाया गया है, जहाँ साधारण algorithm की complexity theta(n) होती है [17:27], [21:24]। Divide and conquer तकनीक का उपयोग करके 1D peak खोजने की complexity को घटाकर theta(log n) किया गया है [24:38], [35:27]। फिर 2D peak finding समस्या और Greedy Ascent जैसे अलग-अलग तरीकों पर चर्चा की गई है [35:27], [38:47]।",
+      "classify_ms": 5.951,
+      "fast_ms": null,
+      "rtt_ms": 17169.05660001794
+    }
+  ],
+  "spoken": {}
+}

@@ -1,0 +1,3575 @@
+{
+  "generated": "2026-10-05T15:02:18+00:00",
+  "bundle": {
+    "version": "intent-20261005-distilbert-s2",
+    "created_at": "2026-10-05T10:10:08+00:00",
+    "checkpoint": "distilbert-base-uncased-s2",
+    "run": "onnx",
+    "base_model": "distilbert-base-uncased",
+    "layers": 6,
+    "seed": 2,
+    "params": 66964238,
+    "max_len": 40,
+    "labels": [
+      "PLAY",
+      "PAUSE",
+      "SEEK_BACK",
+      "SEEK_FORWARD",
+      "SEEK_ABSOLUTE",
+      "REPLAY",
+      "SPEED",
+      "VOLUME",
+      "SEMANTIC_SEEK",
+      "ASK",
+      "SUMMARIZE",
+      "TAKE_NOTE",
+      "STOP_SPEAKING",
+      "OOS"
+    ],
+    "nlp_version": "1.0.0",
+    "opset": 17,
+    "transformer_fusion": true,
+    "quantization": {
+      "type": "dynamic",
+      "weight_type": "QInt8",
+      "config": "per-channel",
+      "within_budget_on_val": true,
+      "budget_pt": 0.5,
+      "drop_val_acc_pt": -0.915,
+      "drop_val_f1_pt": -0.897,
+      "drop_test_acc_pt": -0.186,
+      "drop_test_f1_pt": -0.126,
+      "tried": [
+        {
+          "config": "per-tensor",
+          "val_acc_pt": 0.458,
+          "val_f1_pt": 0.528,
+          "test_acc_pt": -0.557,
+          "test_f1_pt": -0.577
+        },
+        {
+          "config": "per-channel",
+          "val_acc_pt": -0.915,
+          "val_f1_pt": -0.897,
+          "test_acc_pt": -0.186,
+          "test_f1_pt": -0.126
+        }
+      ]
+    },
+    "onnxruntime": "1.30.0",
+    "files": {
+      "model.onnx": {
+        "bytes": 67534817,
+        "sha256": "5e426dbdfdfd0e6292042dcf486bcdb79219a69fe0e82c3dd59e8a2e3580a752"
+      },
+      "tokenizer.json": {
+        "bytes": 711493,
+        "sha256": "ad228ebea015ec19444e03d88a5c654c1378d7ca38562fa7c6c3c975b7c02099"
+      }
+    },
+    "fp32_bytes": 267952642,
+    "metrics": {
+      "fp32": {
+        "test_accuracy": 0.9313543599257885,
+        "test_macro_f1": 0.9263031753204254,
+        "val_accuracy": 0.9427917620137299,
+        "val_macro_f1": 0.9405701124760812,
+        "latency_ms_1thread": {
+          "p50": 24.188400013372302,
+          "p95": 37.46031999180559,
+          "n": 539
+        }
+      },
+      "int8": {
+        "test_accuracy": 0.9332096474953617,
+        "test_macro_f1": 0.9275655144429722,
+        "val_accuracy": 0.9519450800915332,
+        "val_macro_f1": 0.9495396867170165,
+        "latency_ms_1thread": {
+          "p50": 10.397100006230175,
+          "p95": 17.893759987782687,
+          "n": 539
+        }
+      }
+    }
+  },
+  "calibration": {
+    "temperature": 1.252257112292003,
+    "tau": 0.92,
+    "tau_per_intent": null,
+    "misfire_budget": 0.02,
+    "chosen": "global",
+    "out_of_fold_choice": "global",
+    "override": null,
+    "ece": {
+      "val_raw": 0.031189262662381277,
+      "val_scaled": 0.017565943113180757,
+      "test_raw": 0.04248021164276601,
+      "test_scaled": 0.025463486895490405
+    },
+    "routing": {
+      "val": {
+        "global": {
+          "coverage": 0.8908045977011494,
+          "misfire_rate": 0.01929260450160772,
+          "misfires": 6,
+          "direct": 311,
+          "fast_coverage": 0.9,
+          "fast_misfire": 0.01,
+          "oos_leak": 0.011235955056179775,
+          "n": 437
+        },
+        "per_intent": {
+          "coverage": 0.8477011494252874,
+          "misfire_rate": 0.0033783783783783786,
+          "misfires": 1,
+          "direct": 296,
+          "fast_coverage": 0.9181818181818182,
+          "fast_misfire": 0.0049261083743842365,
+          "oos_leak": 0.011235955056179775,
+          "n": 437
+        }
+      },
+      "val_out_of_fold": {
+        "global": {
+          "coverage": 0.8991728893547284,
+          "misfire_rate": 0.028662420382165606,
+          "misfires": 9,
+          "direct": 314
+        },
+        "per_intent": {
+          "coverage": 0.87672900751834,
+          "misfire_rate": 0.02280130293159609,
+          "misfires": 7,
+          "direct": 307
+        }
+      },
+      "test": {
+        "global": {
+          "coverage": 0.9053117782909931,
+          "misfire_rate": 0.025252525252525252,
+          "misfires": 10,
+          "direct": 396,
+          "fast_coverage": 0.9124087591240876,
+          "fast_misfire": 0.031007751937984496,
+          "oos_leak": 0.03773584905660377,
+          "n": 539
+        },
+        "per_intent": {
+          "coverage": 0.8822170900692841,
+          "misfire_rate": 0.05181347150259067,
+          "misfires": 20,
+          "direct": 386,
+          "fast_coverage": 0.9087591240875912,
+          "fast_misfire": 0.04230769230769231,
+          "oos_leak": 0.03773584905660377,
+          "n": 539
+        }
+      }
+    },
+    "fitted_on": "onnx-int8 validation logits"
+  },
+  "table": [
+    {
+      "model": "Regex baseline (backend `regex_classifier`)",
+      "key": "regex",
+      "params": null,
+      "bytes": null,
+      "acc": 0.7699443413729128,
+      "f1": 0.8038484408683815,
+      "note": "",
+      "latency": {
+        "p50": 0.03480000304989517,
+        "p95": 0.07900501950643957,
+        "n": 900
+      }
+    },
+    {
+      "model": "TF-IDF (char 2-5 + word 1-2) + LogReg",
+      "key": "tfidf",
+      "params": null,
+      "bytes": 2394044,
+      "acc": 0.9424860853432282,
+      "f1": 0.9443651774312501,
+      "note": "",
+      "latency": {
+        "p50": 1.9110499997623265,
+        "p95": 2.297899998666253,
+        "n": 300
+      }
+    },
+    {
+      "model": "DistilBERT (distilbert-base-uncased), fp32 PyTorch",
+      "key": "distilbert-base-uncased",
+      "params": 66964238,
+      "bytes": 267869480,
+      "acc": 0.9313543599257885,
+      "f1": 0.9263031753204254,
+      "note": "3 seed(s): acc 0.936 \u00b1 0.006, F1 0.934 \u00b1 0.008",
+      "latency": {
+        "p50": 31.74580000631977,
+        "p95": 48.49160501908044,
+        "n": 200
+      }
+    },
+    {
+      "model": "DistilBERT, first 3 of its 6 blocks (`--layers 3`), fp32 PyTorch",
+      "key": "distilbert-l3",
+      "params": 45700622,
+      "bytes": 182809152,
+      "acc": 0.9443413729128015,
+      "f1": 0.9429759627974093,
+      "note": "3 seed(s): acc 0.939 \u00b1 0.005, F1 0.937 \u00b1 0.007",
+      "latency": {
+        "p50": 16.880249997484498,
+        "p95": 26.590144995134313,
+        "n": 200
+      }
+    },
+    {
+      "model": "multilingual DistilBERT (distilbert-base-multilingual-cased), fp32 PyTorch",
+      "key": "distilbert-base-multilingual-cased",
+      "params": 135335438,
+      "bytes": 541354288,
+      "acc": 0.9443413729128015,
+      "f1": 0.9464306046537617,
+      "note": "1 seed(s): acc 0.944 \u00b1 0.000, F1 0.946 \u00b1 0.000",
+      "latency": {
+        "p50": 31.78785000636708,
+        "p95": 55.21631499141219,
+        "n": 200
+      }
+    },
+    {
+      "model": "MuRIL (google/muril-base-cased), fp32 PyTorch",
+      "key": "muril-base-cased",
+      "params": 237566990,
+      "bytes": 950291512,
+      "acc": 0.9573283858998145,
+      "f1": 0.9574659228368454,
+      "note": "1 seed(s): acc 0.957 \u00b1 0.000, F1 0.957 \u00b1 0.000",
+      "latency": {
+        "p50": 66.2661500100512,
+        "p95": 94.58190000004828,
+        "n": 200
+      }
+    },
+    {
+      "model": "\u21b3 exported to ONNX fp32",
+      "key": "onnx-fp32",
+      "params": 66964238,
+      "bytes": 267952642,
+      "acc": 0.9313543599257885,
+      "f1": 0.9263031753204254,
+      "note": "",
+      "latency": {
+        "p50": 23.562100002891384,
+        "p95": 38.387139997212216,
+        "n": 300
+      }
+    },
+    {
+      "model": "\u21b3 **ONNX dynamic INT8 (deployed, CLASSIFIER=onnx)**",
+      "key": "onnx-int8",
+      "params": 66964238,
+      "bytes": 67534817,
+      "acc": 0.9332096474953617,
+      "f1": 0.9275655144429722,
+      "note": "quantization: per-channel",
+      "latency": {
+        "p50": 6.631500000366941,
+        "p95": 16.069950004748524,
+        "n": 900
+      }
+    }
+  ],
+  "reports": {
+    "regex": {
+      "n": 539,
+      "accuracy": 0.7699443413729128,
+      "macro_f1": 0.8038484408683815,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9111111111111111,
+          "recall": 0.8723404255319149,
+          "f1": 0.891304347826087,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9629629629629629,
+          "recall": 0.8125,
+          "f1": 0.8813559322033898,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 1.0,
+          "recall": 0.9285714285714286,
+          "f1": 0.962962962962963,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.9393939393939394,
+          "recall": 1.0,
+          "f1": 0.96875,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 0.9230769230769231,
+          "recall": 0.8,
+          "f1": 0.8571428571428571,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.92,
+          "recall": 0.7931034482758621,
+          "f1": 0.851851851851852,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 0.88,
+          "f1": 0.9361702127659575,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.8888888888888888,
+          "f1": 0.9411764705882353,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.8596491228070176,
+          "recall": 0.8448275862068966,
+          "f1": 0.8521739130434783,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.2923076923076923,
+          "recall": 0.6551724137931034,
+          "f1": 0.40425531914893614,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 1.0,
+          "recall": 0.5714285714285714,
+          "f1": 0.7272727272727273,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 1.0,
+          "recall": 0.9545454545454546,
+          "f1": 0.9767441860465117,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 1.0,
+          "recall": 0.28,
+          "f1": 0.43750000000000006,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.5241935483870968,
+          "recall": 0.6132075471698113,
+          "f1": 0.5652173913043478,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 1,
+          "b_as_a": 1,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 1,
+          "b_as_a": 2,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 3,
+          "b_as_a": 0,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 2,
+          "b_as_a": 0,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          41,
+          0,
+          0,
+          2,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          1,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ],
+        [
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          24,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          23,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          22,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          24,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          49,
+          1,
+          0,
+          0,
+          0,
+          7
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          2,
+          19,
+          0,
+          0,
+          0,
+          7
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          16,
+          0,
+          0,
+          9
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          42,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          7,
+          17
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          39,
+          0,
+          0,
+          0,
+          65
+        ]
+      ]
+    },
+    "tfidf": {
+      "n": 539,
+      "accuracy": 0.9424860853432282,
+      "macro_f1": 0.9443651774312501,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9791666666666666,
+          "recall": 1.0,
+          "f1": 0.9894736842105264,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9375,
+          "recall": 0.9375,
+          "f1": 0.9375,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.9032258064516129,
+          "recall": 1.0,
+          "f1": 0.9491525423728813,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.96875,
+          "recall": 1.0,
+          "f1": 0.9841269841269841,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 1.0,
+          "recall": 0.9666666666666667,
+          "f1": 0.983050847457627,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.9615384615384616,
+          "recall": 0.8620689655172413,
+          "f1": 0.9090909090909091,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.9629629629629629,
+          "f1": 0.9811320754716981,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9508196721311475,
+          "recall": 1.0,
+          "f1": 0.9747899159663865,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.6875,
+          "recall": 0.7586206896551724,
+          "f1": 0.7213114754098361,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9285714285714286,
+          "recall": 0.9285714285714286,
+          "f1": 0.9285714285714286,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.96,
+          "recall": 0.96,
+          "f1": 0.96,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.93,
+          "recall": 0.8773584905660378,
+          "f1": 0.9029126213592233,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 3,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          47,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          3,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          22,
+          0,
+          0,
+          0,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          26,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          24,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          10,
+          2,
+          0,
+          0,
+          93
+        ]
+      ]
+    },
+    "distilbert-base-uncased": {
+      "n": 539,
+      "accuracy": 0.9313543599257885,
+      "macro_f1": 0.9263031753204254,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9787234042553191,
+          "recall": 0.9787234042553191,
+          "f1": 0.9787234042553191,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9655172413793104,
+          "recall": 0.875,
+          "f1": 0.9180327868852458,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.8484848484848485,
+          "recall": 1.0,
+          "f1": 0.9180327868852458,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.96875,
+          "recall": 1.0,
+          "f1": 0.9841269841269841,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 1.0,
+          "recall": 0.9666666666666667,
+          "f1": 0.983050847457627,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.7878787878787878,
+          "recall": 0.896551724137931,
+          "f1": 0.8387096774193549,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.9629629629629629,
+          "f1": 0.9811320754716981,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9206349206349206,
+          "recall": 1.0,
+          "f1": 0.9586776859504132,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.8076923076923077,
+          "recall": 0.7241379310344828,
+          "f1": 0.7636363636363636,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9230769230769231,
+          "recall": 0.8571428571428571,
+          "f1": 0.888888888888889,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 0.9772727272727273,
+          "recall": 0.9772727272727273,
+          "f1": 0.9772727272727273,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.7931034482758621,
+          "recall": 0.92,
+          "f1": 0.851851851851852,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.9690721649484536,
+          "recall": 0.8867924528301887,
+          "f1": 0.9261083743842364,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 4,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 3,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          46,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          28,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          0,
+          0,
+          1,
+          21,
+          1,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          1,
+          0,
+          24,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          43,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          23,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          5,
+          0,
+          0,
+          5,
+          94
+        ]
+      ]
+    },
+    "distilbert-l3": {
+      "n": 539,
+      "accuracy": 0.9443413729128015,
+      "macro_f1": 0.9429759627974093,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9215686274509803,
+          "recall": 1.0,
+          "f1": 0.9591836734693878,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9655172413793104,
+          "recall": 0.875,
+          "f1": 0.9180327868852458,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.9333333333333333,
+          "recall": 1.0,
+          "f1": 0.9655172413793104,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 0.9666666666666667,
+          "recall": 0.9666666666666667,
+          "f1": 0.9666666666666667,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.8387096774193549,
+          "recall": 0.896551724137931,
+          "f1": 0.8666666666666666,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 0.9259259259259259,
+          "recall": 1.0,
+          "f1": 0.9615384615384615,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9508196721311475,
+          "recall": 1.0,
+          "f1": 0.9747899159663865,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.7878787878787878,
+          "recall": 0.896551724137931,
+          "f1": 0.8387096774193549,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9615384615384616,
+          "recall": 0.8928571428571429,
+          "f1": 0.9259259259259259,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 0.9772727272727273,
+          "recall": 0.9772727272727273,
+          "f1": 0.9772727272727273,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.9565217391304348,
+          "recall": 0.88,
+          "f1": 0.9166666666666666,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.9791666666666666,
+          "recall": 0.8867924528301887,
+          "f1": 0.9306930693069307,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 2,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          47,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          2,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          27,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          26,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          25,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          22,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          7,
+          0,
+          0,
+          1,
+          94
+        ]
+      ]
+    },
+    "distilbert-base-multilingual-cased": {
+      "n": 539,
+      "accuracy": 0.9443413729128015,
+      "macro_f1": 0.9464306046537617,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9591836734693877,
+          "recall": 1.0,
+          "f1": 0.9791666666666666,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 1.0,
+          "recall": 0.90625,
+          "f1": 0.9508196721311475,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.9655172413793104,
+          "recall": 1.0,
+          "f1": 0.9824561403508771,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.96875,
+          "recall": 1.0,
+          "f1": 0.9841269841269841,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 1.0,
+          "recall": 0.9666666666666667,
+          "f1": 0.983050847457627,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.7941176470588235,
+          "recall": 0.9310344827586207,
+          "f1": 0.8571428571428571,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.7941176470588235,
+          "recall": 0.9310344827586207,
+          "f1": 0.8571428571428571,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9259259259259259,
+          "recall": 0.8928571428571429,
+          "f1": 0.9090909090909091,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 0.9777777777777777,
+          "recall": 1.0,
+          "f1": 0.9887640449438202,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.8461538461538461,
+          "recall": 0.88,
+          "f1": 0.8627450980392156,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.9473684210526315,
+          "recall": 0.8490566037735849,
+          "f1": 0.8955223880597015,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          47,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          29,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          0,
+          27,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          27,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          27,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          22,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          7,
+          2,
+          1,
+          4,
+          90
+        ]
+      ]
+    },
+    "muril-base-cased": {
+      "n": 539,
+      "accuracy": 0.9573283858998145,
+      "macro_f1": 0.9574659228368454,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9791666666666666,
+          "recall": 1.0,
+          "f1": 0.9894736842105264,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 1.0,
+          "recall": 0.90625,
+          "f1": 0.9508196721311475,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.9333333333333333,
+          "recall": 1.0,
+          "f1": 0.9655172413793104,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 0.967741935483871,
+          "recall": 1.0,
+          "f1": 0.9836065573770492,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.9285714285714286,
+          "recall": 0.896551724137931,
+          "f1": 0.912280701754386,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.9629629629629629,
+          "f1": 0.9811320754716981,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9830508474576272,
+          "recall": 1.0,
+          "f1": 0.9914529914529915,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.7931034482758621,
+          "recall": 0.7931034482758621,
+          "f1": 0.7931034482758621,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9310344827586207,
+          "recall": 0.9642857142857143,
+          "f1": 0.9473684210526316,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.9259259259259259,
+          "recall": 1.0,
+          "f1": 0.9615384615384615,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.941747572815534,
+          "recall": 0.9150943396226415,
+          "f1": 0.9282296650717704,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 1,
+          "b_as_a": 1,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 2,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          47,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          29,
+          0,
+          0,
+          1,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          2,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          23,
+          1,
+          0,
+          0,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          27,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          44,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          5,
+          1,
+          0,
+          2,
+          97
+        ]
+      ]
+    },
+    "onnx-fp32": {
+      "n": 539,
+      "accuracy": 0.9313543599257885,
+      "macro_f1": 0.9263031753204254,
+      "per_intent": {
+        "PLAY": {
+          "precision": 0.9787234042553191,
+          "recall": 0.9787234042553191,
+          "f1": 0.9787234042553191,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9655172413793104,
+          "recall": 0.875,
+          "f1": 0.9180327868852458,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.8484848484848485,
+          "recall": 1.0,
+          "f1": 0.9180327868852458,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.96875,
+          "recall": 1.0,
+          "f1": 0.9841269841269841,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 1.0,
+          "recall": 0.9666666666666667,
+          "f1": 0.983050847457627,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.7878787878787878,
+          "recall": 0.896551724137931,
+          "f1": 0.8387096774193549,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.9629629629629629,
+          "f1": 0.9811320754716981,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9206349206349206,
+          "recall": 1.0,
+          "f1": 0.9586776859504132,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.8076923076923077,
+          "recall": 0.7241379310344828,
+          "f1": 0.7636363636363636,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.9230769230769231,
+          "recall": 0.8571428571428571,
+          "f1": 0.888888888888889,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 0.9772727272727273,
+          "recall": 0.9772727272727273,
+          "f1": 0.9772727272727273,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.7931034482758621,
+          "recall": 0.92,
+          "f1": 0.851851851851852,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.9690721649484536,
+          "recall": 0.8867924528301887,
+          "f1": 0.9261083743842364,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 4,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 3,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          46,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          28,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          4,
+          0,
+          0,
+          1,
+          21,
+          1,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          1,
+          0,
+          24,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          43,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          23,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          5,
+          0,
+          0,
+          5,
+          94
+        ]
+      ]
+    },
+    "onnx-int8": {
+      "n": 539,
+      "accuracy": 0.9332096474953617,
+      "macro_f1": 0.9275655144429722,
+      "per_intent": {
+        "PLAY": {
+          "precision": 1.0,
+          "recall": 0.9787234042553191,
+          "f1": 0.989247311827957,
+          "support": 47
+        },
+        "PAUSE": {
+          "precision": 0.9655172413793104,
+          "recall": 0.875,
+          "f1": 0.9180327868852458,
+          "support": 32
+        },
+        "SEEK_BACK": {
+          "precision": 0.8484848484848485,
+          "recall": 1.0,
+          "f1": 0.9180327868852458,
+          "support": 28
+        },
+        "SEEK_FORWARD": {
+          "precision": 0.96875,
+          "recall": 1.0,
+          "f1": 0.9841269841269841,
+          "support": 31
+        },
+        "SEEK_ABSOLUTE": {
+          "precision": 1.0,
+          "recall": 0.9666666666666667,
+          "f1": 0.983050847457627,
+          "support": 30
+        },
+        "REPLAY": {
+          "precision": 0.8387096774193549,
+          "recall": 0.896551724137931,
+          "f1": 0.8666666666666666,
+          "support": 29
+        },
+        "SPEED": {
+          "precision": 0.9615384615384616,
+          "recall": 1.0,
+          "f1": 0.9803921568627451,
+          "support": 25
+        },
+        "VOLUME": {
+          "precision": 1.0,
+          "recall": 0.9629629629629629,
+          "f1": 0.9811320754716981,
+          "support": 27
+        },
+        "SEMANTIC_SEEK": {
+          "precision": 0.9206349206349206,
+          "recall": 1.0,
+          "f1": 0.9586776859504132,
+          "support": 58
+        },
+        "ASK": {
+          "precision": 0.8076923076923077,
+          "recall": 0.7241379310344828,
+          "f1": 0.7636363636363636,
+          "support": 29
+        },
+        "SUMMARIZE": {
+          "precision": 0.8571428571428571,
+          "recall": 0.8571428571428571,
+          "f1": 0.8571428571428571,
+          "support": 28
+        },
+        "TAKE_NOTE": {
+          "precision": 0.9767441860465116,
+          "recall": 0.9545454545454546,
+          "f1": 0.9655172413793104,
+          "support": 44
+        },
+        "STOP_SPEAKING": {
+          "precision": 0.8275862068965517,
+          "recall": 0.96,
+          "f1": 0.888888888888889,
+          "support": 25
+        },
+        "OOS": {
+          "precision": 0.9693877551020408,
+          "recall": 0.8962264150943396,
+          "f1": 0.9313725490196079,
+          "support": 106
+        }
+      },
+      "pairs": [
+        {
+          "pair": "ASK / REPLAY",
+          "a_as_b": 3,
+          "b_as_a": 0,
+          "support_a": 29,
+          "support_b": 29
+        },
+        {
+          "pair": "STOP_SPEAKING / PAUSE",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 25,
+          "support_b": 32
+        },
+        {
+          "pair": "SEMANTIC_SEEK / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 58,
+          "support_b": 29
+        },
+        {
+          "pair": "SUMMARIZE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 2,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "TAKE_NOTE / ASK",
+          "a_as_b": 0,
+          "b_as_a": 1,
+          "support_a": 44,
+          "support_b": 29
+        },
+        {
+          "pair": "SEEK_BACK / REPLAY",
+          "a_as_b": 0,
+          "b_as_a": 3,
+          "support_a": 28,
+          "support_b": 29
+        },
+        {
+          "pair": "VOLUME / SPEED",
+          "a_as_b": 0,
+          "b_as_a": 0,
+          "support_a": 27,
+          "support_b": 25
+        },
+        {
+          "pair": "SEEK_ABSOLUTE / SEEK_FORWARD",
+          "a_as_b": 1,
+          "b_as_a": 0,
+          "support_a": 30,
+          "support_b": 31
+        }
+      ],
+      "confusion": [
+        [
+          46,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          28,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          28,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          31,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          26,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          58,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          1,
+          21,
+          2,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          1,
+          0,
+          24,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          42,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          24,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          5,
+          1,
+          0,
+          4,
+          95
+        ]
+      ]
+    }
+  },
+  "styles": {
+    "regex": {
+      "en": {
+        "n": 130,
+        "accuracy": 0.8307692307692308
+      },
+      "hinglish": {
+        "n": 151,
+        "accuracy": 0.8013245033112583
+      },
+      "hi": {
+        "n": 152,
+        "accuracy": 0.756578947368421
+      },
+      "hi_pure": {
+        "n": 49,
+        "accuracy": 0.8571428571428571
+      },
+      "external": {
+        "n": 57,
+        "accuracy": 0.5087719298245614
+      }
+    },
+    "tfidf": {
+      "en": {
+        "n": 130,
+        "accuracy": 0.9076923076923077
+      },
+      "hinglish": {
+        "n": 151,
+        "accuracy": 0.9602649006622517
+      },
+      "hi": {
+        "n": 152,
+        "accuracy": 0.9473684210526315
+      },
+      "hi_pure": {
+        "n": 49,
+        "accuracy": 0.9183673469387755
+      },
+      "external": {
+        "n": 57,
+        "accuracy": 0.9824561403508771
+      }
+    },
+    "distilbert-base-uncased": {
+      "en": {
+        "n": 130,
+        "accuracy": 0.9307692307692308
+      },
+      "hinglish": {
+        "n": 151,
+        "accuracy": 0.9271523178807947
+      },
+      "hi": {
+        "n": 152,
+        "accuracy": 0.9276315789473685
+      },
+      "hi_pure": {
+        "n": 49,
+        "accuracy": 0.8979591836734694
+      },
+      "external": {
+        "n": 57,
+        "accuracy": 0.9824561403508771
+      }
+    },
+    "onnx-int8": {
+      "en": {
+        "n": 130,
+        "accuracy": 0.9307692307692308
+      },
+      "hinglish": {
+        "n": 151,
+        "accuracy": 0.9337748344370861
+      },
+      "hi": {
+        "n": 152,
+        "accuracy": 0.9342105263157895
+      },
+      "hi_pure": {
+        "n": 49,
+        "accuracy": 0.8775510204081632
+      },
+      "external": {
+        "n": 57,
+        "accuracy": 0.9824561403508771
+      }
+    }
+  },
+  "data": {
+    "nlp_version": "1.0.0",
+    "allow_unjudged": false,
+    "paraphrase_label_gate": {
+      "judge_agrees": 2895,
+      "review": 873
+    },
+    "valtest_unreviewed": {},
+    "rows": {
+      "train": 3874,
+      "val": 437,
+      "test": 539
+    },
+    "per_intent": {
+      "train": {
+        "PLAY": 304,
+        "PAUSE": 239,
+        "SEEK_BACK": 295,
+        "SEEK_FORWARD": 240,
+        "SEEK_ABSOLUTE": 337,
+        "REPLAY": 242,
+        "SPEED": 317,
+        "VOLUME": 299,
+        "SEMANTIC_SEEK": 263,
+        "ASK": 247,
+        "SUMMARIZE": 176,
+        "TAKE_NOTE": 205,
+        "STOP_SPEAKING": 199,
+        "OOS": 511
+      },
+      "val": {
+        "PLAY": 39,
+        "PAUSE": 22,
+        "SEEK_BACK": 25,
+        "SEEK_FORWARD": 24,
+        "SEEK_ABSOLUTE": 22,
+        "REPLAY": 23,
+        "SPEED": 25,
+        "VOLUME": 23,
+        "SEMANTIC_SEEK": 44,
+        "ASK": 23,
+        "SUMMARIZE": 31,
+        "TAKE_NOTE": 30,
+        "STOP_SPEAKING": 17,
+        "OOS": 89
+      },
+      "test": {
+        "PLAY": 47,
+        "PAUSE": 32,
+        "SEEK_BACK": 28,
+        "SEEK_FORWARD": 31,
+        "SEEK_ABSOLUTE": 30,
+        "REPLAY": 29,
+        "SPEED": 25,
+        "VOLUME": 27,
+        "SEMANTIC_SEEK": 58,
+        "ASK": 29,
+        "SUMMARIZE": 28,
+        "TAKE_NOTE": 44,
+        "STOP_SPEAKING": 25,
+        "OOS": 106
+      }
+    },
+    "per_kind": {
+      "train": {
+        "para": 2397,
+        "base": 1163,
+        "external": 314
+      },
+      "val": {
+        "para": 257,
+        "base": 123,
+        "external": 57
+      },
+      "test": {
+        "para": 319,
+        "base": 163,
+        "external": 57
+      }
+    },
+    "per_style": {
+      "train": {
+        "hinglish": 1102,
+        "hi": 1094,
+        "en": 1442,
+        "hi_pure": 236
+      },
+      "val": {
+        "en": 153,
+        "hi": 125,
+        "hinglish": 117,
+        "hi_pure": 42
+      },
+      "test": {
+        "hinglish": 151,
+        "hi": 152,
+        "en": 187,
+        "hi_pure": 49
+      }
+    },
+    "drops": {
+      "base_dropped_in_review": 2,
+      "paraphrase_of_dropped_base": 3,
+      "external_dropped_in_review": 1,
+      "duplicate": 867,
+      "cross_split_duplicate": 45
+    },
+    "judge": {
+      "checked": 4275,
+      "agree_with_base_intent": 3690,
+      "reviewed": 1192,
+      "confident_learning": {
+        "flag": 79,
+        "pass": 3801
+      }
+    }
+  },
+  "render_cpu_candidates": [
+    {
+      "label": "6 blocks (DistilBERT)",
+      "bundle": "intent-20261005-distilbert-s2",
+      "layers": 6,
+      "params": 66964238,
+      "bytes": 67534817,
+      "val_acc": 0.9519450800915332,
+      "val_f1": 0.9495396867170165,
+      "test_acc": 0.9332096474953617,
+      "test_f1": 0.9275655144429722,
+      "tau": 0.92,
+      "coverage": 0.9053117782909931,
+      "misfire": 0.025252525252525252,
+      "latency": {
+        "p50": 6.821499991929159,
+        "p95": 16.505854997376442,
+        "n": 900
+      },
+      "capped": {
+        "runs": [
+          {
+            "saturated_p95": 529.093,
+            "sparse_p95": 12.04,
+            "cfs1_turn_p95": 108.035,
+            "cfs2_turn_p95": 306.069,
+            "turn_p95_uncapped": 18.035,
+            "rss_delta_mb": 109.6
+          },
+          {
+            "saturated_p95": 536.67,
+            "sparse_p95": 12.449,
+            "cfs1_turn_p95": 109.081,
+            "cfs2_turn_p95": 308.163,
+            "turn_p95_uncapped": 19.081,
+            "rss_delta_mb": 109.1
+          }
+        ]
+      }
+    },
+    {
+      "label": "3 blocks (DistilBERT `--layers 3`)",
+      "bundle": "intent-20261005-distilbert-l3-s2",
+      "layers": 3,
+      "params": 45700622,
+      "bytes": 45892906,
+      "val_acc": 0.9405034324942791,
+      "val_f1": 0.9392515969401826,
+      "test_acc": 0.9517625231910947,
+      "test_f1": 0.9500554433983278,
+      "tau": 0.92,
+      "coverage": 0.9168591224018475,
+      "misfire": 0.0225,
+      "latency": {
+        "p50": 3.2435499888379127,
+        "p95": 8.453785015444737,
+        "n": 900
+      },
+      "capped": {
+        "runs": [
+          {
+            "saturated_p95": 444.692,
+            "sparse_p95": 7.042,
+            "cfs1_turn_p95": 103.379,
+            "cfs2_turn_p95": 206.757,
+            "turn_p95_uncapped": 13.379,
+            "rss_delta_mb": 86.2
+          },
+          {
+            "saturated_p95": 466.146,
+            "sparse_p95": 7.785,
+            "cfs1_turn_p95": 103.92,
+            "cfs2_turn_p95": 207.84,
+            "turn_p95_uncapped": 13.92,
+            "rss_delta_mb": 85.9
+          }
+        ]
+      }
+    }
+  ]
+}

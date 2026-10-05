@@ -1,0 +1,92 @@
+{
+  "model": "distilbert-base-uncased",
+  "rows": 3880,
+  "out_of_fold_accuracy": 0.9232,
+  "flagged": 79,
+  "by_kind": {
+    "base/flag": 25,
+    "base/pass": 1138,
+    "external/flag": 1,
+    "external/pass": 314,
+    "para/flag": 53,
+    "para/pass": 2349
+  },
+  "thresholds": {
+    "PLAY": 0.851,
+    "PAUSE": 0.872,
+    "SEEK_BACK": 0.932,
+    "SEEK_FORWARD": 0.954,
+    "SEEK_ABSOLUTE": 0.912,
+    "REPLAY": 0.848,
+    "SPEED": 0.955,
+    "VOLUME": 0.947,
+    "SEMANTIC_SEEK": 0.886,
+    "ASK": 0.758,
+    "SUMMARIZE": 0.779,
+    "TAKE_NOTE": 0.872,
+    "STOP_SPEAKING": 0.832,
+    "OOS": 0.808
+  },
+  "top_flag_pairs": [
+    [
+      "OOS -> ASK",
+      15
+    ],
+    [
+      "ASK -> OOS",
+      5
+    ],
+    [
+      "PAUSE -> PLAY",
+      5
+    ],
+    [
+      "SUMMARIZE -> ASK",
+      4
+    ],
+    [
+      "OOS -> STOP_SPEAKING",
+      3
+    ],
+    [
+      "OOS -> REPLAY",
+      3
+    ],
+    [
+      "SEEK_ABSOLUTE -> SEMANTIC_SEEK",
+      3
+    ],
+    [
+      "SEEK_BACK -> SEEK_ABSOLUTE",
+      3
+    ],
+    [
+      "ASK -> SPEED",
+      2
+    ],
+    [
+      "ASK -> REPLAY",
+      2
+    ],
+    [
+      "OOS -> VOLUME",
+      2
+    ],
+    [
+      "REPLAY -> SEEK_BACK",
+      2
+    ],
+    [
+      "STOP_SPEAKING -> PAUSE",
+      2
+    ],
+    [
+      "SUMMARIZE -> OOS",
+      2
+    ],
+    [
+      "ASK -> SEMANTIC_SEEK",
+      1
+    ]
+  ]
+}
