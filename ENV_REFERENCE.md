@@ -31,5 +31,6 @@ Every provider key (TranscriptAPI, Groq, Gemini, HF, Supabase service role) live
 | `HF_TOKEN` | Tier 1a+ | hosted BGE-M3 embeddings |
 | `CLASSIFIER` | no | `regex` (Tier 0, the rollback) or `onnx` (Tier 1c: the fine-tuned model; `/health` says which one really serves) |
 | `CONFIDENCE_THRESHOLD` | no | routing threshold for the **regex** only; the ONNX model routes on the calibrated τ in its bundle |
-| `INTENT_MODEL_DIR` | no | the ONNX bundle (`model.onnx`, `tokenizer.json`, `labels.json`, `calibration.json`, `meta.json`); empty = `backend/models/intent`. See `docs/TIER1C_MODEL.md` |
+| `INTENT_MODEL_DIR` | no | the ONNX bundle (`model.onnx`, `tokenizer.json`, `labels.json`, `calibration.json`, `meta.json`); empty = `backend/models/intent` (in the Docker image `/app/models/intent`, filled at build time by `scripts/fetch_intent_bundle.py` from `bundle.lock.json`). See `docs/TIER1C_MODEL.md`, `docs/TIER1C_DEPLOY.md` |
 | `INTENT_MODEL_THREADS` | no | onnxruntime intra-op threads for the classifier (default 1: one short utterance at a time) |
+| `HF_WRITE_TOKEN` | no, **local only** | Hugging Face fine-grained **write** token for `ml/publish_bundle.py --push`. Export it in your shell for that one command; read from the environment only (no CLI flag), never printed. **Never** in `backend/.env`, Render or Vercel, never `VITE_`: the Docker build downloads the public bundle with no token. See `docs/TIER1C_DEPLOY.md` |

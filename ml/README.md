@@ -43,6 +43,7 @@ uv pip install --python ml/.venv/Scripts/python.exe -r ml/requirements.txt
 | corpus regression | `backend/.venv/Scripts/python ml/corpus_regression.py` (what-if routing: `--tau 0.95`) | – | `reports/corpus_regression*.md` (yes) |
 | serving cost | `backend/.venv/Scripts/python ml/bench_serving.py [--bundle DIR --name l3] [--cpu-cap 0.1]` (saturated + sparse under the cap, plus a CFS model) | – | `reports/serving_bench*.json` (yes) |
 | install locally | `python ml/install_bundle.py` → `backend/models/intent/` (the backend's default path) | – | no |
+| publish (deploy) | `python ml/publish_bundle.py --write-lock --lock <scratch>` previews; `--write-card <scratch>/card.md` previews the public card (it overwrites its target); `--push` (needs `HF_WRITE_TOKEN`) uploads to the HF repo and writes `backend/bundle.lock.json` — see `docs/TIER1C_DEPLOY.md` | – | `backend/bundle.lock.json` (yes, only once published) |
 | real speech | `python ml/eval_real_speech.py [--test-speakers a,b]` over `data/real_speech_*.jsonl` | – | the Collect export (yes, text only) |
 | WS probe | `backend/.venv/Scripts/python ml/probe_ws.py [--url wss://… --token …] [--audio]` | – | stdout |
 

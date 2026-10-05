@@ -6,3 +6,5 @@ tests/
 .pytest_cache/
 .ruff_cache/
 migrations/
+# a local copy of the ONNX bundle (67 MB) stays out of the build context: the Dockerfile fetches the pinned one
+models/

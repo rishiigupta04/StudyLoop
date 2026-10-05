@@ -12,7 +12,11 @@ services:
       - key: CORS_ORIGINS
         value: https://studyloopp.vercel.app,https://study-loop-pink.vercel.app,https://studylooop.vercel.app
       - key: CLASSIFIER
-        value: regex
+        value: onnx    # Tier 1c fine-tuned intent model; the Dockerfile fetches the pinned bundle at build time
+                       # Rollback WITHOUT a rebuild: set CLASSIFIER=regex in the Render dashboard (the image still
+                       # holds the bundle; the app also falls back to the regex by itself if the bundle won't load).
+                       # A dashboard override may be reset by a blueprint sync (not verified for this variable):
+                       # to make the rollback durable, commit value: regex here.
       - key: CHECKPOINTER
         value: postgres    # Tier 1b conversation memory; DATABASE_URL must be the Supabase *session pooler*
                            # URL (the direct db.<ref>.supabase.co host is IPv6-only; Render can't reach it)
