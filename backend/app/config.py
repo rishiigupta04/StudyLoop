@@ -59,7 +59,12 @@ class Settings(BaseSettings):
     tts_timeout_s: float = 15.0
 
     classifier: Literal["regex", "onnx"] = "regex"
+    # regex only: the ONNX model routes on its own calibrated τ (calibration.json in the bundle)
     confidence_threshold: float = 0.85
+    # Tier 1c bundle from ml/export_onnx.py (model.onnx + tokenizer.json + calibration.json + meta.json);
+    # empty = backend/models/intent. Missing or broken → the regex classifier keeps serving (see /health).
+    intent_model_dir: str = ""
+    intent_model_threads: int = 1
 
     @field_validator("cors_origins", mode="before")
     @classmethod

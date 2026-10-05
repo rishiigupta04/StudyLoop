@@ -8,10 +8,15 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 def health(request: Request, settings: Settings = Depends(get_settings)) -> dict:
     """Cheap liveness + config check. Also used as the cold-start warm-up ping from the landing page."""
+    from app.orchestration import onnx_classifier
+
+    model = onnx_classifier.active()
     return {
         "status": "ok",
         "env": settings.env,
-        "classifier": settings.classifier,
+        # what actually classifies: "onnx", "regex", or "regex (onnx failed: …)" when CLASSIFIER=onnx couldn't load
+        "classifier": getattr(request.app.state, "classifier", settings.classifier),
+        "classifier_model": model.version if model is not None else None,
         "checkpointer": getattr(request.app.state, "checkpointer", "memory"),
         "configured": {
             "transcript_api": bool(settings.transcript_api_key),

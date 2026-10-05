@@ -1,0 +1,7 @@
+{
+  "temperature": 1.0,
+  "tau": 0.5,
+  "tau_per_intent": {
+    "SEEK_BACK": 0.95
+  }
+}

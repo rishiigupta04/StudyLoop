@@ -40,7 +40,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.config import get_settings
 from app.orchestration import localize as L
-from app.orchestration import regex_classifier
+from app.orchestration import onnx_classifier, regex_classifier
 from app.orchestration.intents import PLAYER_INTENTS, Intent
 from app.orchestration.state import StudyState
 from app.services.retrieval import tokens
@@ -107,8 +107,15 @@ def normalize_input(state: StudyState) -> dict[str, Any]:
 
 
 def _classifier() -> Callable[[str], tuple[Intent, float]]:
-    # Tier 1c swaps in the ONNX DistilBERT model here when CLASSIFIER=onnx.
-    return regex_classifier.classify
+    # CLASSIFIER=onnx: the fine-tuned model, loaded once at startup (Tier 1c); regex when it isn't loaded
+    model = onnx_classifier.active()
+    return model.classify if model is not None else regex_classifier.classify
+
+
+def _threshold(intent: str) -> float:
+    """τ below which a turn goes to llm_router: the ONNX model's calibrated τ, else CONFIDENCE_THRESHOLD."""
+    model = onnx_classifier.active()
+    return model.threshold(intent) if model is not None else get_settings().confidence_threshold
 
 
 @timed("classify_intent")
@@ -691,7 +698,7 @@ def respond(state: StudyState) -> dict[str, Any]:
 # ------------------------------------------------------------------ routing
 def route_after_classify(state: StudyState) -> str:
     intent = state.get("intent", Intent.OOS.value)
-    if state.get("confidence", 0.0) < get_settings().confidence_threshold or intent == Intent.OOS.value:
+    if state.get("confidence", 0.0) < _threshold(intent) or intent == Intent.OOS.value:
         return "llm_router"
     if Intent(intent) in PLAYER_INTENTS:
         return "parse_slots"

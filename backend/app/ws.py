@@ -43,6 +43,7 @@ from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from app.auth import ANONYMOUS, resolve_user
 from app.config import get_settings
+from app.orchestration import onnx_classifier
 from app.orchestration.graph import TurnDeps, default_deps, get_graph, new_turn_input
 from app.services.ingest import get_ingest_service
 from app.services.library import get_library_service
@@ -194,7 +195,8 @@ async def session_ws(ws: WebSocket) -> None:
             "transcript_status": "pending",
             "transcript_fail_reason": None,
         }
-        await send({"type": "ready", "session_id": session["session_id"], "classifier": settings.classifier})
+        classifier = "onnx" if onnx_classifier.active() is not None else "regex"  # what really serves
+        await send({"type": "ready", "session_id": session["session_id"], "classifier": classifier})
         library = get_library_service()
         library.record_anonymous_session(
             session["session_id"], user.id, session["video_id"], session["language"]

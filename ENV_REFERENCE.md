@@ -29,5 +29,7 @@ Every provider key (TranscriptAPI, Groq, Gemini, HF, Supabase service role) live
 | `GROQ_API_KEY` | Tier 1b+ | primary LLM |
 | `GEMINI_API_KEY` | Tier 1b+ | LLM fallback |
 | `HF_TOKEN` | Tier 1a+ | hosted BGE-M3 embeddings |
-| `CLASSIFIER` | no | `regex` (Tier 0) → `onnx` (Tier 1c) |
-| `CONFIDENCE_THRESHOLD` | no | tuned from the confusion matrix in Tier 1c |
+| `CLASSIFIER` | no | `regex` (Tier 0, the rollback) or `onnx` (Tier 1c: the fine-tuned model; `/health` says which one really serves) |
+| `CONFIDENCE_THRESHOLD` | no | routing threshold for the **regex** only; the ONNX model routes on the calibrated τ in its bundle |
+| `INTENT_MODEL_DIR` | no | the ONNX bundle (`model.onnx`, `tokenizer.json`, `labels.json`, `calibration.json`, `meta.json`); empty = `backend/models/intent`. See `docs/TIER1C_MODEL.md` |
+| `INTENT_MODEL_THREADS` | no | onnxruntime intra-op threads for the classifier (default 1: one short utterance at a time) |

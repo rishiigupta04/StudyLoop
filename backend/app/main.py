@@ -25,6 +25,16 @@ async def lifespan(app: FastAPI):
     app.state.checkpointer = desc
     logging.getLogger("studyloop").info("checkpointer: %s", desc)
 
+    # Tier 1c: the fine-tuned classifier, loaded once, before the warm-up turn below runs through it
+    app.state.classifier = "regex"
+    if settings.classifier == "onnx":
+        from app.orchestration import onnx_classifier
+
+        app.state.classifier = await asyncio.to_thread(
+            onnx_classifier.load, settings.intent_model_dir or None, settings.intent_model_threads
+        )
+    logging.getLogger("studyloop").info("classifier: %s", app.state.classifier)
+
     # Run one throwaway turn so the first real voice command isn't slow
     # (cold import + graph compile cost ~70 ms otherwise).
     tid = f"warmup-{uuid.uuid4()}"
@@ -38,6 +48,10 @@ async def lifespan(app: FastAPI):
             "JWKS %s", "loaded" if ok else "unavailable (will retry on first token)"
         )
     yield
+    if settings.classifier == "onnx":
+        from app.orchestration import onnx_classifier
+
+        onnx_classifier.unload()
     close = getattr(saver, "close", None)
     if close is not None:  # write-behind checkpointer: persist the last turns before exiting
         await asyncio.to_thread(close)

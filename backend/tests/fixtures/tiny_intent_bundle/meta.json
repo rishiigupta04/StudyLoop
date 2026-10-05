@@ -1,0 +1,6 @@
+{
+  "version": "tiny-test",
+  "base_model": "bag-of-words fixture",
+  "max_len": 16,
+  "nlp_version": "1.0.0"
+}

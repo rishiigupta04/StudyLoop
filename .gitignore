@@ -52,6 +52,12 @@ __pycache__/
 # ML artifacts (large)
 ml/saved_models/
 ml/runs/
+ml/.venv/
+# CLINC150 / SNIPS downloads (ml/download_oos.py) and the splits built from them: never committed
+ml/data/external/
+ml/data/build/
+# the ONNX intent bundle a deploy puts here (INTENT_MODEL_DIR default)
+backend/models/
 
 # Test run artifacts
 backend/.coverage
