@@ -68,6 +68,20 @@ npm run type-check && npm run build
   `tests/test_collect_scenarios.py`), hold `~` through the app's own `lib/audioCapture.ts`, clip +
   audio in IndexedDB, ZIP (audio + `labels.jsonl`) and JSONL export. **Awaiting:** the first
   real-speaker session. Next: `ml/` pipeline.
+  **`ml/` pipeline done 5 Oct (branch `tier1c-ml`, uncommitted):** bases → 3,771 LLM paraphrases → blind judge on
+  every row + confident learning + two-reviewer review of every val/test row (1,192 logged decisions) → regex /
+  TF-IDF / DistilBERT ×3 seeds / 3-block DistilBERT ×3 / mBERT / MuRIL → ONNX INT8 → calibration →
+  `CLASSIFIER=onnx` (regex rollback). Synthetic test (539 rows): regex 0.770, TF-IDF 0.942, DistilBERT 0.936 ± 0.006,
+  MuRIL 0.957, installed INT8 bundle `intent-20261005-distilbert-s2` 0.933 (macro-F1 0.928). **Decided 5 Oct:** keep
+  the 6-block bundle; misfire budget 2 % → global τ **0.92** served (rule's literal pick; validation misfire 1.9 %,
+  test 2.5 %, coverage 0.905, 4 of 106 OOS turns act; τ 0.95 would be 1.8 % / 0.873 / 2 — a Rishi call, not chosen by
+  looking at test; 1 of 743 corpus commands deferred to `llm_router`, 0 wrong). Everything, incl. the 6- vs 3-block
+  Render analysis and the τ trade-off table, in `docs/TIER1C_MODEL.md`. **Hosting wired, not pushed/deployed**
+  (`docs/TIER1C_DEPLOY.md`: public HF model repo, `backend/bundle.lock.json`, Dockerfile fetch step that fails on a
+  checksum mismatch, `render.yaml` `CLASSIFIER=onnx`; the Docker build fails until the lock holds a real revision, so
+  push the HF repo first; `CLASSIFIER=regex` = rollback). **Awaiting Rishi:** HF username + write token, a licence
+  check (CLINC150 / SNIPS / LLM-output terms) before the repo is public, commit. The CO4 headline (real-speech test
+  set) still has no data.
 
 - Bilingual robustness pass (28 Sep, `docs/BILINGUAL_ROBUSTNESS.md`): `services/term_repair.py` maps a
   phonetically romanized term back to the transcript's own spelling ("baainri sarch" → "binary search")
