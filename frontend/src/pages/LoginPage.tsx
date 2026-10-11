@@ -18,9 +18,18 @@ type AuthForm = {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Only same-site paths: "/video-study-page?v=x" yes, "//evil.com" or "https://…" no. */
+/**
+ * Only same-site paths: "/video-study-page?v=x" yes; "//evil.com", "/\evil.com" or "https://…" no.
+ * Browsers read a backslash as a slash, so the path check alone is not enough: resolve it and compare origins.
+ */
 function safeNext(raw: string | null): string {
-  return raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard-home';
+  const fallback = '/dashboard-home';
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
+  try {
+    return new URL(raw, window.location.origin).origin === window.location.origin ? raw : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function friendly(err: unknown): string {
@@ -37,7 +46,8 @@ export default function LoginPage() {
   const auth = useAuth();
   const [params] = useSearchParams();
   const next = safeNext(params.get('next'));
-  const [mode, setMode] = useState<Mode>('signin');
+  // the landing page's "Get started" links here with ?mode=signup
+  const [mode, setMode] = useState<Mode>(() => (params.get('mode') === 'signup' ? 'signup' : 'signin'));
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
@@ -326,7 +336,7 @@ export default function LoginPage() {
 
         {/* Tech badges — the stack actually in use (roadmap v2) */}
         <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
-          {['Web Speech API', 'LangGraph', 'DistilBERT', 'BGE-M3', 'pgvector'].map((tech) => (
+          {['Sarvam speech', 'LangGraph', 'DistilBERT', 'BGE-M3', 'pgvector'].map((tech) => (
             <span
               key={`tech-${tech}`}
               className="text-xs text-muted-foreground px-2.5 py-1 rounded-full border border-border bg-secondary"
