@@ -67,6 +67,18 @@ export function useStudySocket(opts: {
   /** anti-spoiler Q&A (roadmap D7); false = the learner allows answers from the whole lecture */
   spoilerGuard?: boolean;
   getPlayback: () => { playback_s: number; max_watched_s: number };
+  /**
+   * False until the player is ready AND the video has been placed at its resume point. Until then the position
+   * is meaningless (0), and reporting it would overwrite the learner's saved place, so no heartbeat is sent and
+   * utterances carry no position.
+   */
+  canReportPlayback?: () => boolean;
+  /**
+   * Asked before each heartbeat and each sendPlaybackNow. False = nothing new to say (a paused tab whose playhead
+   * has not moved): an idle second tab or a tab left open overnight must not keep re-stamping its old position as
+   * the newest one over the tab the learner actually watched in. May record what it reports.
+   */
+  heartbeatDue?: () => boolean;
   onNoteEvent?: (e: NoteEvent) => void;
 }) {
   const { videoId, language, getPlayback } = opts;
@@ -96,6 +108,20 @@ export function useStudySocket(opts: {
   // transcript ingestion progress for this video, pushed as `video.status` (Tier 1a)
   const [videoStatus, setVideoStatus] = useState<VideoStatusInfo | null>(null);
   getPlaybackRef.current = getPlayback;
+  const canReportRef = useRef(opts.canReportPlayback);
+  canReportRef.current = opts.canReportPlayback;
+  const heartbeatDueRef = useRef(opts.heartbeatDue);
+  heartbeatDueRef.current = opts.heartbeatDue;
+  /**
+   * The playback fields for an utterance. While the position cannot be trusted yet only the high-water mark goes
+   * (it is not a position and the spoiler guard needs it); the server ignores a message without playback_s.
+   */
+  const playbackFields = () => {
+    const pb = getPlaybackRef.current();
+    return canReportRef.current?.() ?? true ? pb : { max_watched_s: pb.max_watched_s };
+  };
+  /** A heartbeat is sent only when the position is trusted AND something has changed since the last one. */
+  const canHeartbeat = () => (canReportRef.current?.() ?? true) && (heartbeatDueRef.current?.() ?? true);
 
   // new video → new viewing session (yesterday's Q&A must not leak into today's)
   useEffect(() => {
@@ -155,7 +181,8 @@ export function useStudySocket(opts: {
           updateStatus('open');
           openWaitersRef.current.splice(0).forEach((fn) => fn(true));
           heartbeat = window.setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'playback', ...getPlaybackRef.current() }));
+            if (ws.readyState === WebSocket.OPEN && canHeartbeat())
+              ws.send(JSON.stringify({ type: 'playback', ...getPlaybackRef.current() }));
           }, 5000);
           return;
         }
@@ -279,7 +306,7 @@ export function useStudySocket(opts: {
             text,
             language: languageRef.current,
             spoiler_guard: spoilerGuardRef.current,
-            ...getPlaybackRef.current(),
+            ...playbackFields(),
           })
         );
       });
@@ -293,8 +320,16 @@ export function useStudySocket(opts: {
     pendingRef.current.forEach((_, id) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: 'turn.cancel', turn_id: id })));
   }, []);
 
+  /** Send the exact position now (on pause, on leaving the page) instead of waiting for the next 5 s heartbeat. */
+  const sendPlaybackNow = useCallback(() => {
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN && canHeartbeat())
+      ws.send(JSON.stringify({ type: 'playback', ...getPlaybackRef.current() }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // waking = no connection has worked yet on this page (the free-tier server is probably cold), as opposed to a drop
   const waking = status !== 'open' && status !== 'unauthorized' && !everOpenRef.current;
 
-  return { status, waking, videoStatus, sessionId: sessionIdRef.current, sendUtterance, cancelTurn };
+  return { status, waking, videoStatus, sessionId: sessionIdRef.current, sendUtterance, cancelTurn, sendPlaybackNow };
 }

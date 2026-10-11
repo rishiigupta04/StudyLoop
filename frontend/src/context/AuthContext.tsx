@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { setAccessTokenGetter } from '@/services/apiClient';
+import { setPositionScope } from '@/lib/resumePosition';
 
 interface AuthState {
   session: Session | null;
@@ -32,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [recovering, setRecovering] = useState(
     () => new URLSearchParams(window.location.search).get('reset') === '1'
   );
+  // the browser's own copy of every lecture position is per user: set before any child renders and reads it
+  setPositionScope(session?.user?.id);
 
   useEffect(() => {
     if (!supabaseConfigured) {

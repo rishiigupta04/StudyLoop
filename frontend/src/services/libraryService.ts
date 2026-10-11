@@ -4,6 +4,7 @@
  */
 
 import { apiGet, apiSend } from './apiClient';
+import { clearLocalPosition } from '@/lib/resumePosition';
 import type { Note } from './notesService';
 import type { OutlineStatus, VideoStatus } from './transcriptService';
 
@@ -66,17 +67,40 @@ export async function fetchLibrary(): Promise<LibraryVideo[]> {
   return (await apiGet<{ videos: LibraryVideo[] }>('/api/library')).videos;
 }
 
-/** Null when offline: the video page then simply starts at 0 with a fresh high-water mark. */
+/**
+ * Null only after a retry failed too (offline, server asleep, token hiccup). A single transient failure used to
+ * cost the learner their place, so it gets one more try; the study page also keeps its own copy of the position
+ * (lib/resumePosition) and uses it when this returns null. Each attempt is bounded so the page never hangs.
+ */
 export async function fetchResume(videoId: string): Promise<ResumePoint | null> {
-  try {
-    return await apiGet<ResumePoint>(`/api/library/${encodeURIComponent(videoId)}`);
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctl = new AbortController();
+    let timer = 0;
+    // a hard bound: the abort covers the request, the race also covers a token getter that never answers
+    const timeout = new Promise<never>((_, reject) => {
+      timer = window.setTimeout(() => {
+        ctl.abort();
+        reject(new Error('resume fetch timed out'));
+      }, 4500);
+    });
+    try {
+      return await Promise.race([
+        apiGet<ResumePoint>(`/api/library/${encodeURIComponent(videoId)}`, { signal: ctl.signal }),
+        timeout,
+      ]);
+    } catch {
+      /* fall through to the retry */
+    } finally {
+      window.clearTimeout(timer);
+    }
+    if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 400));
   }
+  return null;
 }
 
 export async function removeFromLibrary(videoId: string): Promise<void> {
   await apiSend('DELETE', `/api/library/${encodeURIComponent(videoId)}`);
+  clearLocalPosition(videoId); // this browser's copy would otherwise resume the removed video's old place
 }
 
 export async function fetchDashboard(): Promise<Dashboard> {

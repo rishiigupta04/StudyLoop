@@ -43,6 +43,8 @@ export interface YouTubePlayerApi extends PlayerControls {
   maxWatched: () => number;
   /** raise the high-water mark to what earlier sessions reached (library resume point, Tier 2) */
   seedMaxWatched: (s: number) => void;
+  /** cue the video at a start time without playing it (the resume point; no autoplay permission needed) */
+  cueAt: (s: number) => void;
   /** lower the volume while push-to-talk is held so the mic doesn't hear the lecture (roadmap D8) */
   duck: () => void;
   unduck: () => void;
@@ -247,6 +249,14 @@ export function useYouTubePlayer(
     seedMaxWatched: (s: number) => {
       if (Number.isFinite(s) && s > maxWatchedRef.current) maxWatchedRef.current = s;
     },
+    // Put the video at a start time WITHOUT playing it (the resume point). Unlike seekTo on a cued video, which
+    // starts playback (and needs autoplay to be allowed), this settles in the cued state with the playhead at `s`;
+    // getCurrentTime() reports it after about a second.
+    cueAt: (s: number) =>
+      withPlayer((p) => {
+        p.cueVideoById(videoId, s);
+        setCurrentTime(s);
+      }, undefined),
     duck,
     unduck,
   };

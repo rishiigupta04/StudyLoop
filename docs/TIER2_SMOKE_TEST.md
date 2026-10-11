@@ -127,3 +127,21 @@ Could affect earlier tiers:
 ### E. Earlier tiers still fine
 21. [ ] Voice commands, Q&A, voice notes and the spoiler toggle behave as in TIER0/1B/1E. The first command after
         opening a video still feels instant.
+
+### F. Resume where you left off, every time (11 Oct)
+What changed: the position is also kept in this browser (`lib/resumePosition.ts`, every 3 s, on pause, on page hide,
+at unmount, per user); the newer of the server's and the browser's copy wins; the resume fetch retries; nothing is
+reported until the playhead has landed (no heartbeat of 0 over the saved place); the video is cued at the place
+(no autoplay needed); a `?t=` deep link applies once and is stripped from the URL; the server never lowers the
+stored high-water mark; an idle paused tab stays quiet.
+22. [ ] Play to about 2:00, pause, press F5: the toast says "Resumed at 2:xx", the video sits cued there, paused.
+23. [ ] Play to about 3:00 and close the tab with Ctrl+W. Reopen the lecture from the Study link and from the Library
+        card: both resume at about 3:00 (within the 5 s heartbeat).
+24. [ ] Open a note's timestamp link, keep watching to a later point, press F5: it resumes at the later point, not at
+        the note's time, and the URL no longer has `&t=`.
+25. [ ] Two tabs on one lecture: leave one paused, watch in the other, close the watching tab first. Reopening resumes
+        at the watched place, not at the idle tab's old position.
+26. [ ] Stop the backend, reload the study page: the video still resumes from this browser's copy (a notice that the
+        server is unreachable is fine). Restart the backend: no jump back to 0:00 in the Library afterwards.
+27. [ ] Remove the video from the Library, then open it again: it starts at 0:00 (the browser's copy was cleared too).
+28. [ ] Hindi pass: the "Resumed at" toast reads `m:ss से आगे शुरू किया` with the "शुरू से देखें" action in हिं mode.

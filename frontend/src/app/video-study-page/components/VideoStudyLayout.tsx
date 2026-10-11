@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import VideoPane from './VideoPane';
@@ -22,6 +22,7 @@ import { executePlayerAction, playerUnavailableMessage, resetSeekHistory } from 
 import { captureSupported } from '@/lib/audioCapture';
 import { hasVoiceFor } from '@/lib/tts';
 import { setLastVideo } from '@/lib/lastVideo';
+import { loadLocalPosition, pickMaxWatched, pickResumeSeconds, saveLocalPosition } from '@/lib/resumePosition';
 
 const STT_OPTIONS: { id: SttProvider; label: string; toast: string }[] = [
   { id: 'sarvam', label: 'Sarvam', toast: 'Speech-to-text: Sarvam (Hindi/Hinglish model, uses Sarvam credit)' },
@@ -88,16 +89,45 @@ function StudyView({ videoId }: { videoId: string }) {
   const player = useYouTubePlayer(playerHostRef, videoId);
   const asr = useSpeechRecognition();
   const notesRef = useRef<VideoNotesState | null>(null);
+  // The playhead says 0 until the video has been moved to where the learner left off, and getCurrentTime() lags a
+  // seek by a moment. Reporting that 0 (to the server or to this browser's own copy) would overwrite the saved
+  // place, so nothing is reported until the playhead has really landed: placedRef = the starting point was chosen,
+  // reportableRef = the position can be trusted.
+  const placedRef = useRef<string | null>(null);
+  const reportableRef = useRef<string | null>(null);
+  const playerLatest = useRef(player);
+  playerLatest.current = player;
+  const goodPosRef = useRef({ t: 0, mw: 0 });
+  const lastHeartbeatRef = useRef<number | null>(null);
+  const lastSavedRef = useRef<number | null>(null);
+  /** The live playhead, or the last good reading while the player is unavailable (it reports 0 then). The
+   *  high-water mark lives in a ref of the player hook, so it is valid even while the player itself is not. */
+  const readPosition = () => {
+    const p = playerLatest.current;
+    const mw = p.maxWatched();
+    if (!p.isReady?.()) return { t: goodPosRef.current.t, mw };
+    goodPosRef.current = { t: p.getCurrentTime(), mw };
+    return goodPosRef.current;
+  };
   const socket = useStudySocket({
     videoId,
     language,
     spoilerGuard,
     // heartbeat + utterances: also the resume point (Tier 2 library, written behind on the server)
-    getPlayback: () => ({
-      playback_s: player.getCurrentTime(),
-      max_watched_s: player.maxWatched(),
-      duration_s: player.duration || undefined,
-    }),
+    getPlayback: () => {
+      const pos = readPosition();
+      return { playback_s: pos.t, max_watched_s: pos.mw, duration_s: player.duration || undefined };
+    },
+    canReportPlayback: () => player.status === 'ready' && reportableRef.current === videoId,
+    // a paused tab whose playhead has not moved has nothing new to say: an idle second tab (or one left open
+    // overnight) must not keep re-stamping its old position over the tab the learner actually watched in
+    heartbeatDue: () => {
+      const t = readPosition().t;
+      const last = lastHeartbeatRef.current;
+      if (!playerLatest.current.isPlaying && last != null && Math.abs(t - last) < 1) return false;
+      lastHeartbeatRef.current = t;
+      return true;
+    },
     onNoteEvent: (e) => notesRef.current?.onNoteEvent(e), // voice notes (Tier 1e)
   });
   const notes = useVideoNotes(videoId, socket.sessionId);
@@ -190,7 +220,6 @@ function StudyView({ videoId }: { videoId: string }) {
   // earlier sessions counts for the no-spoiler rule: they've seen it.
   const [resume, setResume] = useState<ResumePoint | null>(null);
   const [resumeLoaded, setResumeLoaded] = useState(false);
-  const placedRef = useRef<string | null>(null);
   useEffect(() => {
     let alive = true;
     setResume(null);
@@ -205,10 +234,64 @@ function StudyView({ videoId }: { videoId: string }) {
     };
   }, [videoId]);
   useEffect(() => {
-    if (resume && resume.video_id === videoId) player.seedMaxWatched(resume.max_watched_s);
-  }, [resume, videoId, player]);
+    if (!resumeLoaded) return;
+    // the highest mark either copy knows: a failed fetch must not reset what the learner has already seen
+    const server = resume && resume.video_id === videoId ? resume : null;
+    const mw = pickMaxWatched(server, loadLocalPosition(videoId));
+    if (mw > 0) playerLatest.current.seedMaxWatched(mw);
+  }, [resume, resumeLoaded, videoId]);
+
+  // Move the playhead to the saved place. Nothing playing yet (cued / unstarted): CUE it there, which needs no
+  // autoplay permission and makes no sound; seekTo on a cued video would start playback (and be blocked or heard).
+  // Otherwise seek, and keep it paused if the learner had not pressed play.
+  const moveTo = (target: number, keepPlaying: boolean) => {
+    const p = playerLatest.current;
+    if (p.playerState === 5 || p.playerState === -1) {
+      p.cueAt(target);
+      return;
+    }
+    p.seekTo(target);
+    if (!keepPlaying) window.setTimeout(() => playerLatest.current.pause(), 300);
+  };
+
+  // Positions may be reported once the playhead has really landed where we put it (see reportableRef above). A seek
+  // that did not take is repeated, quietly, for up to a minute (and re-paused if the learner had not pressed play).
+  // Reporting unlocks early only when the learner has clearly taken over (playing, the playhead advancing), and
+  // never on a playhead still sitting at the start while the saved place is far ahead: that 0 would overwrite it.
+  // needPlayback: the saved place is unknown (the fetch failed and this browser has no copy), so nothing is
+  // reported until the learner has really watched for a few seconds.
+  const unlockReporting = (target: number | null, opts: { wasPlaying?: boolean; needPlayback?: boolean } = {}) => {
+    const startedAt = Date.now();
+    let tries = 0;
+    let lastT = -1;
+    const check = () => {
+      const p = playerLatest.current;
+      if (!p.isReady?.()) return; // the page was left
+      const t = p.getCurrentTime();
+      const advancing = p.isPlaying && lastT >= 0 && t > lastT + 1;
+      lastT = t;
+      if (opts.needPlayback) {
+        if (advancing && t >= 15) {
+          reportableRef.current = videoId;
+          return;
+        }
+      } else if (target == null || t >= target - 10) {
+        reportableRef.current = videoId;
+        return;
+      } else if (advancing && Date.now() - startedAt > 6000) {
+        reportableRef.current = videoId; // the learner took over before the seek landed
+        return;
+      } else if (tries < 3) {
+        tries += 1;
+        moveTo(target, !!opts.wasPlaying);
+      }
+      if (Date.now() - startedAt < 60000) window.setTimeout(check, 1500);
+    };
+    window.setTimeout(check, 1500);
+  };
 
   // where the video starts, once per video: a deep link (?t=<s> or state.timestamp) wins, else the resume point
+  // (the newer of the server's copy and this browser's own copy)
   const queryT = new URLSearchParams(location.search).get('t');
   useEffect(() => {
     if (player.status !== 'ready' || placedRef.current === videoId) return;
@@ -216,20 +299,87 @@ function StudyView({ videoId }: { videoId: string }) {
     if (explicit) {
       placedRef.current = videoId;
       seekToTimestamp(explicit);
+      const secs = parseClock(explicit);
+      unlockReporting(Number.isFinite(secs) ? secs : null, { wasPlaying: true });
+      // A deep link applies ONCE. Left in the URL or the history state, a reload, a back navigation or a restored
+      // tab would apply it again and overwrite the place the learner actually reached.
+      const rest = new URLSearchParams(location.search);
+      rest.delete('t');
+      const search = rest.toString();
+      navigate({ pathname: location.pathname, search: search ? `?${search}` : '' }, { replace: true, state: null });
       return;
     }
     if (!resumeLoaded) return;
     placedRef.current = videoId;
-    const at = resumeTarget(resume, player.duration);
-    if (at == null) return;
+    const server = resume && resume.video_id === videoId ? resume : null;
+    const local = loadLocalPosition(videoId);
+    const best = pickResumeSeconds(server, local);
+    // the duration may still be unknown here (the player reports 0 until its metadata loads): this browser kept it
+    const at = resumeTarget(best == null ? null : { last_position_s: best }, player.duration || local?.d || 0);
+    if (at == null) {
+      unlockReporting(null, { needPlayback: !server && !local });
+      return;
+    }
     const wasPlaying = player.isPlaying;
-    player.seekTo(at); // on a cued video this also starts playback: resuming shouldn't autoplay
-    if (!wasPlaying) window.setTimeout(() => player.pause(), 300);
+    unlockReporting(at, { wasPlaying });
+    moveTo(at, wasPlaying);
     toast(language === 'hi' ? `${formatClock(at)} से आगे शुरू किया` : `Resumed at ${formatClock(at)}`, {
       action: { label: language === 'hi' ? 'शुरू से देखें' : 'Start over', onClick: () => player.seekTo(0) },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.status, resumeLoaded, videoId, queryT, location.state]);
+
+  // This browser keeps its own copy of the position, so coming back never depends on one fetch or on the server's
+  // write-behind lag: every 3 s, on pause, and when the page is hidden or closed (the exact position is also pushed
+  // to the server then). Never before the playhead can be trusted, and never read at unmount, when the player is
+  // already destroyed and would say 0.
+  const socketRef = useRef(socket);
+  socketRef.current = socket;
+  const saveLocal = () => {
+    if (reportableRef.current !== videoId) return;
+    const pos = readPosition();
+    const p = playerLatest.current;
+    // a paused tab whose playhead has not moved has nothing new to save (an idle tab must not re-stamp an old place)
+    if (!p.isPlaying && lastSavedRef.current != null && Math.abs(pos.t - lastSavedRef.current) < 1) return;
+    lastSavedRef.current = pos.t;
+    saveLocalPosition(videoId, pos.t, pos.mw, p.duration);
+  };
+  // leaving the study page inside the app: layout-effect cleanups run BEFORE the player is destroyed (a passive
+  // cleanup), so the live playhead is still readable here, and the exact place is saved and pushed
+  useLayoutEffect(
+    () => () => {
+      saveLocal();
+      socketRef.current.sendPlaybackNow();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  useEffect(() => {
+    if (player.status !== 'ready') return;
+    const onHide = () => {
+      saveLocal();
+      socketRef.current.sendPlaybackNow();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') onHide();
+    };
+    const id = window.setInterval(saveLocal, 3000);
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.status, videoId]);
+  useEffect(() => {
+    // paused or ended: the exact place, now (the 5 s heartbeat only runs while the socket is open)
+    if (player.isPlaying || player.status !== 'ready' || reportableRef.current !== videoId) return;
+    saveLocal();
+    socketRef.current.sendPlaybackNow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.isPlaying]);
 
   useEffect(() => {
     try {
