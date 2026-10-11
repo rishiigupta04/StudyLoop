@@ -3,7 +3,9 @@
 - `user_video_history` (resume at `last_position_s`, the spoiler high-water mark `max_watched_s`) is
   written **behind** the WebSocket heartbeat: `note_position()` only updates memory; one background flusher
   upserts dirty rows every FLUSH_S, and a session's row is flushed when its socket closes. No turn ever
-  waits on it.
+  waits on it. The READ endpoints (library, dashboard, chats, resume) first `settle()` this user's pending
+  and in-flight writes, bounded by READ_FLUSH_WAIT_S, so leaving the study page and opening the Library at
+  once shows the position just saved.
 - Library = history rows joined with the shared `videos` cache (title, status, outline) + notes counts.
 - Dashboard = library + notes + `study_sessions` (study time per day).
 - Chat history = each session's conversation memory in the LangGraph checkpointer (roadmap §4: no
@@ -31,6 +33,7 @@ from app.services.notes import ANONYMOUS_ID, VIDEO_ID
 log = logging.getLogger("studyloop.library")
 
 FLUSH_S = 20.0  # at most one history write per video per ~20 s of watching
+READ_FLUSH_WAIT_S = 3.0  # a read waits at most this long for the user's own pending writes
 COMPLETED_AT = 0.9  # watched 90 % of the lecture → "completed"
 MAX_SESSION_S = 4 * 3600  # a session left open overnight doesn't count as 12 h of study
 LIBRARY_VIDEO_COLUMNS = (
@@ -277,6 +280,8 @@ class LibraryService:
         self._flush_s = flush_s
         self._dirty: dict[tuple[str, str], dict[str, Any]] = {}
         self._last_flush: dict[tuple[str, str], float] = {}
+        self._writing: dict[tuple[str, str], list[asyncio.Future[None]]] = {}  # upserts on the wire
+        self._seq: dict[tuple[str, str], int] = {}  # per key: how many flushes have started (newest wins)
         self._flusher: asyncio.Task[None] | None = None
         self._tasks: set[asyncio.Task[Any]] = set()
 
@@ -324,11 +329,15 @@ class LibraryService:
             for key in due:
                 await self._flush_key(key)
 
-    async def _flush_key(self, key: tuple[str, str]) -> None:
+    def _begin_flush(self, key: tuple[str, str]) -> tuple[Any, ...] | None:
+        """Take this key's pending row out of _dirty and register it as "on the wire", in ONE synchronous
+        step. Nothing awaits in between, so a reader always finds the key in exactly one of _dirty / _writing /
+        the database, never in none of them (a flush that is merely queued as a task would leave that gap)."""
         item = self._dirty.pop(key, None)
         if item is None:
-            return
+            return None
         self._last_flush[key] = time.monotonic()
+        seq = self._seq[key] = self._seq.get(key, 0) + 1
         row = {
             "user_id": item["user_id"],
             "video_id": item["video_id"],
@@ -337,21 +346,79 @@ class LibraryService:
             "status": status_for(item["max_watched_s"], item.get("duration_s")),
             "last_studied_at": _iso(_now()),
         }
+        done: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        earlier = list(self._writing.get(key, []))  # writes for this key already on the wire
+        self._writing.setdefault(key, []).append(done)
+        return key, item, row, seq, done, earlier
+
+    async def _finish_flush(self, job: tuple[Any, ...]) -> None:
+        key, item, row, seq, done, earlier = job
         try:
+            if earlier:  # same-key writes land in order: a slow older one must not overwrite this newer row
+                await asyncio.wait(earlier)
             await self.repo_for(item["user_id"]).upsert_history(row)
         except Exception as exc:  # the next heartbeat tries again; voice never notices
             log.warning("history %s/%s not saved: %s", item["user_id"][:8], item["video_id"], exc)
-            self._dirty.setdefault(key, item)
+            if (
+                self._seq.get(key) == seq
+            ):  # only if nothing newer was written since: never put an old row back
+                self._dirty.setdefault(key, item)
+                self._ensure_flusher()
+        finally:
+            writes = self._writing.get(key, [])
+            if done in writes:
+                writes.remove(done)
+            if not writes:
+                self._writing.pop(key, None)
+            if not done.done():
+                done.set_result(None)
 
-    def flush_soon(self, user_id: str, video_id: str) -> asyncio.Task[Any] | None:
-        """The socket closed: write this video's latest position now (in the background)."""
-        key = (user_id, video_id)
-        if key not in self._dirty:
-            return None
-        task = asyncio.create_task(self._flush_key(key))
+    async def _flush_key(self, key: tuple[str, str]) -> None:
+        job = self._begin_flush(key)
+        if job is not None:
+            await self._finish_flush(job)
+
+    def _spawn(self, coro: Any) -> asyncio.Task[Any]:
+        task = asyncio.get_running_loop().create_task(coro)
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
         return task
+
+    def flush_soon(self, user_id: str, video_id: str) -> asyncio.Task[Any] | None:
+        """The socket closed: write this video's latest position now (in the background). The row is
+        registered as in flight immediately, so a read that follows waits for it."""
+        job = self._begin_flush((user_id, video_id))
+        return None if job is None else self._spawn(self._finish_flush(job))
+
+    def _inflight(self, user_id: str, video_id: str | None = None) -> list[asyncio.Future[None]]:
+        """Upserts already on the wire for this user (or just this video)."""
+        return [
+            f
+            for (u, v), fs in self._writing.items()
+            if u == user_id and (video_id is None or v == video_id)
+            for f in fs
+        ]
+
+    @staticmethod
+    async def _wait(waits: list[asyncio.Future[Any]], timeout: float | None) -> None:
+        """Wait for the given writes, but never longer than `timeout`, and never cancel them (a cancelled
+        upsert would lose a row that already left `_dirty`)."""
+        if not waits:
+            return
+        _, pending = await asyncio.wait(waits, timeout=READ_FLUSH_WAIT_S if timeout is None else timeout)
+        if pending:
+            log.warning("history write still pending after the read wait (%d)", len(pending))
+
+    async def settle(self, user_id: str, *, timeout: float | None = None) -> None:
+        """Before a READ: make this user's resume rows visible in the repo. Awaits writes already on the
+        wire (another reader's, the socket close's) and flushes the user's dirty keys now (the 20 s throttle
+        is for heartbeats, not for a reader). Bounded, so a slow database cannot hang the page; other users'
+        rows are untouched. Turns never call this."""
+        for key in [k for k in self._dirty if k[0] == user_id]:
+            job = self._begin_flush(key)  # registered as in flight before anything else can run
+            if job is not None:
+                self._spawn(self._finish_flush(job))
+        await self._wait(self._inflight(user_id), timeout)
 
     async def flush_all(self) -> None:
         """Tests / shutdown."""
@@ -360,6 +427,7 @@ class LibraryService:
 
     # ---- reads
     async def resume(self, user_id: str, video_id: str) -> dict[str, Any]:
+        await self._wait(self._inflight(user_id, video_id), None)  # a write on the wire is not in the DB yet
         pending = self._dirty.get((user_id, video_id))
         row = await self.repo_for(user_id).get_history(user_id, video_id) or {}
         src = {**row, **(pending or {})}
@@ -372,12 +440,18 @@ class LibraryService:
         }
 
     async def library(self, user_id: str) -> list[dict[str, Any]]:
+        await self.settle(user_id)  # dashboard() and chats() read through here too
         repo = self.repo_for(user_id)
         rows, counts = await asyncio.gather(repo.list_history(user_id), repo.note_counts(user_id))
         return [library_item(r, counts.get(r["video_id"], 0)) for r in rows]
 
     async def remove(self, user_id: str, video_id: str) -> bool:
-        self._dirty.pop((user_id, video_id), None)
+        key = (user_id, video_id)
+        # nothing not yet written may re-create the row; a write on the wire lands before the delete; and a
+        # failed write must not put its copy back afterwards
+        self._dirty.pop(key, None)
+        await self._wait(self._inflight(user_id, video_id), None)
+        self._dirty.pop(key, None)
         return await self.repo_for(user_id).delete_history(user_id, video_id)
 
     async def dashboard(self, user_id: str) -> dict[str, Any]:

@@ -39,6 +39,20 @@ class CountingRepo(InMemoryLibraryRepo):
         await super().upsert_history(row)
 
 
+class GatedRepo(CountingRepo):
+    """A slow database: upsert_history blocks until `gate` is set (`started` says a write is on the wire)."""
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.gate = asyncio.Event()
+        self.started = asyncio.Event()
+
+    async def upsert_history(self, row):
+        self.started.set()
+        await self.gate.wait()
+        await super().upsert_history(row)
+
+
 def svc(repo=None, **kw):
     repo = repo or CountingRepo()
     return LibraryService(repo, memory=repo, **kw), repo
@@ -109,6 +123,209 @@ async def test_resume_prefers_pending_position_and_the_highest_mark():
     r = await s.resume(USER, VID)
     assert r["last_position_s"] == 420 and r["max_watched_s"] == 800
     assert (await s.resume(USER, "aircAruvnKk"))["status"] == "not-started"
+
+
+# ------------------------------------------------------------------ reads vs the write-behind (T2-01)
+async def test_library_read_right_after_a_heartbeat_sees_the_row():
+    s, repo = svc(flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=640, duration_s=3200)
+    assert repo.history == {}  # write-behind: nothing in the database yet
+    (item,) = await s.library(USER)  # ...but opening the Library right now must not say "empty"
+    assert (item["video_id"], item["last_position_s"], item["max_watched_s"]) == (VID, 420, 640)
+    assert item["status"] == "in-progress"
+    assert len(repo.writes) == 1 and s._dirty == {}
+
+
+async def test_library_read_shows_the_current_position_not_the_stale_row():
+    s, repo = svc(flush_s=60)
+    await repo.upsert_history(
+        {
+            "user_id": USER,
+            "video_id": VID,
+            "last_position_s": 100,
+            "max_watched_s": 100,
+            "status": "in-progress",
+        }
+    )
+    other = "22222222-2222-2222-2222-222222222222"
+    s.note_position(USER, VID, position_s=500, max_watched_s=500)
+    s.note_position(other, VID, position_s=50, max_watched_s=50)
+    (item,) = await s.library(USER)
+    assert item["last_position_s"] == 500
+    assert (other, VID) in s._dirty  # a read flushes its own user's rows only
+    assert all(w["user_id"] == USER for w in repo.writes)
+
+
+async def test_library_read_waits_for_a_write_already_on_the_wire():
+    repo = GatedRepo()
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=420)
+    s.flush_soon(USER, VID)  # the socket just closed
+    await repo.started.wait()  # the row left _dirty and is in flight: neither memory nor the DB has it
+    assert s._dirty == {} and repo.history == {}
+    read = asyncio.create_task(s.library(USER))
+    await asyncio.sleep(0.05)
+    assert not read.done()  # it waits instead of answering with an empty library
+    repo.gate.set()
+    (item,) = await asyncio.wait_for(read, 2)
+    assert item["last_position_s"] == 420
+
+
+async def test_two_readers_arriving_together_both_wait_for_the_same_write():
+    repo = GatedRepo()
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=420)
+    r1 = asyncio.create_task(s.library(USER))
+    r2 = asyncio.create_task(s.library(USER))  # the same loop turn: the first flush task has not started yet
+    await repo.started.wait()
+    await asyncio.sleep(0.05)
+    assert (
+        not r1.done() and not r2.done()
+    )  # a second reader must not slip past while the upsert is on the wire
+    repo.gate.set()
+    (a,), (b,) = await asyncio.wait_for(asyncio.gather(r1, r2), 2)
+    assert a["last_position_s"] == b["last_position_s"] == 420
+
+
+class _SlowFirstWrite(CountingRepo):
+    """The first upsert is slow (and optionally fails); later ones go straight through."""
+
+    def __init__(self, *, first_fails: bool = False):
+        super().__init__()
+        self.calls = 0
+        self.first_fails = first_fails
+        self.release_first = asyncio.Event()
+
+    async def upsert_history(self, row):
+        self.calls += 1
+        if self.calls == 1:
+            await self.release_first.wait()
+            if self.first_fails:
+                raise RuntimeError("db hiccup")
+        await CountingRepo.upsert_history(self, row)
+
+
+async def test_same_key_writes_land_in_order_even_when_the_older_one_is_slow():
+    repo = _SlowFirstWrite()
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=100, max_watched_s=100)
+    s.flush_soon(USER, VID)
+    while repo.calls < 1:  # the older write is on the wire and stuck
+        await asyncio.sleep(0.01)
+    s.note_position(USER, VID, position_s=500, max_watched_s=500)
+    reader = asyncio.create_task(s.settle(USER))
+    await asyncio.sleep(0.05)
+    assert repo.calls == 1  # the newer write queues behind it instead of overtaking
+    repo.release_first.set()
+    await asyncio.wait_for(reader, 2)
+    assert [w["last_position_s"] for w in repo.writes] == [100, 500]
+    assert repo.history[(USER, VID)]["last_position_s"] == 500  # the older write did not land last
+
+
+async def test_a_failed_older_write_does_not_put_its_stale_row_back_over_a_newer_one():
+    repo = _SlowFirstWrite(first_fails=True)
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=100, max_watched_s=100)
+    s.flush_soon(USER, VID)
+    while repo.calls < 1:
+        await asyncio.sleep(0.01)
+    s.note_position(USER, VID, position_s=500, max_watched_s=500)
+    reader = asyncio.create_task(s.settle(USER))
+    await asyncio.sleep(0.05)
+    repo.release_first.set()  # the older write now fails
+    await asyncio.wait_for(reader, 2)
+    assert s._dirty == {}  # the stale 100 was not queued again behind the newer 500
+    assert repo.history[(USER, VID)]["last_position_s"] == 500
+
+
+async def test_library_read_gives_up_on_a_hung_write_without_cancelling_it(monkeypatch):
+    monkeypatch.setattr(LB, "READ_FLUSH_WAIT_S", 0.05)
+    repo = GatedRepo()
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=420)
+    loop = asyncio.get_running_loop()
+    t0 = loop.time()
+    assert await s.library(USER) == []  # a slow database does not hang the page
+    assert loop.time() - t0 < 1
+    repo.gate.set()  # the bounded wait did not cancel the upsert: it still lands
+    await asyncio.wait_for(s.settle(USER), 2)
+    assert repo.history[(USER, VID)]["last_position_s"] == 420
+
+
+async def test_a_failed_write_does_not_break_the_read_and_stays_pending():
+    class FlakyOnce(CountingRepo):
+        fail = True
+
+        async def upsert_history(self, row):
+            if self.fail:
+                self.fail = False
+                raise LB.LibraryError("HTTP 503")
+            await super().upsert_history(row)
+
+    s, _ = svc(FlakyOnce(), flush_s=60)
+    s.note_position(USER, VID, position_s=50, max_watched_s=50)
+    assert await s.library(USER) == []
+    assert (USER, VID) in s._dirty  # kept for the next flush
+    assert [i["last_position_s"] for i in await s.library(USER)] == [50]
+
+
+async def test_dashboard_and_chats_settle_pending_history_too():
+    s, repo = svc(flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=640, duration_s=3200)
+    dash = await s.dashboard(USER)
+    assert dash["stats"]["videos"] == 1 and dash["recent"][0]["last_position_s"] == 420
+    s.note_position(USER, "aircAruvnKk", position_s=10, max_watched_s=10)
+    assert await s.chats(USER) == []  # no sessions here, but the read still flushed the history
+    assert (USER, "aircAruvnKk") in repo.history
+
+
+async def test_resume_waits_for_a_write_already_on_the_wire():
+    repo = GatedRepo()
+    s, _ = svc(repo, flush_s=60)
+    repo.gate.set()
+    await repo.upsert_history(
+        {
+            "user_id": USER,
+            "video_id": VID,
+            "last_position_s": 100,
+            "max_watched_s": 100,
+            "status": "in-progress",
+        }
+    )
+    repo.gate.clear()
+    repo.started.clear()
+    s.note_position(USER, VID, position_s=500, max_watched_s=500)
+    s.flush_soon(USER, VID)
+    await repo.started.wait()
+    got = asyncio.create_task(s.resume(USER, VID))
+    await asyncio.sleep(0.05)
+    assert not got.done()  # the stale row (100) is not what it answers with
+    repo.gate.set()
+    assert (await asyncio.wait_for(got, 2))["last_position_s"] == 500
+
+
+# ------------------------------------------------------------------ remove vs pending writes (T2-15, backend half)
+async def test_remove_waits_for_a_write_on_the_wire_so_the_row_is_not_recreated():
+    repo = GatedRepo()
+    s, _ = svc(repo, flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=420)
+    s.flush_soon(USER, VID)
+    await repo.started.wait()
+    removal = asyncio.create_task(s.remove(USER, VID))
+    await asyncio.sleep(0.05)
+    assert not removal.done()  # the delete queues behind the write
+    repo.gate.set()
+    assert await asyncio.wait_for(removal, 2) is True
+    assert repo.history == {}  # the delete landed last
+
+
+async def test_remove_after_a_scheduled_flush_leaves_no_row():
+    s, repo = svc(flush_s=60)
+    s.note_position(USER, VID, position_s=420, max_watched_s=420)
+    task = s.flush_soon(USER, VID)  # registered as in flight the moment it is called, though not yet run
+    await s.remove(USER, VID)  # waits for that write, then deletes: the video must not come back
+    await task
+    assert repo.history == {} and s._dirty == {}
 
 
 # ------------------------------------------------------------------ views
@@ -255,6 +472,24 @@ def test_api_and_ws_heartbeat_fill_the_library(monkeypatch):
         assert c.delete(f"/api/library/{VID}").status_code == 204
         assert c.delete(f"/api/library/{VID}").status_code == 404
         assert c.get("/api/library").json()["videos"] == []
+
+
+def test_library_endpoints_need_no_polling_after_the_socket_closes():
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    with TestClient(create_app()) as c:
+        with c.websocket_connect("/ws/session") as ws:
+            ws.send_json({"type": "hello", "video_id": VID, "language": "en"})
+            assert recv(ws)["type"] == "ready"
+            ws.send_json({"type": "playback", "playback_s": 610, "max_watched_s": 640, "duration_s": 3202})
+            ws.send_json({"type": "utterance", "turn_id": "t1", "text": "what is a peak", "playback_s": 650})
+            assert recv(ws)["turn_id"] == "t1"
+        # the very first read after leaving the study page: no retry loop
+        lib = c.get("/api/library").json()["videos"]
+        assert lib and lib[0]["video_id"] == VID and lib[0]["last_position_s"] == 650
+        assert c.get("/api/dashboard").json()["stats"]["videos"] == 1
 
 
 def test_anonymous_sessions_only_recorded_for_anonymous():

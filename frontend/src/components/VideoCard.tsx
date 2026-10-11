@@ -31,7 +31,8 @@ export default function VideoCard({
   onRemove?: (v: LibraryVideo) => void;
   compact?: boolean;
 }) {
-  const at = resumeTarget(video, video.duration_s ?? 0);
+  const at = resumeTarget(video, video.duration_s ?? 0); // only labels the link: the study page resumes by itself
+  const to = studyUrl(video.video_id); // no &t=: an explicit time skips the resume path (toast, no autoplay)
   const pct = Math.round((video.progress ?? 0) * 100);
   const statusLabel =
     video.status === 'completed' ? T.completed[lang] : video.status === 'in-progress' ? T.inProgress[lang] : T.notStarted[lang];
@@ -45,7 +46,7 @@ export default function VideoCard({
 
   return (
     <div className="group glass-card rounded-2xl border border-border/70 hover:border-indigo-500/40 transition-colors overflow-hidden flex flex-col">
-      <Link to={studyUrl(video.video_id, at)} className="relative block aspect-video bg-black/40 overflow-hidden">
+      <Link to={to} className="relative block aspect-video bg-black/40 overflow-hidden">
         <img
           src={video.thumbnail_url}
           alt=""
@@ -64,7 +65,7 @@ export default function VideoCard({
       <div className="p-3.5 flex-1 flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <Link
-            to={studyUrl(video.video_id, at)}
+            to={to}
             className="text-sm font-bold text-foreground leading-snug line-clamp-2 hover:text-indigo-300"
             title={video.title || video.video_id}
           >
@@ -101,7 +102,7 @@ export default function VideoCard({
         </div>
         <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span>{timeAgo(video.last_studied_at, lang)}</span>
-          <Link to={studyUrl(video.video_id, at)} className="font-bold text-indigo-300 hover:text-cyan-300 flex items-center gap-1">
+          <Link to={to} className="font-bold text-indigo-300 hover:text-cyan-300 flex items-center gap-1">
             <Icon name="PlayIcon" size={12} />
             {at != null ? `${T.resume[lang]} ${formatClock(at)}` : T.start[lang]}
           </Link>
