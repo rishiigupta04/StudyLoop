@@ -269,6 +269,10 @@ async def _watch_video(send: Any, session: dict[str, Any]) -> None:
 
 def _note_position(session: dict[str, Any], msg: dict[str, Any]) -> None:
     """Resume point + high-water mark into memory (written behind, never awaited here)."""
+    if (
+        msg.get("playback_s") is None
+    ):  # no position in the message (the player was not placed yet): not a position
+        return
     try:
         duration = float(msg.get("duration_s") or 0) or None
         get_library_service().note_position(

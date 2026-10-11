@@ -282,6 +282,9 @@ class LibraryService:
         self._last_flush: dict[tuple[str, str], float] = {}
         self._writing: dict[tuple[str, str], list[asyncio.Future[None]]] = {}  # upserts on the wire
         self._seq: dict[tuple[str, str], int] = {}  # per key: how many flushes have started (newest wins)
+        # per key: the highest max_watched_s already stored. A later session (a page load whose resume fetch failed,
+        # a second device) starts its own mark near 0 and must never lower what the learner has already seen.
+        self._floor: dict[tuple[str, str], float] = {}
         self._flusher: asyncio.Task[None] | None = None
         self._tasks: set[asyncio.Task[Any]] = set()
 
@@ -356,7 +359,21 @@ class LibraryService:
         try:
             if earlier:  # same-key writes land in order: a slow older one must not overwrite this newer row
                 await asyncio.wait(earlier)
-            await self.repo_for(item["user_id"]).upsert_history(row)
+            uid, vid = item["user_id"], item["video_id"]
+            floor = self._floor.get(key)
+            if floor is None:  # first write of this key in this process: what is already stored?
+                try:
+                    stored = await self.repo_for(uid).get_history(uid, vid) or {}
+                    floor = float(stored.get("max_watched_s") or 0)
+                    self._floor[key] = floor
+                except Exception as exc:  # unknown: write without a floor this once, look again next time
+                    log.warning("history %s/%s floor unknown: %s", uid[:8], vid, exc)
+                    floor = 0.0
+            if floor > row["max_watched_s"]:
+                row["max_watched_s"] = floor
+                row["status"] = status_for(floor, item.get("duration_s"))
+            await self.repo_for(uid).upsert_history(row)
+            self._floor[key] = max(self._floor.get(key, 0.0), row["max_watched_s"])
         except Exception as exc:  # the next heartbeat tries again; voice never notices
             log.warning("history %s/%s not saved: %s", item["user_id"][:8], item["video_id"], exc)
             if (
@@ -452,7 +469,9 @@ class LibraryService:
         self._dirty.pop(key, None)
         await self._wait(self._inflight(user_id, video_id), None)
         self._dirty.pop(key, None)
-        return await self.repo_for(user_id).delete_history(user_id, video_id)
+        deleted = await self.repo_for(user_id).delete_history(user_id, video_id)
+        self._floor.pop(key, None)  # a re-watch after removing the video starts from nothing
+        return deleted
 
     async def dashboard(self, user_id: str) -> dict[str, Any]:
         repo = self.repo_for(user_id)

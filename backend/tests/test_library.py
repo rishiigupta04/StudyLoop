@@ -238,6 +238,42 @@ async def test_a_failed_older_write_does_not_put_its_stale_row_back_over_a_newer
     assert repo.history[(USER, VID)]["last_position_s"] == 500
 
 
+async def test_a_later_session_never_lowers_the_stored_high_water_mark():
+    s, repo = svc(flush_s=60)
+    s.note_position(USER, VID, position_s=3000, max_watched_s=3000, duration_s=3200)
+    await s.flush_all()
+    # a new page load whose resume fetch failed starts its own mark near 0 (fresh service: nothing cached)
+    s2, _ = svc(repo, flush_s=60)
+    s2.note_position(USER, VID, position_s=20, max_watched_s=20, duration_s=3200)
+    await s2.flush_all()
+    row = repo.history[(USER, VID)]
+    assert row["max_watched_s"] == 3000  # what the learner has seen never goes down
+    assert row["status"] == "completed"
+    assert row["last_position_s"] == 20  # the place IS where they are now
+
+
+async def test_removing_a_video_resets_the_floor_so_a_rewatch_starts_fresh():
+    s, repo = svc(flush_s=60)
+    s.note_position(USER, VID, position_s=3000, max_watched_s=3000, duration_s=3200)
+    await s.flush_all()
+    await s.remove(USER, VID)
+    s.note_position(USER, VID, position_s=20, max_watched_s=20, duration_s=3200)
+    await s.flush_all()
+    assert repo.history[(USER, VID)]["max_watched_s"] == 20
+
+
+async def test_a_heartbeat_without_a_position_is_not_a_position():
+    from app.ws import _note_position
+
+    s = LibraryService(InMemoryLibraryRepo())
+    LB.set_library_service(s)  # conftest resets it after every test
+    session = {"user_id": USER, "video_id": VID, "max_watched_s": 0.0}
+    _note_position(session, {"type": "utterance", "text": "pause"})  # sent before the player was placed
+    assert s._dirty == {}
+    _note_position(session, {"type": "playback", "playback_s": 42, "max_watched_s": 42})
+    assert s._dirty[(USER, VID)]["last_position_s"] == 42  # a real position still counts
+
+
 async def test_library_read_gives_up_on_a_hung_write_without_cancelling_it(monkeypatch):
     monkeypatch.setattr(LB, "READ_FLUSH_WAIT_S", 0.05)
     repo = GatedRepo()
