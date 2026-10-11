@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { DEMO_PREVIEW } from '../lib/features';
 
 export interface GamificationState {
   xp: number;
@@ -25,19 +26,39 @@ const levelThresholds = [0, 250, 750, 1500, 3000];
 
 const GamificationContext = createContext<GamificationState | undefined>(undefined);
 
-export function GamificationProvider({ children }: { children: ReactNode }) {
-  const [xp, setXp] = useState<number>(() => {
-    const saved = localStorage.getItem('studyloop_xp');
-    return saved ? parseInt(saved, 10) : 1420;
-  });
+// What every consumer sees while the feature is off (no backend until Tier 3, roadmap §0).
+const INERT: GamificationState = {
+  xp: 0,
+  level: 1,
+  levelTitle: levelTitles[0],
+  streakDays: 0,
+  nextLevelXP: levelThresholds[1],
+  prevLevelXP: 0,
+  dailyXPEarned: 0,
+  badgesUnlocked: [],
+  awardXP: () => {},
+};
 
-  const [streakDays] = useState(5);
-  const [dailyXPEarned, setDailyXPEarned] = useState(65);
-  const [badgesUnlocked] = useState<string[]>([
-    'FIRST_VOICE_QUERY',
-    'STREAK_5_DAYS',
-    'ALGO_STARTER',
-  ]);
+// Demo values are only read, written or invented under VITE_DEMO_PREVIEW; a blocked or corrupt
+// localStorage must never stop the app from rendering.
+function readSavedXp(): number {
+  if (!DEMO_PREVIEW) return 0;
+  try {
+    const saved = parseInt(localStorage.getItem('studyloop_xp') ?? '', 10);
+    return Number.isFinite(saved) ? saved : 1420;
+  } catch {
+    return 1420;
+  }
+}
+
+export function GamificationProvider({ children }: { children: ReactNode }) {
+  const [xp, setXp] = useState<number>(readSavedXp);
+
+  const [streakDays] = useState(DEMO_PREVIEW ? 5 : 0);
+  const [dailyXPEarned, setDailyXPEarned] = useState(DEMO_PREVIEW ? 65 : 0);
+  const [badgesUnlocked] = useState<string[]>(
+    DEMO_PREVIEW ? ['FIRST_VOICE_QUERY', 'STREAK_5_DAYS', 'ALGO_STARTER'] : []
+  );
 
   // Calculate current level
   let level = 1;
@@ -51,10 +72,16 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const nextLevelXP = levelThresholds[level] || 3000;
 
   useEffect(() => {
-    localStorage.setItem('studyloop_xp', xp.toString());
+    if (!DEMO_PREVIEW) return;
+    try {
+      localStorage.setItem('studyloop_xp', xp.toString());
+    } catch {
+      /* private mode / blocked storage */
+    }
   }, [xp]);
 
   const awardXP = (amount: number, reason: string) => {
+    if (!DEMO_PREVIEW) return;
     setXp((prevXP) => {
       const newXP = prevXP + amount;
 
@@ -112,6 +139,8 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
 export function useGamification() {
   const context = useContext(GamificationContext);
   if (!context) {
+    // Feature off: a consumer outside the provider just sees the zero state instead of crashing.
+    if (!DEMO_PREVIEW) return INERT;
     throw new Error('useGamification must be used within a GamificationProvider');
   }
   return context;
