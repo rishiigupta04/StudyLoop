@@ -22,6 +22,8 @@ interface QAChatTabProps {
   onOpenVoiceModal?: () => void;
   language: Lang;
   transcriptStatus: VideoStatus;
+  /** the top-bar no-spoiler switch: true = answers only use what has been watched */
+  spoilerGuard?: boolean;
 }
 
 const SUGGESTIONS: Record<Lang, string[]> = {
@@ -37,6 +39,7 @@ export default function QAChatTab({
   onOpenVoiceModal,
   language,
   transcriptStatus,
+  spoilerGuard = true,
 }: QAChatTabProps) {
   const [inputText, setInputText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
@@ -57,7 +60,12 @@ export default function QAChatTab({
 
   const status =
     transcriptStatus === 'ready'
-      ? { dot: 'bg-emerald-400', text: hi ? 'आपने जितना देखा है, उसी से जवाब' : 'Answers come only from what you have watched' }
+      ? spoilerGuard
+        ? { dot: 'bg-emerald-400', text: hi ? 'आपने जितना देखा है, उसी से जवाब' : 'Answers come only from what you have watched' }
+        : {
+            dot: 'bg-amber-400',
+            text: hi ? 'Spoilers चालू: जवाब पूरे lecture से आ सकते हैं' : 'Spoilers on: answers can use the whole lecture',
+          }
       : transcriptStatus === 'unavailable' || transcriptStatus === 'failed'
         ? { dot: 'bg-slate-400', text: hi ? 'Transcript नहीं है: Q&A बंद, playback चालू' : 'No transcript: Q&A is off, playback works' }
         : { dot: 'bg-amber-400 animate-pulse', text: hi ? 'Transcript तैयार हो रहा है…' : 'Preparing the transcript…' };

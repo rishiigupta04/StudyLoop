@@ -43,7 +43,13 @@ export interface TurnResult {
 
 const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) || API_URL.replace(/^http/, 'ws');
 const TURN_TIMEOUT_MS = 15000;
-const CONNECT_WAIT_MS = 60000; // a sleeping free-tier backend can take ~30–60 s to wake
+// First connect of this page: a sleeping free-tier backend can take ~30–60 s to wake, and the top bar says so.
+const CONNECT_WAIT_MS = 60000;
+// After the server has answered once, a drop is not a cold start: fail fast so the learner can ask again.
+const RECONNECT_WAIT_MS = 8000;
+/** `code` of the error a turn gets when the socket closes under it (the server has dropped the turn). */
+export const CONNECTION_LOST = 'connection_lost';
+const CONNECTION_LOST_MESSAGE = 'Connection lost — reconnecting. Ask again in a moment.';
 
 function newId(): string {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -69,14 +75,24 @@ export function useStudySocket(opts: {
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string>(newId());
   const pendingRef = useRef(
-    new Map<string, { resolve: (r: TurnResult) => void; t0: number; timer: number; onDelta?: (t: string) => void; arm: () => number }>()
+    new Map<
+      string,
+      { resolve: (r: TurnResult) => void; t0: number; timer: number; onDelta?: (t: string) => void; arm: () => number; sock: WebSocket }
+    >()
   );
-  const openWaitersRef = useRef<Array<() => void>>([]);
+  // true = the socket opened, false = it will not (sign-in needed / hook torn down)
+  const openWaitersRef = useRef<Array<(ok: boolean) => void>>([]);
   const languageRef = useRef(language);
   const spoilerGuardRef = useRef(opts.spoilerGuard ?? true);
   spoilerGuardRef.current = opts.spoilerGuard ?? true;
   const getPlaybackRef = useRef(getPlayback);
   const [status, setStatus] = useState<SocketStatus>('connecting');
+  const statusRef = useRef<SocketStatus>('connecting');
+  const everOpenRef = useRef(false); // has the server answered at all on this page? (cold start vs a drop)
+  const updateStatus = (s: SocketStatus) => {
+    statusRef.current = s;
+    setStatus(s);
+  };
   // transcript ingestion progress for this video, pushed as `video.status` (Tier 1a)
   const [videoStatus, setVideoStatus] = useState<VideoStatusInfo | null>(null);
   getPlaybackRef.current = getPlayback;
@@ -93,8 +109,21 @@ export function useStudySocket(opts: {
     let retryTimer: number | undefined;
     let heartbeat: number | undefined;
 
+    // the socket closed under these turns: the server dropped them, so answer at once instead of at the 15 s timeout
+    const failPending = (ws: WebSocket) => {
+      pendingRef.current.forEach((p, id) => {
+        if (p.sock !== ws) return;
+        window.clearTimeout(p.timer);
+        pendingRef.current.delete(id);
+        p.resolve({
+          msg: { type: 'error', turn_id: id, code: CONNECTION_LOST, message: CONNECTION_LOST_MESSAGE },
+          roundTripMs: Math.round(performance.now() - p.t0),
+        });
+      });
+    };
+
     const connect = () => {
-      setStatus('connecting');
+      updateStatus('connecting');
       const ws = new WebSocket(`${WS_URL}/ws/session`);
       wsRef.current = ws;
 
@@ -122,8 +151,9 @@ export function useStudySocket(opts: {
         }
         if (msg.type === 'ready') {
           retry = 0;
-          setStatus('open');
-          openWaitersRef.current.splice(0).forEach((fn) => fn());
+          everOpenRef.current = true;
+          updateStatus('open');
+          openWaitersRef.current.splice(0).forEach((fn) => fn(true));
           heartbeat = window.setInterval(() => {
             if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'playback', ...getPlaybackRef.current() }));
           }, 5000);
@@ -155,12 +185,18 @@ export function useStudySocket(opts: {
       };
       ws.onclose = (ev) => {
         window.clearInterval(heartbeat);
+        failPending(ws); // a drop mid-answer: don't leave the learner on a frozen answer for 15 s
+        if (wsRef.current !== ws) return; // superseded (video switch): the newer socket owns the status
         if (ev.code === 4401) {
-          setStatus('unauthorized'); // bad/expired token: retrying with the same one is pointless
+          updateStatus('unauthorized'); // bad/expired token: retrying with the same one is pointless
+          openWaitersRef.current.splice(0).forEach((fn) => fn(false));
           return;
         }
-        setStatus('closed');
-        if (closedByUs) return;
+        updateStatus('closed');
+        if (closedByUs) {
+          openWaitersRef.current.splice(0).forEach((fn) => fn(false));
+          return;
+        }
         retry += 1;
         retryTimer = window.setTimeout(connect, Math.min(1000 * 2 ** retry, 15000));
       };
@@ -186,40 +222,57 @@ export function useStudySocket(opts: {
   const waitForOpen = useCallback(
     () =>
       new Promise<boolean>((resolve) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN && status === 'open') return resolve(true);
-        const timer = window.setTimeout(() => resolve(false), CONNECT_WAIT_MS);
-        openWaitersRef.current.push(() => {
+        if (wsRef.current?.readyState === WebSocket.OPEN && statusRef.current === 'open') return resolve(true);
+        const waiter = (ok: boolean) => {
           window.clearTimeout(timer);
-          resolve(true);
-        });
+          resolve(ok);
+        };
+        const timer = window.setTimeout(
+          () => {
+            openWaitersRef.current = openWaitersRef.current.filter((w) => w !== waiter);
+            resolve(false);
+          },
+          everOpenRef.current ? RECONNECT_WAIT_MS : CONNECT_WAIT_MS
+        );
+        openWaitersRef.current.push(waiter);
       }),
-    [status]
+    []
   );
 
   const sendUtterance = useCallback(
     async (text: string, opts: SendOptions = {}): Promise<TurnResult> => {
       const turn_id = newId();
       const t0 = performance.now();
-      if (status === 'unauthorized') {
-        return {
-          msg: { type: 'error', turn_id, code: 'unauthorized', message: 'Your session expired — please sign in again.' },
-          roundTripMs: 0,
-        };
-      }
+      const unauthorized = (): TurnResult => ({
+        msg: { type: 'error', turn_id, code: 'unauthorized', message: 'Your session expired — please sign in again.' },
+        roundTripMs: 0,
+      });
+      // a function, not a property read: the status can change during the await below
+      const signedOut = () => statusRef.current === 'unauthorized';
+      if (signedOut()) return unauthorized();
       if (!(await waitForOpen())) {
+        if (signedOut()) return unauthorized();
         return {
           msg: { type: 'error', turn_id, code: 'offline', message: "Can't reach the StudyLoop server." },
           roundTripMs: Math.round(performance.now() - t0),
         };
       }
       return new Promise<TurnResult>((resolve) => {
+        const ws = wsRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          // closed again between the wait and the send
+          return resolve({
+            msg: { type: 'error', turn_id, code: CONNECTION_LOST, message: CONNECTION_LOST_MESSAGE },
+            roundTripMs: Math.round(performance.now() - t0),
+          });
+        }
         const arm = () =>
           window.setTimeout(() => {
             pendingRef.current.delete(turn_id);
             resolve({ msg: { type: 'error', turn_id, code: 'timeout', message: 'The server took too long.' }, roundTripMs: TURN_TIMEOUT_MS });
           }, TURN_TIMEOUT_MS);
-        pendingRef.current.set(turn_id, { resolve, t0: performance.now(), timer: arm(), onDelta: opts.onDelta, arm });
-        wsRef.current!.send(
+        pendingRef.current.set(turn_id, { resolve, t0: performance.now(), timer: arm(), onDelta: opts.onDelta, arm, sock: ws });
+        ws.send(
           JSON.stringify({
             type: 'utterance',
             turn_id,
@@ -231,7 +284,7 @@ export function useStudySocket(opts: {
         );
       });
     },
-    [waitForOpen, status]
+    [waitForOpen]
   );
 
   const cancelTurn = useCallback(() => {
@@ -240,5 +293,8 @@ export function useStudySocket(opts: {
     pendingRef.current.forEach((_, id) => ws?.readyState === WebSocket.OPEN && ws.send(JSON.stringify({ type: 'turn.cancel', turn_id: id })));
   }, []);
 
-  return { status, videoStatus, sessionId: sessionIdRef.current, sendUtterance, cancelTurn };
+  // waking = no connection has worked yet on this page (the free-tier server is probably cold), as opposed to a drop
+  const waking = status !== 'open' && status !== 'unauthorized' && !everOpenRef.current;
+
+  return { status, waking, videoStatus, sessionId: sessionIdRef.current, sendUtterance, cancelTurn };
 }

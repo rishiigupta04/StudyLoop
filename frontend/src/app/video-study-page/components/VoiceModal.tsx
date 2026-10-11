@@ -32,7 +32,15 @@ interface VoiceModalProps {
   onClose: () => void;
   onSeekTimestamp?: (ts: string) => void;
   meta?: TurnMeta | null;
+  /** can this browser turn speech into text at all (browser ASR or hosted speech-to-text)? */
   asrSupported?: boolean;
+  /** the voice server is not connected: 'waking' = first connect of a cold free-tier server, 'reconnecting' = a drop */
+  connecting?: 'waking' | 'reconnecting' | null;
+  /** a plain-words problem (mic blocked, window lost focus, …) */
+  notice?: string | null;
+  /** the turn failed for a reason that isn't the learner's (offline, timeout, connection lost) */
+  canAskAgain?: boolean;
+  onAskAgain?: () => void;
 }
 
 const ROUTE_LABEL: Record<string, string> = {
@@ -54,6 +62,10 @@ export default function VoiceModal({
   onSeekTimestamp,
   meta,
   asrSupported = true,
+  connecting = null,
+  notice = null,
+  canAskAgain = false,
+  onAskAgain,
 }: VoiceModalProps) {
   const waveBarCount = 24;
 
@@ -128,6 +140,20 @@ export default function VoiceModal({
               />
             ))}
           </div>
+
+          {connecting && (stage === 'listening' || stage === 'processing') && (
+            <p className="text-xs text-amber-300 mb-3 flex items-center gap-1.5" role="status">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              {connecting === 'waking'
+                ? 'Waking the voice server (can take up to a minute on the free tier)…'
+                : 'Reconnecting to the server…'}
+            </p>
+          )}
+          {notice && (
+            <p className="text-xs text-amber-300 mb-3" role="status">
+              {notice}
+            </p>
+          )}
 
           {/* Recognized Speech */}
           {(recognizedText || stage === 'listening') && (
@@ -220,8 +246,17 @@ export default function VoiceModal({
             </div>
           )}
 
+          {canAskAgain && stage === 'responding' && onAskAgain && (
+            <button
+              onClick={onAskAgain}
+              className="w-full mb-3 py-2.5 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-200 text-sm font-semibold hover:bg-amber-500/20 transition-colors"
+            >
+              Ask again
+            </button>
+          )}
+
           {!asrSupported && (
-            <p className="text-xs text-amber-300 mb-3">Voice input needs Chrome or Edge (Firefox has no speech recognition).</p>
+            <p className="text-xs text-amber-300 mb-3">Voice input isn&apos;t supported in this browser. Use Chrome or Edge.</p>
           )}
 
           {/* PTT Button for Mouse Users */}

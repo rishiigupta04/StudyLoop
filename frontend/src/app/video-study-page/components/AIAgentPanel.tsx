@@ -22,6 +22,8 @@ interface AIAgentPanelProps {
   videoId: string;
   videoTitle: string;
   onSeek: (seconds: number) => void;
+  /** the top-bar no-spoiler switch; the Q&A tab says which mode its answers are in */
+  spoilerGuard?: boolean;
 }
 
 const baseTabs: { id: Tab; label: string; icon: string; badge?: number }[] = [
@@ -43,6 +45,7 @@ export default function AIAgentPanel({
   videoId,
   videoTitle,
   onSeek,
+  spoilerGuard = true,
 }: AIAgentPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('transcript');
   const answers = chat.filter((m) => m.role === 'ai' && !m.streaming).length;
@@ -99,6 +102,7 @@ export default function AIAgentPanel({
             onOpenVoiceModal={onOpenVoiceModal}
             language={language}
             transcriptStatus={transcript.status}
+            spoilerGuard={spoilerGuard}
           />
         )}
         {activeTab === 'notes' && (

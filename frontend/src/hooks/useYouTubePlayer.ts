@@ -29,6 +29,8 @@ export type PlayerStatus = 'loading' | 'ready' | 'error';
 
 export interface YouTubePlayerApi extends PlayerControls {
   status: PlayerStatus;
+  /** still 'loading' after READY_TIMEOUT_MS: an ad blocker or network filter is probably eating the iframe */
+  stalled: boolean;
   error: string | null;
   playerState: number; // YT.PlayerState
   isPlaying: boolean;
@@ -47,6 +49,7 @@ export interface YouTubePlayerApi extends PlayerControls {
 }
 
 const POLL_MS = 500;
+const READY_TIMEOUT_MS = 10_000;
 
 /**
  * Real YouTube IFrame player bound to a container element.
@@ -60,6 +63,7 @@ export function useYouTubePlayer(
   const maxWatchedRef = useRef(0);
   const duckedFromRef = useRef<number | null>(null);
   const [status, setStatus] = useState<PlayerStatus>('loading');
+  const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState(-1);
   const [currentTime, setCurrentTime] = useState(0);
@@ -133,6 +137,16 @@ export function useYouTubePlayer(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
 
+  // an iframe that never reports ready (blocked by an extension, filtered network) would show "Loading player…" forever
+  useEffect(() => {
+    if (status !== 'loading') {
+      setStalled(false);
+      return;
+    }
+    const t = window.setTimeout(() => setStalled(true), READY_TIMEOUT_MS);
+    return () => window.clearTimeout(t);
+  }, [status]);
+
   // switch video without recreating the iframe
   useEffect(() => {
     const p = playerRef.current;
@@ -169,6 +183,7 @@ export function useYouTubePlayer(
 
   const controls = useMemo<PlayerControls>(
     () => ({
+      isReady: () => status === 'ready' && playerRef.current !== null,
       play: () => withPlayer((p) => p.playVideo(), undefined),
       pause: () => withPlayer((p) => p.pauseVideo(), undefined),
       seekTo: (s: number) =>
@@ -197,7 +212,7 @@ export function useYouTubePlayer(
       setVolume: (v: number) => withPlayer((p) => p.setVolume(v), undefined),
       getVolume: () => withPlayer((p) => p.getVolume() ?? 100, 100),
     }),
-    [withPlayer]
+    [withPlayer, status]
   );
 
   const duck = useCallback(() => {
@@ -219,6 +234,7 @@ export function useYouTubePlayer(
   return {
     ...controls,
     status,
+    stalled,
     error,
     playerState,
     isPlaying: playerState === 1,

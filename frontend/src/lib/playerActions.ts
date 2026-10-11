@@ -24,6 +24,8 @@ export type PlayerAction =
   | { type: 'STOP_SPEAKING' };
 
 export interface PlayerControls {
+  /** false while the player is loading, blocked or in error: commands would silently do nothing */
+  isReady?(): boolean;
   play(): void;
   pause(): void;
   seekTo(seconds: number): void;
@@ -58,7 +60,21 @@ function seekRemembering(p: PlayerControls, target: number): void {
   p.seekTo(to);
 }
 
-export function executePlayerAction(p: PlayerControls, a: PlayerAction): void {
+/** What the UI says instead of the server's "Paused" / "Jumped to 12:30" when the player can't act. */
+export function playerUnavailableMessage(lang: 'en' | 'hi'): string {
+  return lang === 'hi'
+    ? 'वीडियो प्लेयर उपलब्ध नहीं है, इसलिए कुछ नहीं बदला।'
+    : "The video player isn't available, so nothing changed.";
+}
+
+/** Run a player command. Returns false (and does nothing) when the player isn't ready or is in error. */
+export function executePlayerAction(p: PlayerControls, a: PlayerAction): boolean {
+  if (a.type !== 'STOP_SPEAKING' && p.isReady && !p.isReady()) return false;
+  runPlayerAction(p, a);
+  return true;
+}
+
+function runPlayerAction(p: PlayerControls, a: PlayerAction): void {
   switch (a.type) {
     case 'PLAY':
       return p.play();

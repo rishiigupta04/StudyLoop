@@ -14,7 +14,10 @@ export interface SttResult {
   language: string | null;
 }
 
-const STT_TIMEOUT_MS = 7000;
+// Timeouts nest: the server gives each STT provider 4 s (Sarvam, then Groq), so the browser waits 10 s for
+// the pair; a sentence of TTS that takes longer than 6 s is spoken by the browser voice instead.
+const STT_TIMEOUT_MS = 10_000;
+const TTS_TIMEOUT_MS = 6_000;
 let sttUnavailable = false;
 let ttsUnavailable = false;
 
@@ -89,24 +92,35 @@ export function hostedTtsAvailable(): boolean {
   return !ttsUnavailable;
 }
 
-/** One sentence as MP3, or null (not configured / failed → speak it with the browser voice). */
+/**
+ * One sentence as MP3, or null (not configured / failed / slower than TTS_TIMEOUT_MS → speak it with the
+ * browser voice). A hung request must not block the sentence queue behind it.
+ */
 export async function synthesize(text: string, language: 'en' | 'hi', signal?: AbortSignal): Promise<Blob | null> {
   if (ttsUnavailable) return null;
+  const ctl = new AbortController();
+  const timer = window.setTimeout(() => ctl.abort(), TTS_TIMEOUT_MS);
+  const onCallerAbort = () => ctl.abort();
+  if (signal?.aborted) ctl.abort();
+  else signal?.addEventListener('abort', onCallerAbort, { once: true });
   try {
     const res = await fetch(`${API_URL}/api/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify({ text, language }),
-      signal,
+      signal: ctl.signal,
     });
     if (res.status === 503) {
       ttsUnavailable = true;
       return null;
     }
     if (!res.ok) return null;
-    const blob = await res.blob();
+    const blob = await res.blob(); // inside the try: the timeout covers the body download too
     return blob.size ? blob : null;
   } catch {
     return null;
+  } finally {
+    window.clearTimeout(timer);
+    signal?.removeEventListener('abort', onCallerAbort);
   }
 }

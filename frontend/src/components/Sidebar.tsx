@@ -6,6 +6,7 @@ import Icon from '@/components/ui/AppIcon';
 import { useGamification } from '@/context/GamificationContext';
 import { initials, useAuth } from '@/context/AuthContext';
 import { DEMO_PREVIEW } from '@/lib/features';
+import { studyHref } from '@/lib/lastVideo';
 
 interface NavItem {
   label: string;
@@ -133,7 +134,13 @@ export default function Sidebar({ activeRoute }: SidebarProps) {
           return (
             <Link
               key={`nav-${item.href}`}
-              to={item.href}
+              to={
+                item.href === '/video-study-page'
+                  ? isActive
+                    ? `${window.location.pathname}${window.location.search}` // already on a lecture: stay on it
+                    : studyHref() // otherwise the last video played, else the library
+                  : item.href
+              }
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group relative ${
                 isActive
                   ? 'bg-indigo-600/20 text-indigo-300 font-semibold border-r-2 border-indigo-500'

@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # 2.5 models are closed to new keys (Sep 2026); 3.x reasons first, so it gets low effort + headroom
     gemini_model: str = "gemini-3.6-flash"
     gemini_reasoning_effort: str = "low"
+    # also bounds background work (chapter outlines, note summaries): do not shorten it
     llm_timeout_s: float = 30.0
     # LangGraph checkpointer: "memory" (dev) or "postgres" (prod; needs DATABASE_URL — on Render use the
     # Supabase *session pooler* URL, the direct db.<ref>.supabase.co host is IPv6-only)
@@ -52,7 +53,7 @@ class Settings(BaseSettings):
     sarvam_stt_model: str = "saaras:v3"
     sarvam_stt_mode: str = "codemix"  # English words in Latin, Hindi in Devanagari, numbers as digits
     groq_stt_model: str = "whisper-large-v3"
-    stt_timeout_s: float = 8.0
+    stt_timeout_s: float = 4.0  # per provider; the browser aborts at 10 s, so both get a turn
     sarvam_tts_model: str = "bulbul:v3"
     sarvam_tts_speaker: str = "shubh"
     sarvam_tts_pace: float = 1.05

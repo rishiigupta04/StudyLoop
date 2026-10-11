@@ -44,6 +44,12 @@ const T = {
   },
   lockedBlurb: { en: 'Summary unlocks when you reach this chapter.', hi: 'इस अध्याय तक पहुँचने पर सारांश दिखेगा।' },
   jump: { en: 'Jump to', hi: 'यहाँ जाएँ:' },
+  playerLoading: { en: 'Loading player…', hi: 'Player लोड हो रहा है…' },
+  playerStalled: {
+    en: "The video player didn't load. An ad blocker or network filter may be blocking YouTube. Voice commands for playback won't work until it loads; Q&A and notes still do.",
+    hi: 'Video player लोड नहीं हुआ। शायद ad blocker या network filter YouTube को रोक रहा है। जब तक यह लोड न हो, playback की voice commands नहीं चलेंगी; Q&A और notes चलते रहेंगे।',
+  },
+  openOnYoutube: { en: 'Open on YouTube', hi: 'YouTube पर खोलें' },
 } as const;
 
 interface VideoPaneProps {
@@ -51,6 +57,8 @@ interface VideoPaneProps {
   onTimestampClick: (ts: string) => void;
   onOpenVoiceModal: () => void;
   player: YouTubePlayerApi;
+  /** for the "Open on YouTube" fallback when the embedded player can't play */
+  videoId: string;
   playerHostRef: React.RefObject<HTMLDivElement | null>;
   outline: VideoOutlineState;
   transcriptStatus: VideoStatus;
@@ -64,6 +72,7 @@ export default function VideoPane({
   onTimestampClick,
   onOpenVoiceModal,
   player,
+  videoId,
   playerHostRef,
   outline,
   transcriptStatus,
@@ -121,11 +130,27 @@ export default function VideoPane({
         <div className="w-full aspect-video relative max-h-[48vh] sm:max-h-[52vh]">
           {/* Real YouTube IFrame player (useYouTubePlayer mounts into this host) */}
           <div ref={playerHostRef} className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
-          {player.status !== 'ready' && (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground pointer-events-none">
-              {player.status === 'error' ? player.error : 'Loading player…'}
-            </div>
-          )}
+          {player.status !== 'ready' &&
+            (player.status === 'error' || player.stalled ? (
+              // opaque: it must cover YouTube's own error screen (or the blank blocked iframe) instead of overlapping it
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/90 px-6 text-center">
+                <p className="text-xs text-muted-foreground max-w-md" role="alert">
+                  {player.status === 'error' ? player.error : T.playerStalled[language]}
+                </p>
+                <a
+                  href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary px-4 py-1.5 rounded-xl text-xs font-bold text-white"
+                >
+                  {T.openOnYoutube[language]}
+                </a>
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground pointer-events-none">
+                {T.playerLoading[language]}
+              </div>
+            ))}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '@/components/ui/AppIcon';
+import { studyHref } from '@/lib/lastVideo';
 
 interface MobileNavItem {
   label: string;
@@ -30,7 +31,13 @@ export default function MobileNav() {
           return (
             <Link
               key={`mobile-nav-${item.href}`}
-              to={item.href}
+              to={
+                item.href === '/video-study-page'
+                  ? isActive
+                    ? `${location.pathname}${location.search}` // already on a lecture: stay on it
+                    : studyHref() // otherwise the last video played, else the library
+                  : item.href
+              }
               className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all duration-200 relative min-w-[52px] min-h-[48px] ${
                 isActive
                   ? 'bg-indigo-600/30 text-indigo-300 font-bold shadow-glow-indigo-sm border border-indigo-500/40'

@@ -5,6 +5,7 @@ import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
 import type { ChatMessage } from './QAChatTab';
 import VoiceModal from './VoiceModal';
+import NoVideoState from './NoVideoState';
 import Icon from '@/components/ui/AppIcon';
 import { useTildePTT } from '@/hooks/useTildePTT';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
@@ -15,19 +16,38 @@ import { useVideoNotes, type VideoNotesState } from '@/hooks/useVideoNotes';
 import { useVideoOutline } from '@/hooks/useVideoOutline';
 import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
 import { formatClock, parseClock } from '@/lib/time';
-import { fetchResume, resumeTarget, type ResumePoint } from '@/services/libraryService';
-import { getSttProvider, setSttProvider, type SttProvider } from '@/services/speechService';
-import { executePlayerAction, resetSeekHistory } from '@/lib/playerActions';
+import { fetchResume, resumeTarget, studyUrl, type ResumePoint } from '@/services/libraryService';
+import { getSttProvider, hostedSttAvailable, setSttProvider, type SttProvider } from '@/services/speechService';
+import { executePlayerAction, playerUnavailableMessage, resetSeekHistory } from '@/lib/playerActions';
+import { captureSupported } from '@/lib/audioCapture';
+import { hasVoiceFor } from '@/lib/tts';
+import { setLastVideo } from '@/lib/lastVideo';
 
 const STT_OPTIONS: { id: SttProvider; label: string; toast: string }[] = [
   { id: 'sarvam', label: 'Sarvam', toast: 'Speech-to-text: Sarvam (Hindi/Hinglish model, uses Sarvam credit)' },
   { id: 'groq', label: 'Groq', toast: 'Speech-to-text: Groq Whisper (free; Sarvam only if Groq fails)' },
 ];
 
-// MIT 6.006 (Fall 2011) Lecture 1 — Algorithmic Thinking, Peak Finding. Matches the demo chapters.
-const DEFAULT_VIDEO_ID = 'HtSuA80QTyo';
+const HINDI_VOICE_NOTICE =
+  'इस browser में हिंदी आवाज़ नहीं है। बोला हुआ हिंदी जवाब server की आवाज़ से आता है; वह न मिले तो जवाब सिर्फ़ text में दिखेगा।';
 
+/**
+ * Resolves which video to study: ?v=<id|url> → router state from the dashboard URL bar. There is deliberately no
+ * fallback lecture: a missing or malformed link says so (and offers a paste field / the library) instead of
+ * silently opening another video and adding it to the learner's library.
+ */
 export default function VideoStudyLayout() {
+  const location = useLocation();
+  const given = String(
+    new URLSearchParams(location.search).get('v') || location.state?.videoUrl || location.state?.videoId || ''
+  ).trim();
+  const videoId = extractYouTubeId(given);
+  if (!videoId) return <NoVideoState invalidValue={given || undefined} />;
+  // key: a different video is a fresh player + fresh per-video state (a player stuck in error can't carry over)
+  return <StudyView key={videoId} videoId={videoId} />;
+}
+
+function StudyView({ videoId }: { videoId: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTimestamp, setActiveTimestamp] = useState('0:00');
@@ -39,7 +59,6 @@ export default function VideoStudyLayout() {
     }
   });
 
-  // video: ?v=<id|url> → router state from the dashboard URL bar → demo lecture
   // anti-spoiler Q&A (on by default): off lets answers and summaries use the whole lecture
   const [spoilerGuard, setSpoilerGuard] = useState<boolean>(() => {
     try {
@@ -64,10 +83,6 @@ export default function VideoStudyLayout() {
     setStt(option.id);
     toast.success(option.toast);
   };
-
-  const queryVideo = new URLSearchParams(location.search).get('v');
-  const videoId =
-    extractYouTubeId(queryVideo || location.state?.videoUrl || location.state?.videoId || '') || DEFAULT_VIDEO_ID;
 
   const playerHostRef = useRef<HTMLDivElement | null>(null);
   const player = useYouTubePlayer(playerHostRef, videoId);
@@ -132,8 +147,8 @@ export default function VideoStudyLayout() {
         },
       });
       if (msg.type === 'action') {
-        executePlayerAction(player, msg.action); // typed commands ("pause", "go to 12:30") work too
-        patchChat(`${id}-a`, { text: msg.message, streaming: false });
+        const done = executePlayerAction(player, msg.action); // typed commands ("pause", "go to 12:30") work too
+        patchChat(`${id}-a`, { text: done ? msg.message : playerUnavailableMessage(language), streaming: false });
       } else if (msg.type === 'answer.done') {
         patchChat(`${id}-a`, { text: msg.text, streaming: false });
       } else {
@@ -141,7 +156,7 @@ export default function VideoStudyLayout() {
       }
       setChatBusy(false);
     },
-    [socket.sendUtterance, player]
+    [socket.sendUtterance, player, language]
   );
 
   const ptt = useTildePTT({
@@ -230,6 +245,22 @@ export default function VideoStudyLayout() {
 
   useEffect(() => resetSeekHistory(), [videoId]);
 
+  // "Study" in the sidebar / mobile nav reopens the video last played, so remember it once it really plays
+  useEffect(() => {
+    if (player.isPlaying) setLastVideo(videoId);
+  }, [player.isPlaying, videoId]);
+
+  // switching to Hindi: spoken answers need a Hindi voice (hosted or the browser's); say so once if the browser has none
+  const hindiVoiceChecked = useRef(false);
+  const chooseLanguage = (l: Lang) => {
+    setLanguage(l);
+    if (l !== 'hi' || hindiVoiceChecked.current) return;
+    hindiVoiceChecked.current = true;
+    void hasVoiceFor('hi').then((has) => {
+      if (!has) toast.warning(HINDI_VOICE_NOTICE, { duration: 9000 });
+    });
+  };
+
   // Dev only: drive the full voice pipeline with typed text (no mic needed), e.g. in the preview pane:
   //   await window.__studyloopSay('go back 30 seconds')
   useEffect(() => {
@@ -241,10 +272,13 @@ export default function VideoStudyLayout() {
     };
   }, [ptt.processText]);
 
-  const videoTitle = player.title || location.state?.videoTitle || 'Loading video…';
+  // the backend knows the title even when the embedded player never loads (blocked iframe, embedding disabled)
+  const backendTitle = socket.videoStatus?.video_id === videoId ? socket.videoStatus.title : null;
+  const videoTitle = player.title || backendTitle || location.state?.videoTitle || 'Loading video…';
 
   const handleShareSession = () => {
-    const shareUrl = window.location.href;
+    // built from the id: the address bar has no ?v= when the video came from router state
+    const shareUrl = `${window.location.origin}${studyUrl(videoId)}`;
     navigator.clipboard.writeText(shareUrl).then(
       () => toast.success('Link to this video copied'),
       () => toast.error("Couldn't copy the link")
@@ -273,7 +307,7 @@ export default function VideoStudyLayout() {
         <div className="flex items-center gap-2 flex-shrink-0">
           {socket.status === 'unauthorized' ? (
             <button
-              onClick={() => navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`)}
+              onClick={() => navigate(`/login?next=${encodeURIComponent(studyUrl(videoId))}`)}
               className="lang-badge-en text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 text-red-300"
               title="The voice server rejected your session — sign in again"
             >
@@ -283,14 +317,20 @@ export default function VideoStudyLayout() {
           ) : (
             <span
               className="lang-badge-en text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5"
-              title={socket.status === 'open' ? 'Voice server connected' : 'Waking up the voice server (can take up to a minute on the free tier)'}
+              title={
+                socket.status === 'open'
+                  ? 'Voice server connected'
+                  : socket.waking
+                    ? 'Waking up the voice server (can take up to a minute on the free tier)'
+                    : 'The connection dropped. Reconnecting; a voice command waits a few seconds, then you can ask again.'
+              }
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   socket.status === 'open' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
                 }`}
               />
-              {socket.status === 'open' ? 'Voice ready' : 'Connecting…'}
+              {socket.status === 'open' ? 'Voice ready' : socket.waking ? 'Connecting…' : 'Reconnecting…'}
             </span>
           )}
           {transcriptChip && (
@@ -352,7 +392,7 @@ export default function VideoStudyLayout() {
             {(['en', 'hi'] as Lang[]).map((l) => (
               <button
                 key={l}
-                onClick={() => setLanguage(l)}
+                onClick={() => chooseLanguage(l)}
                 className={`px-2 py-1 transition-colors ${
                   language === l ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
                 }`}
@@ -399,6 +439,7 @@ export default function VideoStudyLayout() {
             onTimestampClick={seekToTimestamp}
             onOpenVoiceModal={() => ptt.startListening()}
             player={player}
+            videoId={videoId}
             playerHostRef={playerHostRef}
             outline={outline}
             transcriptStatus={transcript.status}
@@ -421,8 +462,9 @@ export default function VideoStudyLayout() {
             onOpenVoiceModal={() => ptt.startListening()}
             notes={notes}
             videoId={videoId}
-            videoTitle={player.title || location.state?.videoTitle || videoId}
+            videoTitle={player.title || backendTitle || location.state?.videoTitle || videoId}
             onSeek={(secs) => player.seekTo(secs)}
+            spoilerGuard={spoilerGuard}
           />
         </div>
       </div>
@@ -439,7 +481,14 @@ export default function VideoStudyLayout() {
           onClose={ptt.closeModal}
           onSeekTimestamp={seekToTimestamp}
           meta={ptt.meta}
-          asrSupported={asr.supported}
+          // Firefox has no browser ASR, but hosted speech-to-text serves it: voice is only unsupported with neither
+          asrSupported={asr.supported || (hostedSttAvailable() && captureSupported())}
+          connecting={
+            socket.status === 'open' || socket.status === 'unauthorized' ? null : socket.waking ? 'waking' : 'reconnecting'
+          }
+          notice={ptt.notice}
+          canAskAgain={ptt.canAskAgain}
+          onAskAgain={ptt.askAgain}
         />
       )}
     </div>

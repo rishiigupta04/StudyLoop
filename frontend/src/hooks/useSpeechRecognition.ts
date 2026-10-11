@@ -19,10 +19,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   'service-not-allowed': 'Speech recognition is blocked in this browser.',
   'audio-capture': 'No microphone found.',
   network: 'Speech recognition needs an internet connection.',
+  'language-not-supported': "This browser can't recognise that language. Try Chrome or Edge.",
 };
 
 /**
- * Browser-native ASR (Web Speech API). Chrome/Edge only — Firefox has no SpeechRecognition.
+ * Browser-native ASR (Web Speech API). Chrome/Edge only — Firefox has no SpeechRecognition (hosted speech-to-text
+ * still serves it: the study page treats voice as supported when either is available).
  * Only recognized TEXT goes to the backend; audio never leaves the browser's speech service.
  */
 export function useSpeechRecognition(): SpeechRecognitionApi {
