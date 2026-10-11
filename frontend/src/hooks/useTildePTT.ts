@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { executePlayerAction, playerUnavailableMessage, type PlayerControls } from '@/lib/playerActions';
-import { createSpeechStream, stopSpeaking, type SpeechStream } from '@/lib/tts';
+import { createSpeechStream, playFiller, prefetchFiller, stopFiller, stopSpeaking, type SpeechStream } from '@/lib/tts';
+import { earcon } from '@/lib/earcons';
+import { followUpContext, type FollowUpContext } from '@/lib/followUps';
 import {
   abortCapture,
   captureProblem,
@@ -28,28 +30,43 @@ export interface TurnMeta {
   /** who turned the speech into text: 'sarvam' | 'groq' (hosted, D14) or 'browser' */
   sttProvider?: string;
   sttMs?: number;
+  /** a grounded answer offers one-tap follow-ups (null for commands, templates, router lines) */
+  followUp?: FollowUpContext | null;
+}
+
+/** The part of the answer being spoken right now (character offsets into the answer text). */
+export interface SpokenRange {
+  start: number;
+  end: number;
 }
 
 export interface SttInfo {
   provider: string;
   ms?: number;
+  /** the hosted provider's language hint ("hi-IN" …), passed on for Auto mode */
+  language?: string | null;
 }
 
 interface UseTildePTTOptions {
   language: Lang;
   asr: SpeechRecognitionApi;
-  player: PlayerControls & { duck: () => void; unduck: () => void };
+  player: PlayerControls & { duck: () => void; unduck: () => void; isPlaying: boolean };
   sendUtterance: (text: string, opts?: SendOptions) => Promise<TurnResult>;
   cancelTurn?: () => void;
   onTurn?: (userText: string, reply: string, meta: TurnMeta) => void;
+  /** the language the server answered this turn in (Auto mode follows the learner's language) */
+  onReplyLanguage?: (language: Lang) => void;
 }
 
 const ACTION_AUTOCLOSE_MS = 1600;
 const ACTION_FAILED_CLOSE_MS = 4500; // "the player isn't available" needs reading time
 const MAX_HOLD_MS = 30_000; // a hold longer than this is a lost key-up (alt-tab, OS dialog): send what we have
 const PROMPT_NOTICE_MS = 500; // how long a start may sit on the mic permission prompt before we say so
-// The lecture is ducked while ~ is held and while the answer is spoken. Every exit path restores it; these
-// watchdogs put the volume back if one is ever missed (a hung TTS request, a turn that never answers).
+const FILLER_AFTER_MS = 1500; // no reply yet after this long: say "One sec…" so the silence isn't mistaken for failure
+// The lecture is ducked while ~ is held and until the reply starts. A spoken answer PAUSES the lecture (two voices at
+// once can't both be followed) and plays it again once the answer has been spoken; short confirmations (a voice note)
+// only duck. Every exit path restores the volume; these watchdogs put it back if one is ever missed (a hung TTS
+// request, a turn that never answers).
 const DUCK_LISTEN_MS = 60_000;
 const DUCK_TURN_MS = 40_000;
 const DUCK_SPEAK_MS = 45_000;
@@ -113,6 +130,12 @@ export function useTildePTT(options: UseTildePTTOptions) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null); // mic / focus problems, shown in the modal
   const [canAskAgain, setCanAskAgain] = useState(false);
+  // the reply has been fully spoken (or there is nothing to speak): the fullscreen caption may fade out after this
+  const [answerSpoken, setAnswerSpoken] = useState(false);
+  // the sentence being spoken, for the caption's highlight; null between sentences and after the answer
+  const [spoken, setSpoken] = useState<SpokenRange | null>(null);
+  const answerTextRef = useRef(''); // the answer as streamed so far (the highlight looks sentences up in it)
+  const spokenCursorRef = useRef(0);
   const closeTimer = useRef<number | undefined>(undefined);
   const holdTimer = useRef<number | undefined>(undefined);
   const promptTimer = useRef<number | undefined>(undefined);
@@ -136,6 +159,27 @@ export function useTildePTT(options: UseTildePTTOptions) {
     optsRef.current.player.unduck();
   }, []);
 
+  // true while the lecture is paused because WE paused it for a spoken answer (not the learner): only then is it
+  // played again afterwards. It outlives a barge-in, so the next turn's ending decides.
+  const resumeAfterRef = useRef(false);
+
+  /** A spoken answer is starting: pause the lecture if it is playing, at its own volume for when it comes back. */
+  const pauseForAnswer = useCallback(() => {
+    const { player } = optsRef.current;
+    if (player.isPlaying) {
+      player.pause();
+      resumeAfterRef.current = true;
+    }
+    restoreVolume();
+  }, [restoreVolume]);
+
+  /** The answer is over (spoken, closed, failed): back to the lecture if we were the ones who paused it. */
+  const resumeLecture = useCallback(() => {
+    if (!resumeAfterRef.current) return;
+    resumeAfterRef.current = false;
+    optsRef.current.player.play();
+  }, []);
+
   const startListening = useCallback(() => {
     const { asr, language, player, cancelTurn } = optsRef.current;
     window.clearTimeout(closeTimer.current);
@@ -156,7 +200,11 @@ export function useTildePTT(options: UseTildePTTOptions) {
     setError(null);
     setNotice(null);
     setCanAskAgain(false);
+    setAnswerSpoken(false);
+    setSpoken(null);
     setActiveStep(0);
+    earcon('start');
+    prefetchFiller(language); // ready by the time a slow answer needs it
     const lang: AsrLang = language === 'hi' ? 'hi-IN' : 'en-IN';
     // hosted STT (D14) records the audio; the browser recognizer still gives live captions while ~ is held
     const hosted = hostedSttAvailable() && captureSupported();
@@ -185,7 +233,7 @@ export function useTildePTT(options: UseTildePTTOptions) {
 
   /** Everything after ASR: send the recognized text, execute the action or speak the answer. */
   const processText = useCallback(async (text: string, stt?: SttInfo) => {
-    const { player, sendUtterance, onTurn, language } = optsRef.current;
+    const { player, sendUtterance, onTurn, onReplyLanguage, language } = optsRef.current;
     window.clearTimeout(closeTimer.current);
     window.clearTimeout(holdTimer.current);
     window.clearTimeout(promptTimer.current);
@@ -198,8 +246,14 @@ export function useTildePTT(options: UseTildePTTOptions) {
     setNotice(null);
     setError(null); // a repeat failure with the same message must still raise a fresh toast
     setCanAskAgain(false);
+    setAnswerSpoken(false);
+    setSpoken(null);
+    answerTextRef.current = '';
+    spokenCursorRef.current = 0;
     if (!text) {
       restoreVolume();
+      resumeLecture();
+      setAnswerSpoken(true);
       setStage('responding');
       setAiResponse(SAY.noSpeech[language]);
       setActiveStep(-1);
@@ -210,35 +264,72 @@ export function useTildePTT(options: UseTildePTTOptions) {
     const seq = ++turnSeq.current;
     armDuckWatchdog(DUCK_TURN_MS);
     speechRef.current?.cancel();
-    // D8: the lecture stays ducked while the answer is spoken, and comes back once it's done
-    const speech = createSpeechStream(language, () => {
-      if (turnSeq.current === seq) restoreVolume();
-    });
-    speechRef.current = speech;
+    // The voice is opened once the reply's language is known (Auto mode: the server decides it per turn and says so
+    // on the first streamed words). The lecture is paused while the answer is spoken (pauseForAnswer) and plays
+    // again once it's done.
+    const stream: { current: SpeechStream | null } = { current: null };
+    const voice = (lang: Lang) => {
+      if (!stream.current) {
+        stream.current = createSpeechStream(
+          lang,
+          () => {
+            if (turnSeq.current !== seq) return;
+            restoreVolume();
+            resumeLecture();
+            setAnswerSpoken(true);
+            setSpoken(null);
+          },
+          (sentence) => {
+            // find the sentence in the answer, from where the last one ended (the caption highlights it)
+            if (turnSeq.current !== seq) return;
+            const s = sentence.trim();
+            const at = answerTextRef.current.indexOf(s, spokenCursorRef.current);
+            const start = at >= 0 ? at : spokenCursorRef.current;
+            const end = Math.min(answerTextRef.current.length, start + s.length);
+            spokenCursorRef.current = end;
+            setSpoken({ start, end });
+          }
+        );
+        speechRef.current = stream.current;
+      }
+      return stream.current;
+    };
     let streamed = '';
+    // a slow answer (retrieval + the LLM's first words): "One sec…" instead of silence. Commands come back long
+    // before this fires.
+    const fillerTimer = window.setTimeout(() => {
+      if (turnSeq.current === seq && !streamed) playFiller(language);
+    }, FILLER_AFTER_MS);
     const { msg, roundTripMs } = await sendUtterance(text, {
-      onDelta: (d) => {
+      sttLanguage: stt?.language,
+      onDelta: (d, lang) => {
         if (turnSeq.current !== seq) return;
         if (!streamed) {
+          window.clearTimeout(fillerTimer);
           setStage('responding');
           setActiveStep(3);
-          armDuckWatchdog(DUCK_SPEAK_MS);
+          pauseForAnswer();
         }
         streamed += d;
+        answerTextRef.current = streamed;
         setAiResponse(streamed);
-        speech.push(d);
+        voice(lang ?? language).push(d);
       },
     });
+    window.clearTimeout(fillerTimer);
     if (turnSeq.current !== seq) return; // superseded by a newer command while this one was in flight
     setActiveStep(3);
 
     if (msg.type === 'error') {
-      speech.cancel();
+      stopFiller();
+      stream.current?.cancel();
       restoreVolume();
+      resumeLecture();
       setError(msg.message);
       // keep what had already streamed: a drop mid-answer shouldn't erase the half that arrived
       setAiResponse(streamed ? `${streamed} … ${msg.message}` : msg.message);
       setCanAskAgain(RETRYABLE_CODES.includes(msg.code));
+      setAnswerSpoken(true);
       setStage('responding');
       return;
     }
@@ -253,16 +344,29 @@ export function useTildePTT(options: UseTildePTTOptions) {
       citations: msg.type === 'answer.done' ? msg.citations || [] : [],
       sttProvider: stt?.provider,
       sttMs: stt?.ms,
+      followUp: msg.type === 'answer.done' ? followUpContext(msg, msg.language ?? language) : null,
     };
     setMeta(m);
+    const replyLanguage = msg.language ?? language;
+    if (msg.language) onReplyLanguage?.(msg.language);
 
     if (msg.type === 'action') {
-      speech.cancel();
+      stopFiller();
+      stream.current?.cancel();
       restoreVolume(); // restore before the action so VOLUME/MUTE actions apply to the real level
       // a blocked / still-loading player can't do it: say so instead of confirming "Paused" / "Jumped to 12:30"
       const done = executePlayerAction(player, msg.action);
-      const shown = done ? msg.message : playerUnavailableMessage(language);
+      // the lecture was paused for an earlier answer that this command interrupted: carry on playing after it,
+      // unless the command itself leaves it paused
+      if (resumeAfterRef.current) {
+        resumeAfterRef.current = false;
+        const a = msg.action;
+        const staysPaused = a.type === 'PAUSE' || ('then' in a && a.then === 'PAUSE');
+        if (done && !staysPaused && a.type !== 'PLAY') player.play();
+      }
+      const shown = done ? msg.message : playerUnavailableMessage(replyLanguage);
       setAiResponse(shown);
+      setAnswerSpoken(true);
       setStage('responding');
       onTurn?.(text, shown, m);
       closeTimer.current = window.setTimeout(
@@ -273,19 +377,27 @@ export function useTildePTT(options: UseTildePTTOptions) {
         done ? ACTION_AUTOCLOSE_MS : ACTION_FAILED_CLOSE_MS
       );
     } else {
+      answerTextRef.current = msg.text;
       setAiResponse(msg.text);
       setStage('responding');
       onTurn?.(text, msg.text, m);
       if (msg.cancelled) {
-        speech.cancel();
+        stopFiller();
+        stream.current?.cancel();
         restoreVolume();
+        resumeLecture();
+        setAnswerSpoken(true);
         return;
       }
-      if (!streamed) speech.push(msg.text); // template answers (no transcript, not covered yet…) don't stream
+      if (!streamed) {
+        // template answers (no transcript, not covered yet…) don't stream; a voice note's short "Noted" only ducks
+        if (msg.route !== 'notes') pauseForAnswer();
+        voice(replyLanguage).push(msg.text);
+      }
       armDuckWatchdog(DUCK_SPEAK_MS); // the speech's own idle callback normally restores it sooner
-      speech.end();
+      voice(replyLanguage).end();
     }
-  }, [armDuckWatchdog, restoreVolume]);
+  }, [armDuckWatchdog, restoreVolume, pauseForAnswer, resumeLecture]);
 
   const stopListeningAndProcess = useCallback(async () => {
     if (!listeningRef.current) return;
@@ -296,6 +408,7 @@ export function useTildePTT(options: UseTildePTTOptions) {
     const { asr, language } = optsRef.current;
     const promptPending = micPromptPending(); // read before stopCapture() cancels the waiting start
     const captureTried = captureTriedRef.current;
+    earcon('stop');
     setStage('processing');
     try {
       const [browserText, capture] = await Promise.all([
@@ -308,13 +421,16 @@ export function useTildePTT(options: UseTildePTTOptions) {
         const hosted = await transcribeAudio(capture.blob, language);
         if (turnSeq.current !== seq) return;
         const text = hosted?.text.trim();
-        if (hosted && text) return await processText(text, { provider: hosted.provider, ms: hosted.ms });
+        if (hosted && text)
+          return await processText(text, { provider: hosted.provider, ms: hosted.ms, language: hosted.language });
       }
       if (!browserText && !capture && captureTried) {
         // nothing heard AND nothing recorded: if the mic itself is the problem, say that instead of "didn't catch"
         const why = micMessage(captureProblem(), promptPending, language);
         if (why) {
           restoreVolume();
+          resumeLecture();
+          setAnswerSpoken(true);
           setStage('responding');
           setAiResponse(why);
           setActiveStep(-1);
@@ -325,11 +441,13 @@ export function useTildePTT(options: UseTildePTTOptions) {
     } catch {
       restoreVolume(); // idempotent; whatever threw, the lecture must not stay ducked
       if (turnSeq.current !== seq) return; // a newer hold owns the modal now
+      resumeLecture();
+      setAnswerSpoken(true);
       setStage('responding');
       setAiResponse(SAY.failed[language]);
       setActiveStep(-1);
     }
-  }, [processText, restoreVolume]);
+  }, [processText, restoreVolume, resumeLecture]);
   stopRef.current = stopListeningAndProcess;
 
   /** The hold ended without a key-up (window blur / tab hidden): drop it instead of sending a stale recording. */
@@ -347,6 +465,7 @@ export function useTildePTT(options: UseTildePTTOptions) {
     setStage('idle');
     setRecognizedText('');
     setActiveStep(-1);
+    setAnswerSpoken(true);
     setNotice(prompting ? SAY.allowMic[language] : SAY.lostFocus[language]);
   }, [restoreVolume]);
 
@@ -445,6 +564,7 @@ export function useTildePTT(options: UseTildePTTOptions) {
     abortCapture();
     restoreVolume();
     stopSpeaking();
+    resumeLecture(); // closing the answer = back to the lecture
     setIsOpen(false);
     setStage('idle');
     setRecognizedText('');
@@ -453,7 +573,8 @@ export function useTildePTT(options: UseTildePTTOptions) {
     setMeta(null);
     setNotice(null);
     setCanAskAgain(false);
-  }, [restoreVolume]);
+    setSpoken(null);
+  }, [restoreVolume, resumeLecture]);
 
   /** Send the last thing the learner said again (after the connection dropped or the server timed out). */
   const askAgain = useCallback(() => {
@@ -468,6 +589,8 @@ export function useTildePTT(options: UseTildePTTOptions) {
     stage,
     recognizedText: stage === 'listening' ? options.asr.interim : recognizedText,
     aiResponse,
+    answerSpoken,
+    spoken,
     activeStep,
     meta,
     error: error || options.asr.error,

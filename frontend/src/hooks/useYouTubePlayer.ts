@@ -89,7 +89,9 @@ export function useYouTubePlayer(
           videoId,
           width: '100%',
           height: '100%',
-          playerVars: { rel: 0, modestbranding: 1, playsinline: 1, enablejsapi: 1, origin: window.location.origin },
+          // fs: 0 hides YouTube's own fullscreen button: a fullscreen iframe can't show anything of ours on top
+          // (the live voice caption), so fullscreen goes through VideoPane's button, which fullscreens the box around it
+          playerVars: { rel: 0, modestbranding: 1, playsinline: 1, enablejsapi: 1, fs: 0, origin: window.location.origin },
           events: {
             onReady: (e) => {
               if (cancelled) return;

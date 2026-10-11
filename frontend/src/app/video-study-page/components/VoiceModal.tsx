@@ -1,8 +1,9 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@/components/ui/AppIcon';
-import type { PTTStage, TurnMeta } from '@/hooks/useTildePTT';
-import AnswerText from './AnswerText';
+import type { PTTStage, SpokenRange, TurnMeta } from '@/hooks/useTildePTT';
+import FollowUps from './FollowUps';
+import SpokenText from './SpokenText';
 
 const pipelineSteps = [
   { id: 'step-asr', label: 'Browser ASR', desc: 'Speech → text (en-IN / hi-IN)' },
@@ -41,6 +42,11 @@ interface VoiceModalProps {
   /** the turn failed for a reason that isn't the learner's (offline, timeout, connection lost) */
   canAskAgain?: boolean;
   onAskAgain?: () => void;
+  /** the sentence being spoken (highlighted) */
+  spoken?: SpokenRange | null;
+  /** a follow-up chip was tapped: ask it (spoken answer) */
+  onAsk?: (text: string) => void;
+  onSeek?: (seconds: number) => void;
 }
 
 const ROUTE_LABEL: Record<string, string> = {
@@ -66,6 +72,9 @@ export default function VoiceModal({
   notice = null,
   canAskAgain = false,
   onAskAgain,
+  spoken = null,
+  onAsk,
+  onSeek,
 }: VoiceModalProps) {
   const waveBarCount = 24;
 
@@ -215,8 +224,13 @@ export default function VoiceModal({
                 <span className="text-xs font-bold text-indigo-400">AI Response</span>
               </div>
               <p className="text-sm text-foreground leading-relaxed" aria-live="polite">
-                <AnswerText text={aiResponse} onSeek={onSeekTimestamp} />
+                <SpokenText text={aiResponse} range={spoken} onSeek={onSeekTimestamp} />
               </p>
+              {stage === 'responding' && meta?.followUp && onAsk && onSeek && (
+                <div className="mt-3">
+                  <FollowUps ctx={meta.followUp} onAsk={onAsk} onSeek={onSeek} />
+                </div>
+              )}
               {meta && (
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-muted-foreground">
                   <span

@@ -145,3 +145,92 @@ stored high-water mark; an idle paused tab stays quiet.
         server is unreachable is fine). Restart the backend: no jump back to 0:00 in the Library afterwards.
 27. [ ] Remove the video from the Library, then open it again: it starts at 0:00 (the browser's copy was cleared too).
 28. [ ] Hindi pass: the "Resumed at" toast reads `m:ss से आगे शुरू किया` with the "शुरू से देखें" action in हिं mode.
+
+## G. Voice caption in fullscreen (Chrome, signed in)
+
+What changed: YouTube's own fullscreen button is off (`fs: 0`; an iframe in fullscreen can't show anything of ours on
+top, so the voice modal was invisible there and only the spoken answer came through). The fullscreen button in our
+control bar now fullscreens the video box itself, and a voice turn shows as a small floating card in the bottom-left
+of the video (`VoiceCaption.tsx`) instead of the blocking modal: listening state + live words, then the answer as it
+streams, fading out 5 s after it has been spoken. Out of fullscreen nothing changed (the modal as before).
+
+29. [ ] Click the fullscreen button under the video: the video fills the screen, a "Hold ~ to talk to the video" hint
+        shows for ~3 s, an exit button sits top-right, and YouTube's own control bar has no fullscreen button.
+30. [ ] Hold ~ and ask "what is a peak?": a red "Listening… keep holding ~" card appears bottom-left with your words as
+        you speak; on release "Thinking…", then the answer streams in while it is spoken; the card fades ~5 s after the
+        voice stops. The lecture stays visible around it; YouTube's control bar (mouse over the video) is not covered.
+31. [ ] "pause" / "go back 30 seconds" in fullscreen: the card shows the confirmation and closes on its own (~1.6 s).
+32. [ ] A long answer scrolls inside the card (newest words in view); a `[mm:ss]` chip in it seeks; the × closes it
+        and stops the voice.
+33. [ ] Click the video (YouTube play/pause) in fullscreen, then hold ~ again: it still listens.
+34. [ ] Esc or the exit button leaves fullscreen; holding ~ now opens the normal modal. Leaving fullscreen mid-answer
+        moves the turn into the modal without losing it.
+35. [ ] Hindi pass (हिं): the card reads "सुन रहा हूँ… ~ दबाए रखें" / "सोच रहा हूँ…" / "जवाब", the answer in Hindi.
+
+## H. The lecture pauses while the answer is spoken
+
+What changed (`useTildePTT.ts`): the lecture is still ducked while `~` is held, but a spoken answer now PAUSES it
+(when it was playing) and plays it again once the answer has been spoken. Only a pause made by the voice copilot is
+undone: a lecture the learner had paused stays paused. A voice note's short "Noted" only ducks, as before. Checked
+without a mic on 11 Oct (dev hook, no-auth backend): playing → paused at the first streamed words → TTS → playing
+again the moment the audio ended; learner-paused stayed paused; "go back 10 seconds" during an answer → seek + playing;
+closing the answer → playing.
+
+36. [ ] Lecture playing, hold ~, ask a question: the lecture is quiet while you speak, pauses as the answer starts, and
+        plays on by itself right after the last word.
+37. [ ] Pause the lecture yourself, ask a question: it stays paused after the answer.
+38. [ ] During an answer, hold ~ and say "go back 10 seconds": the answer stops, the video jumps and keeps playing.
+        Saying "pause" instead leaves it paused.
+39. [ ] Close the answer (× / click outside the modal) while it is being spoken: the voice stops, the lecture plays.
+40. [ ] "Take a note: …" while playing: the lecture does not pause (only gets quieter for the short "Noted").
+
+## I. Auto language (answer in the language spoken)
+
+What changed: the top-bar toggle is now **Auto | EN | हिं**, Auto by default. In Auto the server picks each turn's
+reply language from the utterance (`reply_language.py`): English → English; Hindi in Devanagari → Hindi; Hinglish
+(romanized Hindi, or Devanagari mixed with English) → a Hinglish answer (Hindi in Devanagari, English terms in
+English letters). Very short commands ("pause", "12:30") keep the conversation's language. The reply language comes
+back on every delta, so the right voice speaks it; the page's labels and chapters follow it. EN / हिं force a
+language as before. Checked 11 Oct without a mic: 273/273 on the Collect deck's EN / Hinglish / Hindi lines; live
+over the WS with Groq (English, Hindi, Hinglish answers; "pause" kept Hinglish); in the page the voice switched
+en → hi with the question.
+
+41. [ ] Auto is selected on a fresh browser. Ask "what is a peak?" in English: English answer, English voice.
+42. [ ] Ask "peak kya hota hai, simple words mein samjhao": a Hinglish answer (Hindi in Devanagari, words like array
+        / element / algorithm in English letters), read by the Hindi voice; the page's labels switch to Hindi.
+43. [ ] Ask in pure Hindi ("पीक क्या होता है?"): a Hindi answer.
+44. [ ] Right after a Hinglish answer say "pause": the confirmation is in Hindi ("रोक दिया"). Then a full English
+        sentence: back to English.
+45. [ ] Hover Auto: the tooltip says which language it is answering in now.
+46. [ ] Pick EN, ask in Hinglish: the answer is English. Pick हिं, ask in English: the answer is Hindi.
+47. [ ] Typed questions in the Q&A tab follow the same rule.
+
+## J. Follow-ups, "I'm lost", voice feel, revision sheet
+
+What changed: (1) follow-up chips under every grounded answer (voice modal, fullscreen caption, latest Q&A answer):
+Explain with an example / Simpler / the other language / Jump to the cited moment; follow-ups search with the
+previous exchange, and "in Hindi" / "in English" override Auto and the toggle. (2) "I'm lost", "I didn't get that",
+"samajh nahi aaya" (one phrase rule ahead of the classifier, `regex_classifier.is_lost`) re-explain the last ~90 s
+in simpler words, with a "Replay from …" chip. (3) a soft tone on ~ press / release; "One sec…" (prefetched, same
+voice) when no reply has come after 1.5 s; the sentence being spoken is highlighted. (4) a Revision sheet button in
+the top bar: big picture, key points watched so far, chapters, every question about this lecture (all sessions),
+notes, moments to rewatch → Save as PDF. Checked 11 Oct without a mic: recap + chips live over the WS (English and
+Hinglish), chips in the modal and the Q&A tab, highlight followed 3 sentences, filler fetched once per language,
+the sheet built (6 sections, 63 links). Not heard by a human: the tones and the filler.
+
+48. [ ] Ask "what is a peak?": a soft rising tone on press, a falling one on release. Under the answer: Explain with
+        an example · Simpler · हिंदी में · Jump to 16:38. Each chip works (the first three answer aloud).
+49. [ ] While the answer is spoken, the sentence being said is highlighted in the modal / fullscreen caption.
+50. [ ] Ask something slow (a whole-lecture summary): "One sec…" is heard if nothing comes for 1.5 s, and stops as
+        the answer starts. It never plays for "pause" / "go back 10 seconds".
+51. [ ] At ~25:00 say "I'm lost" (and "samajh nahi aaya"): a simpler re-explanation of the last ~90 s, with a
+        "Replay from 23:01" chip that jumps there. "I didn't understand recursion" is a normal answer (topic named).
+52. [ ] Fullscreen: the chips show on the caption; hovering the caption keeps it up.
+53. [ ] Revision sheet (top bar): the print dialog opens; the PDF has the overview, key points only up to where
+        you've watched (spoiler guard on), chapters, your questions with clickable timestamps, notes, moments to
+        rewatch. In हिं / a Hindi conversation the headings are Hindi.
+54. [ ] Hindi answer (हिं, or ask in Devanagari): English vocabulary stays in English letters ("इस lecture में
+        professor ने algorithm…"), the rest is Hindi; the same in voice-note summaries and the हिं chapters/summary
+        (`services/hindi_terms.py`: prompt rule + a dictionary net on the stream; stored outlines fixed when served).
+55. [ ] "पीक क्या होता है?" in a fresh session finds the 16:38 definition (Devanagari loanwords are also searched in
+        English letters, which matters while BGE-M3 is down: HF credits ran out on 11 Oct, HTTP 402).

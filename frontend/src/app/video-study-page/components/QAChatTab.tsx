@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import type { Lang } from '@/hooks/useStudySocket';
 import type { VideoStatus } from '@/services/transcriptService';
+import type { FollowUpContext } from '@/lib/followUps';
+import { formatClock } from '@/lib/time';
 import AnswerText from './AnswerText';
+import FollowUps from './FollowUps';
 
 export interface ChatMessage {
   id: string;
@@ -12,6 +15,8 @@ export interface ChatMessage {
   via: 'typed' | 'voice';
   streaming?: boolean;
   isError?: boolean;
+  /** a grounded answer: one-tap follow-ups (shown under the latest answer only) */
+  followUp?: FollowUpContext | null;
 }
 
 interface QAChatTabProps {
@@ -44,6 +49,7 @@ export default function QAChatTab({
   const [inputText, setInputText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const hi = language === 'hi';
+  const lastAiId = [...messages].reverse().find((m) => m.role === 'ai')?.id;
 
   // keep the newest message (and the streaming answer) in view, inside the list only
   useEffect(() => {
@@ -139,6 +145,16 @@ export default function QAChatTab({
                   {msg.via === 'voice' && <Icon name="MicrophoneIcon" size={10} />}
                   {msg.time}
                 </span>
+                {msg.id === lastAiId && msg.followUp && !msg.streaming && (
+                  <div className="mt-1">
+                    <FollowUps
+                      ctx={msg.followUp}
+                      onAsk={send}
+                      onSeek={(s) => onTimestampClick(formatClock(s))}
+                      disabled={busy}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))

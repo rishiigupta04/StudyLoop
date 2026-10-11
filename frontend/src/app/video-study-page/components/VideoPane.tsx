@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
 import { useAppFullscreen } from '@/hooks/useAppFullscreen';
 import type { YouTubePlayerApi } from '@/hooks/useYouTubePlayer';
@@ -50,7 +50,12 @@ const T = {
     hi: 'Video player लोड नहीं हुआ। शायद ad blocker या network filter YouTube को रोक रहा है। जब तक यह लोड न हो, playback की voice commands नहीं चलेंगी; Q&A और notes चलते रहेंगे।',
   },
   openOnYoutube: { en: 'Open on YouTube', hi: 'YouTube पर खोलें' },
+  fullscreen: { en: 'Fullscreen (hold ~ to talk)', hi: 'Fullscreen (~ दबाकर बोलें)' },
+  exitFullscreen: { en: 'Exit fullscreen (Esc)', hi: 'Fullscreen से बाहर (Esc)' },
+  fullscreenHint: { en: 'Hold ~ to talk to the video', hi: 'Video से बात करने के लिए ~ दबाए रखें' },
 } as const;
+
+const HINT_MS = 3500;
 
 interface VideoPaneProps {
   activeTimestamp: string;
@@ -66,6 +71,8 @@ interface VideoPaneProps {
   spoilerGuard: boolean;
   /** the learner's high-water mark for this video (this session and earlier ones) */
   watchedS: number;
+  /** drawn on top of the video while it is fullscreen (the live voice caption) */
+  fullscreenOverlay?: React.ReactNode;
 }
 
 export default function VideoPane({
@@ -79,11 +86,22 @@ export default function VideoPane({
   language,
   spoilerGuard,
   watchedS,
+  fullscreenOverlay,
 }: VideoPaneProps) {
   const [activeTab, setActiveTab] = useState<'summary' | 'chapters'>('chapters');
 
-  const paneContainerRef = useRef<HTMLDivElement>(null);
-  const { isFullscreen, toggleFullscreen } = useAppFullscreen(paneContainerRef);
+  // fullscreen = the video box (player + the voice caption on top), not YouTube's own iframe fullscreen
+  const videoBoxRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggleFullscreen } = useAppFullscreen(videoBoxRef);
+
+  // on entering fullscreen, say once how to talk to it
+  const [showHint, setShowHint] = useState(false);
+  useEffect(() => {
+    setShowHint(isFullscreen);
+    if (!isFullscreen) return;
+    const t = window.setTimeout(() => setShowHint(false), HINT_MS);
+    return () => window.clearTimeout(t);
+  }, [isFullscreen]);
 
   const { doc, fellBack } = pickOutline(outline.outline, language);
   const chapters = doc?.chapters ?? [];
@@ -119,15 +137,15 @@ export default function VideoPane({
   };
 
   return (
-    <div
-      ref={paneContainerRef}
-      className={`flex flex-col h-full min-h-0 video-pane overflow-y-auto scrollbar-thin ${
-        isFullscreen ? 'bg-obsidian p-4' : ''
-      }`}
-    >
-      {/* YouTube Embed Container */}
-      <div className="relative w-full bg-black flex items-center justify-center flex-shrink-0 max-h-[48vh] sm:max-h-[52vh] overflow-hidden">
-        <div className="w-full aspect-video relative max-h-[48vh] sm:max-h-[52vh]">
+    <div className="flex flex-col h-full min-h-0 video-pane overflow-y-auto scrollbar-thin">
+      {/* YouTube Embed Container (the fullscreen target) */}
+      <div
+        ref={videoBoxRef}
+        className={`relative w-full bg-black flex items-center justify-center flex-shrink-0 overflow-hidden ${
+          isFullscreen ? 'h-full' : 'max-h-[48vh] sm:max-h-[52vh]'
+        }`}
+      >
+        <div className={`w-full relative ${isFullscreen ? 'h-full' : 'aspect-video max-h-[48vh] sm:max-h-[52vh]'}`}>
           {/* Real YouTube IFrame player (useYouTubePlayer mounts into this host) */}
           <div ref={playerHostRef} className="absolute inset-0 w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
           {player.status !== 'ready' &&
@@ -152,6 +170,30 @@ export default function VideoPane({
               </div>
             ))}
         </div>
+
+        {isFullscreen && (
+          <>
+            <button
+              onClick={toggleFullscreen}
+              className="absolute top-3 right-3 z-30 p-2 rounded-xl bg-black/50 text-white/60 hover:text-white hover:bg-black/75 border border-white/10 backdrop-blur-sm transition-colors"
+              title={T.exitFullscreen[language]}
+              aria-label={T.exitFullscreen[language]}
+            >
+              <Icon name="ArrowsPointingInIcon" size={16} />
+            </button>
+            {fullscreenOverlay ??
+              (showHint && (
+                <div className="absolute left-3 sm:left-5 bottom-16 sm:bottom-20 z-30 pointer-events-none fade-in">
+                  <span className="inline-flex items-center gap-2 rounded-xl bg-black/65 backdrop-blur-md border border-white/10 px-3 py-2 text-sm text-white">
+                    <kbd className="px-1.5 rounded bg-indigo-900/70 border border-indigo-400/40 text-indigo-200 font-mono text-xs">
+                      ~
+                    </kbd>
+                    {T.fullscreenHint[language]}
+                  </span>
+                </div>
+              ))}
+          </>
+        )}
       </div>
 
       {/* Integrated Controls Bar with Voice Copilot Button & App Fullscreen Toggle */}
@@ -254,7 +296,7 @@ export default function VideoPane({
             <button
               onClick={toggleFullscreen}
               className="p-1.5 rounded-lg hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors ml-1"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Study Workspace Fullscreen (Keeps ~ PTT Active)'}
+              title={isFullscreen ? T.exitFullscreen[language] : T.fullscreen[language]}
             >
               <Icon name={isFullscreen ? 'ArrowsPointingInIcon' : 'ArrowsPointingOutIcon'} size={16} />
             </button>

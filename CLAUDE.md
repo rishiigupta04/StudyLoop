@@ -9,7 +9,10 @@ Bilingual (EN/Hindi/Hinglish) voice-native study copilot for long YouTube lectur
 - No GPU anywhere at deploy time (Render free tier: CPU, ~512 MB RAM — no torch in the prod image).
 - Fast path (player intents) never touches the LLM router or any agent.
 - `normalize_input` (`backend/studyloop_nlp`) always runs before the classifier; training data must go through the same `normalize()`.
-- `language` is one field from the UI toggle; LLM agents answer directly in that language; `localize` only renders templates.
+- `language` is the reply language of a turn: the UI toggle when it is forced (EN / हिं), otherwise ("Auto", the
+  default since 11 Oct 2026) resolved per turn by `orchestration/reply_language.py` from what the learner said
+  (English → en, Devanagari Hindi → hi, Hinglish → hi + `code_mix`). LLM agents answer directly in it; `localize`
+  only renders templates; the turn's `language` goes back to the client (voice + UI).
 - RAG answers only from already-watched content (`chunk.end_s <= max_watched_s`); semantic seek searches the whole video.
 - No transcript ⇒ degrade gracefully with a stated reason (`fail_reason`), playback voice control keeps working. TranscriptAPI works even for captions-disabled videos, so "no transcript" is a failure state.
 - Secrets only in `backend/.env` / Render. Anything `VITE_`-prefixed is public. Never commit `.env`.

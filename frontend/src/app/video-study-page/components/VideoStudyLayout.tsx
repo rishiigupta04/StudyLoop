@@ -5,18 +5,32 @@ import VideoPane from './VideoPane';
 import AIAgentPanel from './AIAgentPanel';
 import type { ChatMessage } from './QAChatTab';
 import VoiceModal from './VoiceModal';
+import VoiceCaption from './VoiceCaption';
 import NoVideoState from './NoVideoState';
 import Icon from '@/components/ui/AppIcon';
 import { useTildePTT } from '@/hooks/useTildePTT';
+import { useAppFullscreen } from '@/hooks/useAppFullscreen';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useStudySocket, type Lang } from '@/hooks/useStudySocket';
+import { useStudySocket, type Lang, type LangMode } from '@/hooks/useStudySocket';
+import { readUiLang } from '@/lib/uiLang';
+import { followUpContext } from '@/lib/followUps';
+import { revisionSheetHtml, type RevisionQA } from '@/lib/revisionSheet';
+import { printHtml } from '@/lib/notesExport';
+import { pickOutline } from '@/lib/outline';
 import { useVideoTranscript } from '@/hooks/useVideoTranscript';
 import { useVideoNotes, type VideoNotesState } from '@/hooks/useVideoNotes';
 import { useVideoOutline } from '@/hooks/useVideoOutline';
 import { extractYouTubeId, IN_PROGRESS_STATUSES } from '@/services/transcriptService';
 import { formatClock, parseClock } from '@/lib/time';
-import { fetchResume, resumeTarget, studyUrl, type ResumePoint } from '@/services/libraryService';
+import {
+  fetchChats,
+  fetchResume,
+  isConversation,
+  resumeTarget,
+  studyUrl,
+  type ResumePoint,
+} from '@/services/libraryService';
 import { getSttProvider, hostedSttAvailable, setSttProvider, type SttProvider } from '@/services/speechService';
 import { executePlayerAction, playerUnavailableMessage, resetSeekHistory } from '@/lib/playerActions';
 import { captureSupported } from '@/lib/audioCapture';
@@ -52,13 +66,23 @@ function StudyView({ videoId }: { videoId: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTimestamp, setActiveTimestamp] = useState('0:00');
-  const [language, setLanguage] = useState<Lang>(() => {
+  // The top-bar toggle: Auto (the default) answers in the language the learner uses, per turn, decided by the server;
+  // EN / हिं force one. `language` is what the page itself speaks and shows: the forced one, or in Auto the language
+  // of the last answer (so labels, chapters and the voice follow the conversation).
+  const [langMode, setLangMode] = useState<LangMode>(() => {
     try {
-      return (localStorage.getItem('studyloop.lang') as Lang) || 'en';
+      const v = localStorage.getItem('studyloop.langMode');
+      return v === 'en' || v === 'hi' || v === 'auto' ? v : 'auto';
     } catch {
-      return 'en';
+      return 'auto';
     }
   });
+  // Auto starts in the language the app was last shown in (lib/uiLang's shared key, also set by the other pages)
+  const [replyLang, setReplyLang] = useState<Lang>(readUiLang);
+  const language: Lang = langMode === 'auto' ? replyLang : langMode;
+  const noteReplyLanguage = useCallback((l?: Lang) => {
+    if (l === 'en' || l === 'hi') setReplyLang(l);
+  }, []);
 
   // anti-spoiler Q&A (on by default): off lets answers and summaries use the whole lecture
   const [spoilerGuard, setSpoilerGuard] = useState<boolean>(() => {
@@ -111,7 +135,7 @@ function StudyView({ videoId }: { videoId: string }) {
   };
   const socket = useStudySocket({
     videoId,
-    language,
+    language: langMode,
     spoilerGuard,
     // heartbeat + utterances: also the resume point (Tier 2 library, written behind on the server)
     getPlayback: () => {
@@ -176,18 +200,27 @@ function StudyView({ videoId }: { videoId: string }) {
           patchChat(`${id}-a`, { text: streamed });
         },
       });
+      if (msg.type !== 'error') noteReplyLanguage(msg.language);
       if (msg.type === 'action') {
         const done = executePlayerAction(player, msg.action); // typed commands ("pause", "go to 12:30") work too
-        patchChat(`${id}-a`, { text: done ? msg.message : playerUnavailableMessage(language), streaming: false });
+        patchChat(`${id}-a`, {
+          text: done ? msg.message : playerUnavailableMessage(msg.language ?? language),
+          streaming: false,
+        });
       } else if (msg.type === 'answer.done') {
-        patchChat(`${id}-a`, { text: msg.text, streaming: false });
+        patchChat(`${id}-a`, { text: msg.text, streaming: false, followUp: followUpContext(msg, language) });
       } else {
         patchChat(`${id}-a`, { text: msg.message, streaming: false, isError: true });
       }
       setChatBusy(false);
     },
-    [socket.sendUtterance, player, language]
+    [socket.sendUtterance, player, language, noteReplyLanguage]
   );
+
+  // the video is fullscreen (VideoPane's button): the voice turn shows as a small caption on the video, not the modal
+  const { isFullscreen: videoFullscreen } = useAppFullscreen();
+  const voiceConnecting =
+    socket.status === 'open' || socket.status === 'unauthorized' ? null : socket.waking ? 'waking' : 'reconnecting';
 
   const ptt = useTildePTT({
     language,
@@ -195,6 +228,7 @@ function StudyView({ videoId }: { videoId: string }) {
     player,
     sendUtterance: socket.sendUtterance,
     cancelTurn: socket.cancelTurn,
+    onReplyLanguage: noteReplyLanguage,
     onTurn: (userText, reply, meta) => {
       // player commands are confirmed in the voice modal; voice notes land in the Notes tab
       if (meta.isAction || meta.route === 'notes') return;
@@ -202,7 +236,7 @@ function StudyView({ videoId }: { videoId: string }) {
       setChat((c) => [
         ...c,
         { id: `${id}-u`, role: 'user', text: userText, time: clockNow(), via: 'voice' },
-        { id: `${id}-a`, role: 'ai', text: reply, time: clockNow(), via: 'voice' },
+        { id: `${id}-a`, role: 'ai', text: reply, time: clockNow(), via: 'voice', followUp: meta.followUp },
       ]);
     },
   });
@@ -383,11 +417,12 @@ function StudyView({ videoId }: { videoId: string }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem('studyloop.lang', language);
+      localStorage.setItem('studyloop.langMode', langMode);
+      localStorage.setItem('studyloop.lang', language); // the other pages show the language the conversation is in
     } catch {
       /* private mode */
     }
-  }, [language]);
+  }, [langMode, language]);
 
   useEffect(() => {
     if (ptt.error) toast.error(ptt.error);
@@ -400,16 +435,16 @@ function StudyView({ videoId }: { videoId: string }) {
     if (player.isPlaying) setLastVideo(videoId);
   }, [player.isPlaying, videoId]);
 
-  // switching to Hindi: spoken answers need a Hindi voice (hosted or the browser's); say so once if the browser has none
+  // answering in Hindi (chosen, or detected in Auto): spoken answers need a Hindi voice (hosted or the browser's);
+  // say so once if the browser has none
   const hindiVoiceChecked = useRef(false);
-  const chooseLanguage = (l: Lang) => {
-    setLanguage(l);
-    if (l !== 'hi' || hindiVoiceChecked.current) return;
+  useEffect(() => {
+    if (language !== 'hi' || hindiVoiceChecked.current) return;
     hindiVoiceChecked.current = true;
     void hasVoiceFor('hi').then((has) => {
       if (!has) toast.warning(HINDI_VOICE_NOTICE, { duration: 9000 });
     });
-  };
+  }, [language]);
 
   // Dev only: drive the full voice pipeline with typed text (no mic needed), e.g. in the preview pane:
   //   await window.__studyloopSay('go back 30 seconds')
@@ -425,6 +460,51 @@ function StudyView({ videoId }: { videoId: string }) {
   // the backend knows the title even when the embedded player never loads (blocked iframe, embedding disabled)
   const backendTitle = socket.videoStatus?.video_id === videoId ? socket.videoStatus.title : null;
   const videoTitle = player.title || backendTitle || location.state?.videoTitle || 'Loading video…';
+
+  // One-tap revision sheet: the big picture, key points watched so far, chapters, every question asked about this
+  // lecture (all sessions, from the server, plus this page's), notes and the moments worth rewatching → Save as PDF
+  const openRevisionSheet = async () => {
+    const hi = language === 'hi';
+    const busy = toast.loading(hi ? 'Revision sheet बन रही है…' : 'Building your revision sheet…');
+    const qa: RevisionQA[] = [];
+    const seen = new Set<string>();
+    const add = (q: RevisionQA) => {
+      const key = `${q.question.trim()}
+${q.answer.trim()}`;
+      if (!q.question.trim() || !q.answer.trim() || seen.has(key)) return;
+      seen.add(key);
+      qa.push(q);
+    };
+    try {
+      const sessions = await fetchChats(50);
+      sessions
+        .filter((sess) => sess.video_id === videoId)
+        .reverse() // oldest session first
+        .forEach((sess) => sess.turns.filter(isConversation).forEach((t) => add({ question: t.question, answer: t.answer, at_s: t.at_s })));
+    } catch {
+      /* offline / signed out: this page's own Q&A below still goes in */
+    }
+    // this page's grounded answers (the server's copy can lag the last turn)
+    chat.forEach((m, i) => {
+      const q = chat[i - 1];
+      if (m.role === 'ai' && m.followUp && q?.role === 'user') add({ question: q.text, answer: m.text, at_s: null });
+    });
+    qa.sort((a, b) => (a.at_s ?? Infinity) - (b.at_s ?? Infinity));
+    const html = revisionSheetHtml({
+      videoId,
+      title: videoTitle,
+      exportedAt: new Date(),
+      language,
+      watchedS: player.maxWatched(),
+      durationS: player.duration,
+      spoilerGuard,
+      outline: pickOutline(outline.outline, language).doc,
+      qa,
+      notes: notes.notes,
+    });
+    toast.dismiss(busy);
+    printHtml(html);
+  };
 
   const handleShareSession = () => {
     // built from the id: the address bar has no ?v= when the video came from router state
@@ -539,16 +619,23 @@ function StudyView({ videoId }: { videoId: string }) {
             ))}
           </div>
           <div className="flex rounded-full border border-border/80 overflow-hidden text-[11px] font-semibold" role="group" aria-label="Response language">
-            {(['en', 'hi'] as Lang[]).map((l) => (
+            {(['auto', 'en', 'hi'] as LangMode[]).map((l) => (
               <button
                 key={l}
-                onClick={() => chooseLanguage(l)}
+                onClick={() => setLangMode(l)}
                 className={`px-2 py-1 transition-colors ${
-                  language === l ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
+                  langMode === l ? 'bg-indigo-600 text-white' : 'text-muted-foreground hover:text-foreground'
                 }`}
-                aria-pressed={language === l}
+                aria-pressed={langMode === l}
+                title={
+                  l === 'auto'
+                    ? `Answers in the language you speak: English, Hindi or Hinglish (now: ${language === 'hi' ? 'Hindi' : 'English'})`
+                    : l === 'en'
+                      ? 'Always answer in English'
+                      : 'Always answer in Hindi'
+                }
               >
-                {l === 'en' ? 'EN' : 'हिं'}
+                {l === 'auto' ? 'Auto' : l === 'en' ? 'EN' : 'हिं'}
               </button>
             ))}
           </div>
@@ -560,6 +647,19 @@ function StudyView({ videoId }: { videoId: string }) {
             <Icon name="MicrophoneIcon" size={14} className="text-indigo-400 ptt-pulse" />
             <span className="hidden sm:inline font-bold">Voice Copilot</span>
             <kbd className="hidden md:inline-block px-1.5 py-0.2 text-[10px] font-mono rounded bg-indigo-950/80 border border-indigo-500/40 text-indigo-200 font-semibold">~</kbd>
+          </button>
+          <button
+            onClick={() => void openRevisionSheet()}
+            className="px-2.5 py-1.5 rounded-xl hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+            title={
+              language === 'hi'
+                ? 'Revision sheet: मुख्य बातें, आपके सवाल, notes और दोबारा देखने लायक हिस्से (PDF)'
+                : 'Revision sheet: key points, your questions, notes and moments to rewatch (save as PDF)'
+            }
+            aria-label="Revision sheet"
+          >
+            <Icon name="AcademicCapIcon" size={16} />
+            <span className="hidden xl:inline">Revision sheet</span>
           </button>
           <button
             onClick={handleShareSession}
@@ -596,6 +696,25 @@ function StudyView({ videoId }: { videoId: string }) {
             language={language}
             spoilerGuard={spoilerGuard}
             watchedS={player.maxWatched()}
+            fullscreenOverlay={
+              ptt.isOpen ? (
+                <VoiceCaption
+                  stage={ptt.stage}
+                  recognizedText={ptt.recognizedText}
+                  aiResponse={ptt.aiResponse}
+                  answerSpoken={ptt.answerSpoken}
+                  notice={ptt.notice}
+                  connecting={voiceConnecting}
+                  language={language}
+                  onSeekTimestamp={seekToTimestamp}
+                  onDone={ptt.closeModal}
+                  spoken={ptt.spoken}
+                  followUp={ptt.meta?.followUp}
+                  onAsk={(t) => void ptt.processText(t)}
+                  onSeek={(s) => player.seekTo(s)}
+                />
+              ) : null
+            }
           />
         </div>
 
@@ -620,7 +739,7 @@ function StudyView({ videoId }: { videoId: string }) {
       </div>
 
       {/* Voice Modal (Triggered via ~ Key or UI Button) */}
-      {ptt.isOpen && (
+      {ptt.isOpen && !videoFullscreen && (
         <VoiceModal
           stage={ptt.stage}
           recognizedText={ptt.recognizedText}
@@ -633,12 +752,13 @@ function StudyView({ videoId }: { videoId: string }) {
           meta={ptt.meta}
           // Firefox has no browser ASR, but hosted speech-to-text serves it: voice is only unsupported with neither
           asrSupported={asr.supported || (hostedSttAvailable() && captureSupported())}
-          connecting={
-            socket.status === 'open' || socket.status === 'unauthorized' ? null : socket.waking ? 'waking' : 'reconnecting'
-          }
+          connecting={voiceConnecting}
           notice={ptt.notice}
           canAskAgain={ptt.canAskAgain}
           onAskAgain={ptt.askAgain}
+          spoken={ptt.spoken}
+          onAsk={(t) => void ptt.processText(t)}
+          onSeek={(s) => player.seekTo(s)}
         />
       )}
     </div>

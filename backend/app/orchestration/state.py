@@ -11,11 +11,13 @@ def keep_recent(existing: list[dict] | None, new: list[dict] | None) -> list[dic
 
 
 class StudyState(TypedDict, total=False):
-    # session (set once per turn from the WS session; `language` comes only from the UI toggle)
+    # session (set once per turn from the WS session). `language` = the reply language: the UI toggle when it is
+    # set to EN / हिं, otherwise detected from the utterance (reply_language.py); `code_mix` = answer in Hinglish
     session_id: str
     user_id: str
     video_id: str
     language: Literal["en", "hi"]
+    code_mix: bool
     playback_s: float
     max_watched_s: float
     turn_id: str
@@ -36,6 +38,8 @@ class StudyState(TypedDict, total=False):
     answer_text: str | None
     answer_args: dict[str, Any] | None  # template args for answer_key
     citations: list[dict[str, float]]  # [{start_s}] from RAG answers → seekable chips
+    answer_kind: str | None  # rag_agent: "answer" | "summary" | "recap" (→ follow-up chips)
+    replay_from_s: float | None  # a recap ("I'm lost"): where the part they lost starts
     note: dict[str, Any] | None  # Tier 1e: the note notes_agent drafted this turn (stored by the WebSocket)
     router_target: str | None  # where llm_router sends the turn next
     response_text: str | None

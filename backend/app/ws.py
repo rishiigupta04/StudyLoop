@@ -1,8 +1,10 @@
 """WebSocket voice session — protocol from STUDYLOOP_ROADMAP_V2.md §2.
 
 client → server
-  {"type":"hello", "token"?, "video_id", "session_id"?, "language":"en"|"hi", "spoiler_guard"?: bool}
-  {"type":"utterance", "turn_id", "text", "playback_s", "max_watched_s", "language"?, "spoiler_guard"?}
+  {"type":"hello", "token"?, "video_id", "session_id"?, "language":"auto"|"en"|"hi", "spoiler_guard"?: bool}
+      language "auto" = answer in the language the learner uses, per turn (reply_language.py); "en" / "hi" force it
+  {"type":"utterance", "turn_id", "text", "playback_s", "max_watched_s", "language"?, "spoiler_guard"?,
+   "stt_language"?}   # stt_language: the STT provider's hint ("hi-IN" …), used in Auto for very short commands
       spoiler_guard (UI toggle, default true): Q&A/summaries use only what's been watched (D7). false = the
       learner opted out, the whole lecture is used. The utterance's value wins and sticks for the session.
   {"type":"playback", "playback_s", "max_watched_s", "duration_s"?}   # heartbeat every 5 s; also feeds the
@@ -14,10 +16,14 @@ server → client
   {"type":"video.status", "video_id", "status", "has_transcript", "fail_reason", "retryable", ...}
       sent right after `ready`, then on every ingestion change (Tier 1a). status: pending | fetching |
       transcribing | embedding | ready | unavailable | failed. Retry = POST /api/videos {retry: true}.
-  {"type":"action", "turn_id", "action":{...}, "message", "intent", "confidence", "route", "timings"}
-  {"type":"answer.delta", "turn_id", "text"}                  # streamed answer tokens (Tier 1b, D8)
+  {"type":"action", "turn_id", "action":{...}, "message", "intent", "confidence", "route", "timings",
+   "language", "code_mix"}
+  {"type":"answer.delta", "turn_id", "text", "language"}      # streamed answer tokens (Tier 1b, D8)
   {"type":"answer.done", "turn_id", "text", "citations":[{"start_s"}], "cancelled", "intent", "confidence",
-   "route", "timings"}                                        # text = the full answer (or template)
+   "route", "timings", "language", "code_mix", "answer_kind", "replay_from_s"}   # text = the full answer
+      answer_kind: "answer" | "summary" | "recap" ("I'm lost") for a grounded answer, null for a template;
+      replay_from_s: a recap's start (the client offers "Replay from …")
+      language = the language this turn was answered in ("en" | "hi"; code_mix = Hinglish): the client's voice
   {"type":"note.created", "turn_id", "note":{id, video_id, session_id, at_s, raw_text, summary, is_auto,
    is_bookmarked, created_at, updated_at}, "summary_status":"pending"}   # voice note (Tier 1e), before
                                                               # the turn's answer.done ack
@@ -45,6 +51,7 @@ from app.auth import ANONYMOUS, resolve_user
 from app.config import get_settings
 from app.orchestration import onnx_classifier
 from app.orchestration.graph import TurnDeps, default_deps, get_graph, new_turn_input
+from app.orchestration.reply_language import detect_reply_language, requested_language
 from app.services.ingest import get_ingest_service
 from app.services.library import get_library_service
 from app.services.notes import get_notes_service, new_note, public
@@ -58,7 +65,31 @@ HELLO_TIMEOUT_S = 10
 
 
 def _lang(v: Any, default: str = "en") -> str:
-    return v if v in ("en", "hi") else default
+    """The language mode from the UI: "auto" (answer in the language spoken) or a forced "en" / "hi"."""
+    return v if v in ("auto", "en", "hi") else default
+
+
+def _session_lang(session: dict[str, Any]) -> str:
+    """A plain en/hi for bookkeeping rows: the forced language, else the one the conversation is in."""
+    if session["language"] != "auto":
+        return session["language"]
+    return (session.get("reply") or ("en", False))[0]
+
+
+def _reply_language(session: dict[str, Any], msg: dict[str, Any], text: str) -> tuple[str, bool]:
+    """This turn's (reply language, code_mix): "explain that in Hindi" first, then the toggle when forced, else
+    detected from what was said."""
+    mode = _lang(msg.get("language"), session["language"])
+    if asked := requested_language(text):
+        if mode == "auto":
+            session["reply"] = asked
+        return asked
+    if mode != "auto":
+        return mode, False
+    stt = msg.get("stt_language")
+    reply = detect_reply_language(text, stt if isinstance(stt, str) else None, session.get("reply"))
+    session["reply"] = reply
+    return reply
 
 
 async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = None) -> dict[str, Any]:
@@ -75,10 +106,12 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
     if isinstance(msg.get("spoiler_guard"), bool):
         session["spoiler_guard"] = msg["spoiler_guard"]
     cancelled: set[str] = session.setdefault("cancelled", set())
+    lang, code_mix = _reply_language(session, msg, text)
 
     async def emit(delta: str) -> None:
         if turn_id not in cancelled:
-            await send({"type": "answer.delta", "turn_id": turn_id, "text": delta})
+            # the reply language rides on every delta: the client picks the voice before the first sentence
+            await send({"type": "answer.delta", "turn_id": turn_id, "text": delta, "language": lang})
 
     base = default_deps()
     deps = TurnDeps(
@@ -95,7 +128,8 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
             session_id=session["session_id"],
             user_id=session["user_id"],
             video_id=session["video_id"],
-            language=_lang(msg.get("language"), session["language"]),
+            language=lang,
+            code_mix=code_mix,
             playback_s=float(msg.get("playback_s") or 0),
             max_watched_s=session["max_watched_s"],
             spoiler_guard=session.get("spoiler_guard", True),
@@ -126,9 +160,7 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
                     "summary_status": "pending",
                 }
             )
-        get_notes_service().start_voice_note(
-            note, spoken=text, language=state.get("language") or session["language"], send=send
-        )
+        get_notes_service().start_voice_note(note, spoken=text, language=lang, send=send)
     was_cancelled = turn_id in cancelled
     cancelled.discard(turn_id)
     timings = dict(state.get("timings") or {})
@@ -140,6 +172,8 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
         "route": state.get("route"),
         "normalized_text": state.get("normalized_text"),
         "timings": timings,
+        "language": lang,
+        "code_mix": code_mix,
     }
     log.info(
         "turn %s intent=%s route=%s %.1fms",
@@ -155,6 +189,9 @@ async def run_turn(session: dict[str, Any], msg: dict[str, Any], send: Any = Non
         "text": state.get("response_text"),
         "citations": state.get("citations") or [],
         "cancelled": was_cancelled,
+        # a real grounded answer ("answer" | "summary" | "recap"; null for templates): the client offers follow-ups
+        "answer_kind": state.get("answer_kind"),
+        "replay_from_s": state.get("replay_from_s"),
         **common,
     }
 
@@ -190,6 +227,7 @@ async def session_ws(ws: WebSocket) -> None:
             "user_id": user.id,
             "video_id": str(hello["video_id"])[:64],
             "language": _lang(hello.get("language")),
+            "reply": None,  # Auto mode: the last turn's (reply language, code_mix), for commands too short to tell
             "spoiler_guard": hello.get("spoiler_guard") is not False,
             "max_watched_s": 0.0,
             "transcript_status": "pending",
@@ -199,7 +237,7 @@ async def session_ws(ws: WebSocket) -> None:
         await send({"type": "ready", "session_id": session["session_id"], "classifier": classifier})
         library = get_library_service()
         library.record_anonymous_session(
-            session["session_id"], user.id, session["video_id"], session["language"]
+            session["session_id"], user.id, session["video_id"], _session_lang(session)
         )
         # transcript ingestion starts (or is joined) here; progress streams as video.status
         watcher = asyncio.create_task(_watch_video(send, session))
@@ -216,7 +254,7 @@ async def session_ws(ws: WebSocket) -> None:
                     user_id=user.id,
                     email=user.email,
                     video_id=session["video_id"],
-                    language=session["language"],
+                    language=_session_lang(session),
                 )
             )
     except (WebSocketDisconnect, asyncio.TimeoutError):
@@ -228,7 +266,7 @@ async def session_ws(ws: WebSocket) -> None:
         watcher.cancel()
         library.flush_soon(user.id, session["video_id"])  # resume point, in the background
         library.record_anonymous_session(
-            session["session_id"], user.id, session["video_id"], session["language"]
+            session["session_id"], user.id, session["video_id"], _session_lang(session)
         )
         if user is not ANONYMOUS:
             try:
@@ -237,7 +275,7 @@ async def session_ws(ws: WebSocket) -> None:
                     session_id=session["session_id"],
                     user_id=user.id,
                     max_watched_s=session["max_watched_s"],
-                    language=session["language"],
+                    language=_session_lang(session),
                 )
             except Exception:  # bookkeeping must never surface as a socket error
                 log.exception("session %s bookkeeping failed", session["session_id"])

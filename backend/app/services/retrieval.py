@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.services.embedder import Embedder, pad_to_store
+from app.services.hindi_terms import latinize_terms
 from app.services.term_repair import build_repair_map, repair
 from app.services.video_repo import VideoRepo
 
@@ -182,6 +183,11 @@ class Retriever:
         repair can only contribute an extra ranking, never remove the signal we already had."""
         out = list(queries)
         for q in queries:
+            # English loanwords spelled in Devanagari ("पीक क्या है" → "peak क्या है"): words too short for the
+            # skeleton repair below ("peek" is only "pk"), and lexical-only search depends on them
+            latin = latinize_terms(q)
+            if latin != q and latin not in out:
+                out.append(latin)
             fixed = repair(q, index.repairs, index.df, skip=STOPWORDS)
             if fixed and fixed not in out:
                 out.append(fixed)

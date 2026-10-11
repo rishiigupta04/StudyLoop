@@ -5,6 +5,8 @@ import type { VideoStatusInfo } from '@/services/transcriptService';
 import type { Note, SummaryStatus } from '@/services/notesService';
 
 export type Lang = 'en' | 'hi';
+/** The UI toggle: 'auto' = answer in the language the learner speaks (decided per turn by the server). */
+export type LangMode = 'auto' | Lang;
 /** 'unauthorized': the server rejected our token (close 4401) — reconnecting won't help, sign in again */
 export type SocketStatus = 'connecting' | 'open' | 'closed' | 'unauthorized';
 
@@ -14,8 +16,10 @@ export interface Citation {
 }
 
 export interface SendOptions {
-  /** Streamed answer tokens (`answer.delta`) as they arrive. */
-  onDelta?: (text: string) => void;
+  /** Streamed answer tokens (`answer.delta`) as they arrive, with the language the turn is answered in. */
+  onDelta?: (text: string, language?: Lang) => void;
+  /** the hosted STT provider's language hint ("hi-IN" …): helps Auto mode with very short commands */
+  sttLanguage?: string | null;
 }
 
 interface TurnMeta {
@@ -25,10 +29,22 @@ interface TurnMeta {
   route: string | null;
   normalized_text?: string | null;
   timings: Record<string, number>;
+  /** the language this turn was answered in (Auto mode decides it per turn); code_mix = Hinglish */
+  language?: Lang;
+  code_mix?: boolean;
 }
 export type ServerTurn =
   | (TurnMeta & { type: 'action'; action: PlayerAction; message: string })
-  | (TurnMeta & { type: 'answer.done'; text: string; citations?: Citation[]; cancelled?: boolean })
+  | (TurnMeta & {
+      type: 'answer.done';
+      text: string;
+      citations?: Citation[];
+      cancelled?: boolean;
+      /** a grounded answer ("answer" | "summary" | "recap"), null for a template: follow-up chips */
+      answer_kind?: string | null;
+      /** a recap ("I'm lost"): where the part they lost starts */
+      replay_from_s?: number | null;
+    })
   | { type: 'error'; turn_id?: string; code: string; message: string };
 
 /** Voice notes (Tier 1e): created at once, updated when the background summary lands. */
@@ -63,7 +79,7 @@ function newId(): string {
  */
 export function useStudySocket(opts: {
   videoId: string;
-  language: Lang;
+  language: LangMode;
   /** anti-spoiler Q&A (roadmap D7); false = the learner allows answers from the whole lecture */
   spoilerGuard?: boolean;
   getPlayback: () => { playback_s: number; max_watched_s: number };
@@ -89,7 +105,7 @@ export function useStudySocket(opts: {
   const pendingRef = useRef(
     new Map<
       string,
-      { resolve: (r: TurnResult) => void; t0: number; timer: number; onDelta?: (t: string) => void; arm: () => number; sock: WebSocket }
+      { resolve: (r: TurnResult) => void; t0: number; timer: number; onDelta?: SendOptions['onDelta']; arm: () => number; sock: WebSocket }
     >()
   );
   // true = the socket opened, false = it will not (sign-in needed / hook torn down)
@@ -200,7 +216,8 @@ export function useStudySocket(opts: {
           if (pending) {
             window.clearTimeout(pending.timer);
             pending.timer = pending.arm(); // still streaming: the turn is alive
-            pending.onDelta?.(String(msg.text ?? ''));
+            const lang = msg.language === 'hi' || msg.language === 'en' ? msg.language : undefined;
+            pending.onDelta?.(String(msg.text ?? ''), lang);
           }
           return;
         }
@@ -239,7 +256,7 @@ export function useStudySocket(opts: {
     };
   }, [videoId]);
 
-  // language toggle mid-session: one field, set from the UI, read everywhere
+  // language toggle mid-session (auto / en / hi): one field, set from the UI, read everywhere
   useEffect(() => {
     languageRef.current = language;
     const ws = wsRef.current;
@@ -306,6 +323,7 @@ export function useStudySocket(opts: {
             text,
             language: languageRef.current,
             spoiler_guard: spoilerGuardRef.current,
+            ...(opts.sttLanguage ? { stt_language: opts.sttLanguage } : {}),
             ...playbackFields(),
           })
         );

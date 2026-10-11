@@ -272,6 +272,55 @@ def test_summary_before_watching_anything(graph):
     assert out["answer_key"] == "NOTHING_WATCHED"
 
 
+@pytest.mark.parametrize(
+    "text",
+    ["Summarize the last five minutes.", "recap the past 5 mins", "pichhle 5 minute ka summary do"],
+)
+def test_summary_of_the_last_n_minutes_covers_only_that_window(graph, text):
+    # at 16:40 the last 5 minutes are 11:40-16:40: the 12:00 and 15:00 chunks, not 9:00 or anything earlier
+    llm = FakeLLM(answer="Dynamic programming [12:00] then backprop [15:00].")
+    out, _, _ = turn(graph, text, watched=1000, llm=llm)
+    system, prompt = llm.messages[0]["content"], llm.messages[-1]["content"]
+    assert out["intent"] == "SUMMARIZE" and out["answer_key"] is None
+    assert "[12:00]" in prompt and "[15:00]" in prompt
+    assert "[9:00]" not in prompt and "[0:00]" not in prompt
+    assert "from 12:00 to 15:50" in system and "so far" not in prompt
+
+
+def test_summary_window_shorter_than_a_chunk_uses_the_latest_chunk(graph):
+    llm = FakeLLM(answer="Backprop [15:00].")
+    turn(graph, "summarize the last 30 seconds", watched=1000, llm=llm)
+    prompt = llm.messages[-1]["content"]
+    assert "[15:00]" in prompt and "[12:00]" not in prompt
+
+
+def test_summary_of_the_first_n_minutes(graph):
+    llm = FakeLLM(answer="Sorting [0:00] and hashing [3:00].")
+    turn(graph, "summarize the first 5 minutes", watched=1000, llm=llm)
+    prompt = llm.messages[-1]["content"]
+    assert "[0:00]" in prompt and "[3:00]" in prompt and "[6:00]" not in prompt
+
+
+def test_summary_window_with_spoiler_guard_off_still_ends_at_the_playhead(graph):
+    llm = FakeLLM(answer="Dynamic programming [12:00].")
+    turn(graph, "summarize the last 5 minutes", watched=1000, llm=llm, spoiler_guard=False)
+    prompt = llm.messages[-1]["content"]
+    assert "[12:00]" in prompt and "[18:00]" not in prompt and "whole lecture" not in prompt
+
+
+def test_summary_window_is_anchored_at_the_playhead_not_the_watched_mark():
+    from app.orchestration.graph import _summary_window
+    from studyloop_nlp import normalize
+
+    state = {
+        "normalized_text": normalize("summarize the last 5 minutes"),
+        "playback_s": 600.0,
+        "max_watched_s": 1000.0,
+    }
+    assert _summary_window(state) == (300.0, 600.0)
+    assert _summary_window({"normalized_text": normalize("summarize so far"), "playback_s": 600.0}) is None
+
+
 # ---------------------------------------------------------------- llm_router
 def tool(name, **args):
     return {"content": None, "tool_calls": [{"function": {"name": name, "arguments": json.dumps(args)}}]}
@@ -437,3 +486,40 @@ def test_spoiler_guard_off_summarizes_the_whole_lecture(graph):
 def test_spoiler_guard_off_fallback_does_not_say_watched(graph):
     out, _, _ = turn(graph, "how does backprop work", watched=0, llm=FakeLLM(fail=True), spoiler_guard=False)
     assert out["answer_key"] == "LLM_UNAVAILABLE_AT_ANY" and "watched" not in out["response_text"]
+
+
+# ---------------------------------------------------------------- "I'm lost" recap + follow-ups
+@pytest.mark.parametrize(
+    "text", ["I'm lost", "I didn't get that", "samajh nahi aaya", "समझ नहीं आया", "I'm totally confused"]
+)
+def test_lost_recaps_the_last_90_seconds(graph, text):
+    # at 13:00 the last 90 s are 11:30-13:00: the 12:00 chunk only, re-explained, with a replay point
+    llm = FakeLLM(answer="Dynamic programming stores answers to subproblems [12:00].")
+    out, _, _ = turn(graph, text, watched=780, llm=llm)
+    system, prompt = llm.messages[0]["content"], llm.messages[-1]["content"]
+    assert out["intent"] == "ASK" and out["route"] == "rag"
+    assert "[12:00]" in prompt and "[9:00]" not in prompt
+    assert "lost the thread" in system and "simpler words" in system
+    assert out["answer_kind"] == "recap" and out["replay_from_s"] == 720.0
+
+
+def test_lost_with_a_topic_is_a_normal_question(graph):
+    llm = FakeLLM(answer="Recursion calls itself [9:00].")
+    out, _, _ = turn(graph, "I didn't understand recursion", watched=780, llm=llm)
+    assert out["answer_kind"] == "answer" and out["replay_from_s"] is None
+
+
+def test_answers_say_what_kind_they_are(graph):
+    out, _, _ = turn(graph, "summarize so far", watched=400, llm=FakeLLM(answer="Sorting [0:00]."))
+    assert out["answer_kind"] == "summary"
+    out, _, _ = turn(graph, "how does backprop work", watched=720)
+    assert out["answer_key"] == "NOT_COVERED_YET" and out["answer_kind"] is None  # a template: no follow-ups
+
+
+def test_follow_up_chip_searches_with_the_last_exchange(graph):
+    thread = "chips-thread"
+    llm = FakeLLM(answer="Recursion is a function calling itself [9:00].")
+    turn(graph, "explain recursion", watched=780, llm=llm, thread=thread)
+    llm2 = FakeLLM(answer="For example factorial [9:00].")
+    turn(graph, "Can you explain that with an example?", watched=780, llm=llm2, thread=thread)
+    assert "[9:00]" in llm2.messages[-1]["content"]  # found through the previous question, not "example"

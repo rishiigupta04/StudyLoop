@@ -43,6 +43,7 @@ from app.orchestration import localize as L
 from app.orchestration import onnx_classifier, regex_classifier
 from app.orchestration.intents import PLAYER_INTENTS, Intent
 from app.orchestration.state import StudyState
+from app.services.hindi_terms import TermStream, latinize_terms
 from app.services.retrieval import tokens
 from studyloop_nlp import normalize, parse_slots
 from studyloop_nlp.slots import DEFAULT_REPLAY_S, DEFAULT_SEEK_S, END_OFFSET_S, SPEED_STEP, missing_slots
@@ -120,7 +121,12 @@ def _threshold(intent: str) -> float:
 
 @timed("classify_intent")
 def classify_intent(state: StudyState) -> dict[str, Any]:
-    intent, conf = _classifier()(state.get("normalized_text", ""))
+    text = state.get("normalized_text", "")
+    # one fixed phrase family ahead of the model: "I'm lost" / "samajh nahi aaya" is a question about the last part
+    # (rag_agent recaps it). Both classifiers send "I'm lost" to OOS and "what just happened" to SUMMARIZE.
+    if regex_classifier.is_lost(text):
+        return {"intent": Intent.ASK.value, "confidence": 1.0}
+    intent, conf = _classifier()(text)
     return {"intent": intent.value, "confidence": conf}
 
 
@@ -247,6 +253,13 @@ WATCHED_ENOUGH_SIM = 0.55  # …while nothing watched is a good match → "not c
 # n" has a 0.59 watched match and a 0.64 future one: it was covered, so answer from what was watched.)
 ASK_TOP_K = 5
 SUMMARY_BUDGET_CHARS = 9000  # ≈2.3k tokens of transcript: keeps Groq free-tier TPM comfortable
+LOST_RECAP_S = 90.0  # "I'm lost": re-explain this much before the playhead
+# a follow-up that leans on the last exchange ("explain that with an example", "isko aasaan shabdon mein"): its
+# retrieval also searches with the previous question and answer
+_FOLLOW_UP = re.compile(
+    r"\b(that|it|this|isko|ise|isse|usko|use|again|example|examples|simpler|simply|easier|easy|"
+    r"in hindi|in english|hindi mein|english mein|aasaan|asaan|udaharan|dobara|phir se)\b"
+)
 
 _CITE = re.compile(r"\[(\d{1,2}:\d{2}(?::\d{2})?)\]")
 # gpt-oss likes CJK lenticular brackets for citations (【16:38】); normalize to the [16:38] the client parses
@@ -332,13 +345,74 @@ def _even_sample(chunks: list[Any], budget: int) -> list[Any]:
     return [chunks[int(i * step)] for i in range(keep)]
 
 
-def _system_prompt(lang: str, at_s: float, summarize: bool, spoiler_guard: bool = True) -> str:
-    language = (
-        "Hindi, written in Devanagari script (keep technical terms like 'algorithm' in English)"
-        if lang == "hi"
-        else "English"
+_SUMMARY_FROM_START = re.compile(r"\b(first|opening|initial|starting|shuru ke|shuruaat ke|shuruaati)\b")
+
+
+def _summary_window(state: StudyState) -> tuple[float, float] | None:
+    """The span a summary request names: "the last 5 minutes" → the 5 minutes before the playhead, "the first 10
+    minutes" → 0:00-10:00. None = no span named ("summarize so far"). Parsed from the normalized text here rather
+    than in parse_slots, so it holds whichever way the turn reached rag_agent (classifier or llm_router)."""
+    text = state.get("normalized_text", "")
+    span = parse_slots(text, Intent.SUMMARIZE.value).duration_s
+    if not span:
+        return None
+    if _SUMMARY_FROM_START.search(text):
+        return 0.0, span
+    at = float(state.get("playback_s") or state.get("max_watched_s") or 0.0)
+    return max(0.0, at - span), at
+
+
+def _reply_language_name(lang: str, code_mix: bool, short: bool = False) -> str:
+    """How the prompt names the reply language. Hinglish (code_mix) is written in Devanagari + Latin rather than
+    romanized: it reads naturally on screen and the hi-IN voice speaks code-mixed text well."""
+    if lang != "hi":
+        return "English"
+    if code_mix:
+        if short:
+            return "Hinglish (Hindi in Devanagari script, English words kept in English)"
+        return (
+            "Hinglish, the way Indian students talk: Hindi grammar and Hindi words in Devanagari script, with "
+            "technical terms and everyday English words (lecture, algorithm, array, element, peak, problem, "
+            "search, complexity…) written in English letters. Never spell an English word in Devanagari: write "
+            "'array', not 'एरे'; 'algorithm', not 'एल्गोरिद्म'. Example: 'यहाँ binary search use करके array में "
+            "peak find करते हैं।'"
+        )
+    if short:
+        return "Hindi (Devanagari script)"
+    return (
+        "Hindi, written in Devanagari script. Words that are English vocabulary (technical terms and English words "
+        "like lecture, professor, algorithm, array, example) stay in English letters; never spell an English word "
+        "in Devanagari: write 'lecture', not 'लेक्चर'; 'algorithm', not 'एल्गोरिद्म'"
     )
-    if spoiler_guard:
+
+
+def _system_prompt(
+    lang: str,
+    at_s: float,
+    summarize: bool,
+    spoiler_guard: bool = True,
+    span: tuple[float, float] | None = None,
+    code_mix: bool = False,
+    recap: bool = False,
+) -> str:
+    language = _reply_language_name(lang, code_mix)
+    if recap and span is not None:  # "I'm lost": the last ~90 s again, simpler
+        a, b = L.fmt_clock(span[0]), L.fmt_clock(span[1])
+        scope = f"The learner says they lost the thread of the part of the lecture from {a} to {b}."
+        task = (
+            "Re-explain what the lecture says in that part like a patient tutor: simpler words, 2-4 short "
+            "sentences, and one small concrete example if it helps. Do not go beyond that part."
+        )
+        missing = ""
+    elif summarize and span is not None:  # "summarize the last 5 minutes": that part only
+        a, b = L.fmt_clock(span[0]), L.fmt_clock(span[1])
+        scope = f"The learner asked for a summary of the part of the lecture from {a} to {b}."
+        task = (
+            f"Summarize only what the lecture covers between {a} and {b} in 2-4 short sentences. Do not "
+            "describe earlier or later parts of the lecture."
+        )
+        missing = ""
+    elif spoiler_guard:
         scope = f"The learner has watched the lecture up to {L.fmt_clock(at_s)}."
         task = (
             "Summarize what the lecture has covered so far in 3-5 short sentences."
@@ -369,6 +443,7 @@ def _system_prompt(lang: str, at_s: float, summarize: bool, spoiler_guard: bool 
         f"{scope} {task} Reply in {language}. "
         "Use only the transcript excerpts provided; each starts with its timestamp in square brackets. "
         "Cite the excerpts you rely on with that exact timestamp in plain ASCII square brackets, e.g. [12:30]. "
+        "Talk about 'the lecture' or 'the professor', never about 'excerpts' or 'the transcript'. "
         f"{missing}Your reply is read aloud: plain sentences, no markdown, no lists."
     )
 
@@ -395,23 +470,50 @@ def rag_agent(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
     max_w = float(state.get("max_watched_s") or 0.0)
     guard = state.get("spoiler_guard", True) is not False
     summarize = state.get("intent") == Intent.SUMMARIZE.value
+    recap = not summarize and regex_classifier.is_lost(state.get("normalized_text", ""))
     question = state.get("raw_text", "")
+    kind = "summary" if summarize else "recap" if recap else "answer"
 
-    if summarize:
-        chunks = _run(deps, deps.retriever.watched(state["video_id"], max_w if guard else float("inf")))
+    span = None
+    if summarize or recap:
+        if recap:  # "I'm lost": the last ~90 s before the playhead
+            at = float(state.get("playback_s") or max_w)
+            window: tuple[float, float] | None = (max(0.0, at - LOST_RECAP_S), at)
+        else:
+            window = _summary_window(state)
+        limit = max_w if guard else float("inf")
+        if window is not None:
+            limit = min(limit, window[1])  # never past the playhead, nor past what was watched (guard on)
+        chunks = _run(deps, deps.retriever.watched(state["video_id"], limit))
         if not chunks:
             return {"route": "rag", "answer_key": "NOTHING_WATCHED"}
+        if window is not None:
+            # the chunks overlapping the window; a window shorter than one chunk still gets the latest one
+            chunks = [c for c in chunks if c.end_s > window[0]] or chunks[-1:]
+            span = (chunks[0].start_s, chunks[-1].end_s)
         context = _even_sample(chunks, SUMMARY_BUDGET_CHARS)
-        user = "Summarize the lecture so far." if guard else "Summarize the whole lecture."
+        if recap and span is not None:
+            user = (
+                f"I didn't follow the part from {L.fmt_clock(span[0])} to {L.fmt_clock(span[1])}. "
+                "Explain it again, more simply."
+            )
+        elif span is not None:
+            user = f"Summarize the part from {L.fmt_clock(span[0])} to {L.fmt_clock(span[1])}."
+        else:
+            user = "Summarize the lecture so far." if guard else "Summarize the whole lecture."
     else:
         queries = [question, state.get("normalized_text", "")]
-        if (
-            len(tokens(question)) <= 2
-        ):  # a follow-up ("say that more simply"): search with the last question too
-            prev = next(
-                (h["text"] for h in reversed(state.get("history") or []) if h.get("role") == "user"), ""
-            )
-            queries.append(prev)
+        n_words = len(tokens(question))
+        if n_words <= 2 or (n_words <= 3 and _FOLLOW_UP.search(state.get("normalized_text", ""))):
+            # a follow-up ("say that more simply", "explain that with an example") has no topic words of its own:
+            # search with the last exchange instead, or "simply" / "example" would pull in unrelated chunks
+            history = state.get("history") or []
+            last = [
+                str(next((h["text"] for h in reversed(history) if h.get("role") == role), ""))[:300]
+                for role in ("user", "assistant")
+            ]
+            if any(last):
+                queries = [q for q in last if q]
         hits = _run(deps, deps.retriever.rank(state["video_id"], queries))
         if not guard:  # spoiler guard off: rank over the whole lecture, no "not covered yet"
             context = sorted(hits[:ASK_TOP_K], key=lambda h: h.start_s)
@@ -432,7 +534,7 @@ def rag_agent(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
             return {"route": "rag", "answer_key": "NOT_COVERED_YET"}
         context = sorted(watched[:ASK_TOP_K], key=lambda h: h.start_s)
         user = question
-    return _answer(state, deps, context, user, lang, max_w, summarize, guard)
+    return _answer(state, deps, context, user, lang, max_w, summarize, guard, span, kind)
 
 
 def _answer(
@@ -444,16 +546,30 @@ def _answer(
     max_w: float,
     summarize: bool,
     guard: bool,
+    span: tuple[float, float] | None = None,
+    kind: str = "answer",
 ) -> dict[str, Any]:
-    """Stream the grounded answer over `context` (already cut to what the spoiler guard allows)."""
+    """Stream the grounded answer over `context` (already cut to what the spoiler guard allows).
+    `kind` (answer | summary | recap) goes back to the client, which offers follow-ups for it."""
     excerpts = "\n".join(f"[{L.fmt_clock(c.start_s)}] {c.text}" for c in context) or "(nothing relevant yet)"
+    recap = kind == "recap"
     messages = [
-        {"role": "system", "content": _system_prompt(lang, max_w, summarize, guard)},
+        {
+            "role": "system",
+            "content": _system_prompt(
+                lang, max_w, summarize, guard, span, bool(state.get("code_mix")), recap=recap
+            ),
+        },
         *_history_messages(state),
         {"role": "user", "content": f"Transcript excerpts:\n{excerpts}\n\nLearner: {user}"},
     ]
     # retrieval still helps when the LLM is down: point at the most relevant moment (watched, if guarded)
-    top = None if summarize or not context else max(context, key=lambda c: c.score).start_s
+    if summarize or not context:
+        top = None
+    elif recap and span is not None:
+        top = span[0]  # the part they lost (recap context is plain chunks, no relevance score)
+    else:
+        top = max(context, key=lambda c: c.score).start_s
     fallback: dict[str, Any] = {"route": "rag", "answer_key": "LLM_UNAVAILABLE"}
     if top is not None:
         fallback.update(
@@ -465,9 +581,18 @@ def _answer(
         return {**fallback, "answer_key": fallback["answer_key"].replace("UNAVAILABLE", "NOT_CONFIGURED")}
     from app.services.llm import LLMError
 
+    # Hindi answers: English-only words the model spelled in Devanagari go back to English letters ("लेक्चर" →
+    # "lecture"), on the stream as well, so what is shown and spoken matches the final text
+    terms = TermStream() if lang == "hi" else None
+
     async def on_delta(delta: str) -> None:
-        if deps.emit is not None:
-            await deps.emit(_normalize_citations(delta))
+        if deps.emit is None:
+            return
+        out = _normalize_citations(delta)
+        if terms is not None:
+            out = terms.push(out)
+        if out:
+            await deps.emit(out)
 
     try:
         text = _run(
@@ -482,10 +607,22 @@ def _answer(
     except LLMError as exc:
         log.warning("rag answer failed: %s", exc)
         return fallback
+    if terms is not None and deps.emit is not None and (tail := terms.flush()):
+        _run(deps, deps.emit(tail))
     text = _normalize_citations(text).strip()
+    if lang == "hi":
+        text = latinize_terms(text)
     if not text:
         return fallback
-    return {"route": "rag", "answer_text": text, "citations": _citations(text, context)}
+    out: dict[str, Any] = {
+        "route": "rag",
+        "answer_text": text,
+        "citations": _citations(text, context),
+        "answer_kind": kind,
+    }
+    if recap and span is not None:
+        out["replay_from_s"] = span[0]  # "Replay from 18:20": the part they lost, on the screen
+    return out
 
 
 def _citations(text: str, context: list[Any]) -> list[dict[str, float]]:
@@ -655,8 +792,9 @@ def llm_router(state: StudyState, config: RunnableConfig) -> dict[str, Any]:
     deps = _deps(config)
     if not deps.llm.configured:
         return {"route": "llm", "answer_key": "NOT_UNDERSTOOD", "router_target": "localize"}
-    lang = state.get("language", "en")
-    system = _ROUTER_SYSTEM.format(language="Hindi (Devanagari script)" if lang == "hi" else "English")
+    system = _ROUTER_SYSTEM.format(
+        language=_reply_language_name(state.get("language", "en"), bool(state.get("code_mix")), short=True)
+    )
     messages = [
         {"role": "system", "content": system},
         {"role": "user", "content": f"{state.get('raw_text', '')}\n(normalized: {text})"},
@@ -776,6 +914,9 @@ PER_TURN_RESET: dict[str, Any] = {
     "error": None,
     "transcript_status": "pending",
     "transcript_fail_reason": None,
+    "code_mix": False,
+    "answer_kind": None,
+    "replay_from_s": None,
 }
 
 

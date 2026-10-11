@@ -60,7 +60,49 @@ export function speak(text: string, lang: 'en' | 'hi'): void {
 export function stopSpeaking(): void {
   active.forEach((s) => s.cancel());
   active.clear();
+  stopFiller();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
+
+// "One sec…" while a slow answer is on its way: silence after you speak is what makes a voice assistant feel
+// broken. Fetched once per language ahead of time (prefetchFiller on ~ press) so it plays instantly, in the same
+// hosted voice as the answer; the browser voice says it when there's no hosted voice.
+const FILLER = { en: 'One sec…', hi: 'एक second…' } as const;
+const fillerBlob: Partial<Record<'en' | 'hi', Blob | null>> = {};
+const fillerFetch: Partial<Record<'en' | 'hi', Promise<void>>> = {};
+let fillerEl: HTMLAudioElement | null = null;
+
+export function prefetchFiller(lang: 'en' | 'hi'): void {
+  if (!hostedTtsAvailable() || fillerFetch[lang]) return;
+  fillerFetch[lang] = synthesize(FILLER[lang], lang)
+    .then((b) => {
+      fillerBlob[lang] = b;
+    })
+    .catch(() => undefined);
+}
+
+export function playFiller(lang: 'en' | 'hi'): void {
+  stopFiller();
+  const blob = fillerBlob[lang];
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    const el = new Audio(url);
+    fillerEl = el;
+    el.onended = el.onerror = () => {
+      URL.revokeObjectURL(url);
+      if (fillerEl === el) fillerEl = null;
+    };
+    el.play().catch(() => URL.revokeObjectURL(url));
+    return;
+  }
+  if (hostedTtsAvailable()) return; // still fetching: better silent than a different voice
+  if (!('speechSynthesis' in window)) return;
+  void makeUtterance(FILLER[lang], lang).then((u) => window.speechSynthesis.speak(u));
+}
+
+export function stopFiller(): void {
+  fillerEl?.pause();
+  fillerEl = null;
 }
 
 // a sentence ends at . ! ? or the Devanagari danda, followed by whitespace (so "1.5" and "e.g" don't split)
@@ -76,11 +118,21 @@ export interface SpeechStream {
 
 interface Item {
   text: string;
+  /** the sentence as it appears in the answer (citations and all), for onSentence */
+  raw: string;
   audio: Promise<Blob | null> | null; // null = browser voice
   abort?: AbortController;
 }
 
-export function createSpeechStream(lang: 'en' | 'hi', onIdle?: () => void): SpeechStream {
+/**
+ * `onIdle` fires once everything has been spoken; `onSentence` when a sentence starts playing, with its text as it
+ * appears in the answer (the fullscreen caption highlights it).
+ */
+export function createSpeechStream(
+  lang: 'en' | 'hi',
+  onIdle?: () => void,
+  onSentence?: (sentence: string) => void
+): SpeechStream {
   const browserOk = 'speechSynthesis' in window;
   const queue: Item[] = [];
   let buffer = '';
@@ -119,6 +171,8 @@ export function createSpeechStream(lang: 'en' | 'hi', onIdle?: () => void): Spee
     playing = true;
     const blob = item.audio ? await item.audio : null;
     if (cancelled) return;
+    stopFiller(); // the answer itself is about to be heard
+    onSentence?.(item.raw);
     if (!blob) return speakWithBrowser(item.text); // no hosted voice for this one
     const url = URL.createObjectURL(blob);
     const el = new Audio(url);
@@ -136,7 +190,7 @@ export function createSpeechStream(lang: 'en' | 'hi', onIdle?: () => void): Spee
   const say = (sentence: string) => {
     const text = stripForSpeech(sentence);
     if (!text || cancelled) return;
-    const item: Item = { text, audio: null };
+    const item: Item = { text, raw: sentence, audio: null };
     if (hostedTtsAvailable()) {
       item.abort = new AbortController();
       item.audio = synthesize(text, lang, item.abort.signal); // prefetch now; plays in order

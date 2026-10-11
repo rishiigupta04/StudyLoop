@@ -29,6 +29,7 @@ import httpx
 
 from app.config import Settings
 from app.orchestration import localize as L
+from app.services.hindi_terms import latinize_terms
 
 log = logging.getLogger("studyloop.notes")
 
@@ -319,7 +320,7 @@ class NotesService:
             max_tokens=SUMMARY_MAX_TOKENS,
             temperature=0.2,
         )
-        return clean_summary(text) or None
+        return latinize_terms(clean_summary(text)) or None  # Hindi: "लेक्चर" → "lecture"
 
     def start_voice_note(
         self, note: dict[str, Any], *, spoken: str, language: str, send: Send | None = None

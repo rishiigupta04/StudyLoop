@@ -217,6 +217,29 @@ def is_help(text: str) -> bool:
     return bool(text.strip()) and bool(_HELP.fullmatch(_core(text.strip())))
 
 
+# "I'm lost" with no topic named: rag_agent re-explains the last ~90 s in simpler words (+ a replay offer).
+# On normalized text. "I didn't hear / catch that" stays REPLAY (labeling rule), so hear/catch are not here.
+# fmt: off
+_LOST = re.compile(
+    r"(?:i am (?:totally |completely |so |a bit |kind of |a little )?(?:lost|confused)|"
+    r"i (?:did not|could not|cannot|can not|do not) (?:really |quite )?(?:get|understand|follow)"
+    r"(?: (?:that|it|this|any of (?:that|it|this)|what (?:he|she|they) (?:said|meant|just said)))?"
+    r"(?: (?:part|bit|last part|one))?|"
+    r"(?:kuch |bilkul |zara bhi )?samajh (?:nahi|nahin) (?:aaya|aya|aa raha|aa rha|aa rahi)|"
+    r"(?:kuch |bilkul )?samjha (?:nahi|nahin)|samjhi (?:nahi|nahin)|"
+    r"what just happened|i am not following|you lost me|he lost me|"
+    r"(?:can you |please )?explain what (?:he|she|they) just said)"
+    r"(?: (?:at all|again|please|yaar|bhai|sir))?"
+)
+# fmt: on
+
+
+def is_lost(text: str) -> bool:
+    """ "I'm lost", "I didn't get that", "samajh nahi aaya" — the learner lost the thread, no topic named."""
+    t = text.strip()
+    return bool(t) and bool(_LOST.fullmatch(_core(t)))
+
+
 def classify(text: str) -> tuple[Intent, float]:
     t = (text or "").strip()
     if not t:

@@ -35,6 +35,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.orchestration.localize import fmt_clock
+from app.services.hindi_terms import latinize_terms
 from app.services.video_repo import OUTLINE_VERSION
 
 log = logging.getLogger("studyloop.outline")
@@ -102,7 +103,7 @@ def parse_json(text: str) -> dict[str, Any]:
 
 def _clean(s: Any, limit: int) -> str:
     s = " ".join(str(s or "").replace("**", "").split()).strip().strip('"').strip()
-    return s[:limit]
+    return latinize_terms(s)[:limit]  # Hindi outlines: "लेक्चर" → "lecture" (no-op on English)
 
 
 def windows(chunks: Sequence[dict[str, Any]], *, window_s: float = WINDOW_S) -> list[list[dict[str, Any]]]:
@@ -358,7 +359,19 @@ def public(doc: Any) -> dict[str, Any]:
     if not isinstance(doc, dict):
         return {"outline_status": None, "outline": None}
     status = doc.get("status")
-    return {
-        "outline_status": status,
-        "outline": doc.get("langs") if status == "ready" else None,
-    }
+    langs = doc.get("langs") if status == "ready" else None
+    if isinstance(langs, dict) and isinstance(langs.get("hi"), dict):
+        # outlines stored before English words were kept in English letters: fix them on the way out
+        langs = {**langs, "hi": _latinize_doc(langs["hi"])}
+    return {"outline_status": status, "outline": langs}
+
+
+def _latinize_doc(value: Any) -> Any:
+    """Every string in a (Hindi) outline doc through latinize_terms; structure and numbers untouched."""
+    if isinstance(value, str):
+        return latinize_terms(value)
+    if isinstance(value, list):
+        return [_latinize_doc(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _latinize_doc(v) for k, v in value.items()}
+    return value

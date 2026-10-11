@@ -197,8 +197,9 @@ def test_ws_hindi_bookmark_note():
         assert created["note"]["is_bookmarked"] is True
         assert recv(ws)["text"] == "1:01 bookmark कर लिया।"
         updated = recv(ws)
-        assert updated["note"]["summary"] == llm.answer
-        assert "Devanagari" in llm.calls[0][0]["content"]  # the summary is written in Hindi directly
+        # written in Hindi directly; "पीक" (an English word in Devanagari) comes back in English letters
+        assert updated["note"]["summary"] == "peak वह element है जो अपने पड़ोसियों से छोटा नहीं है।"
+        assert "Devanagari" in llm.calls[0][0]["content"]
 
 
 def test_player_commands_never_create_notes():
